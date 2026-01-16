@@ -21,7 +21,18 @@ class SteamConfigHandler(FileSystemEventHandler):
 
     def on_modified(self, event):
         if event.src_path == str(self.localconfig_path) and not self.processing:
-            print(f"\n🔍 Detected change in {self.localconfig_path.name}")
+            print(f"\n🔍 Detected change in {self.localconfig_path.name} (modified)")
+            self.process_launch_options()
+
+    def on_created(self, event):
+        if event.src_path == str(self.localconfig_path) and not self.processing:
+            print(f"\n🔍 Detected change in {self.localconfig_path.name} (created)")
+            self.process_launch_options()
+
+    def on_moved(self, event):
+        # Handle atomic writes (temp file renamed to target)
+        if hasattr(event, 'dest_path') and event.dest_path == str(self.localconfig_path) and not self.processing:
+            print(f"\n🔍 Detected change in {self.localconfig_path.name} (moved/renamed)")
             self.process_launch_options()
 
     def process_launch_options(self):
@@ -33,6 +44,12 @@ class SteamConfigHandler(FileSystemEventHandler):
             # Read the config file
             with open(self.localconfig_path, 'r', encoding='utf-8', errors='ignore') as f:
                 config_content = f.read()
+
+            # Create backup before any processing
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup_path = self.localconfig_path.with_suffix(f'.vdf.backup_{timestamp}')
+            shutil.copy2(self.localconfig_path, backup_path)
+            print(f"✓ Backed up original config to: {backup_path.name}")
 
             # Find the apps section
             apps_section_start = config_content.find('"apps"')
@@ -195,12 +212,6 @@ class SteamConfigHandler(FileSystemEventHandler):
             print(f"📊 Processed {apps_processed} apps ({apps_with_launch_options} with launch options)")
 
             if modified:
-                # Create backup
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                backup_path = self.localconfig_path.with_suffix(f'.vdf.backup_{timestamp}')
-                shutil.copy2(self.localconfig_path, backup_path)
-                print(f"✓ Backed up original config to: {backup_path.name}")
-
                 # Write the modified config atomically
                 temp_path = self.localconfig_path.with_suffix('.vdf.tmp')
                 with open(temp_path, 'w', encoding='utf-8') as f:
