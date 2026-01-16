@@ -3,6 +3,7 @@
 import os
 import re
 import shutil
+import signal
 import subprocess
 import time
 from pathlib import Path
@@ -18,9 +19,14 @@ class SteamConfigHandler(FileSystemEventHandler):
         self.localconfig_path = localconfig_path
         self.steam_path = steam_path
         self.processing = False
+        self.last_modified = 0
 
     def on_modified(self, event):
         if event.src_path == str(self.localconfig_path) and not self.processing:
+            # Debounce: ignore if modified within the last 2 seconds
+            current_mtime = os.path.getmtime(self.localconfig_path)
+            if current_mtime - self.last_modified < 2:
+                return
             print(f"\n🔍 Detected change in {self.localconfig_path.name} (modified)")
             self.process_launch_options()
 
@@ -212,16 +218,26 @@ class SteamConfigHandler(FileSystemEventHandler):
             print(f"📊 Processed {apps_processed} apps ({apps_with_launch_options} with launch options)")
 
             if modified:
+                # Validate the new config before writing
+                if len(new_config) < len(config_content) * 0.9:
+                    print("⚠️  Warning: New config is significantly smaller than original. Aborting to prevent data loss.")
+                    return
+
+                if new_config.count('{') != new_config.count('}'):
+                    print("⚠️  Warning: Brace mismatch in new config. Aborting to prevent corruption.")
+                    return
+
                 # Write the modified config atomically
                 temp_path = self.localconfig_path.with_suffix('.vdf.tmp')
                 with open(temp_path, 'w', encoding='utf-8') as f:
                     f.write(new_config)
 
                 os.replace(temp_path, self.localconfig_path)
+                self.last_modified = time.time()
                 print("✅ Steam configuration updated successfully!")
 
-                # Notify Steam of the changes
-                self.notify_steam()
+                # Give Steam time to detect the change
+                time.sleep(0.5)
             else:
                 print("ℹ️  No launch options needed updating (all already have %command%)")
 
@@ -235,26 +251,14 @@ class SteamConfigHandler(FileSystemEventHandler):
     def notify_steam(self):
         """Notify Steam to reload configuration."""
         try:
-            # Method 1: Touch the config file to update mtime
+            # Just touch the config file to update mtime
+            # Steam will detect this and reload the configuration
             current_time = time.time()
             os.utime(self.localconfig_path, (current_time, current_time))
-
-            # Method 2: Send SIGHUP to Steam process
-            result = subprocess.run(['pgrep', '-f', 'steam'], capture_output=True, text=True)
-            if result.returncode == 0:
-                pids = result.stdout.strip().split('\n')
-                for pid in pids:
-                    if pid.strip():
-                        try:
-                            subprocess.run(['kill', '-HUP', pid.strip()], check=False)
-                        except:
-                            pass
-                print("✅ Steam notified of configuration changes")
-            else:
-                print("ℹ️  Steam is not running - changes will apply when Steam starts")
+            print("✅ Steam will reload configuration on next check")
 
         except Exception as e:
-            print(f"⚠️  Could not signal Steam: {e}")
+            print(f"⚠️  Could not update file timestamp: {e}")
 
 
 def find_steam_path() -> Path:
@@ -303,6 +307,9 @@ def main():
     print("=" * 60)
     print("🎮 Steam Launch Options Watcher")
     print("=" * 60)
+
+    # Ignore SIGHUP to prevent the script from being killed
+    signal.signal(signal.SIGHUP, signal.SIG_IGN)
 
     try:
         # Find Steam installation
