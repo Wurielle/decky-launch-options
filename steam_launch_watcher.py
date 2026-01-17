@@ -105,6 +105,14 @@ def set_launch_options_for_all_apps(localconfig_path: Path, launch_option: str =
         launch_option = LAUNCH_OPTION
 
     try:
+        # Stop Steam first so it writes its config, then we can modify it
+        if restart_steam_after:
+            print("🔄 Stopping Steam...")
+            stop_steam()
+            print("⏳ Waiting for Steam to fully close and write config...")
+            import time
+            time.sleep(5)
+
         print("📝 Reading Steam configuration...")
 
         # Read the config file
@@ -259,6 +267,9 @@ def set_launch_options_for_all_apps(localconfig_path: Path, launch_option: str =
 
         if modified:
             # Validate the new config before writing
+            print(f"🔍 Debug: Original size: {len(config_content)}, New size: {len(new_config)}")
+            print(f"🔍 Debug: Original braces: {config_content.count('{')}/{config_content.count('}')}, New braces: {new_config.count('{')}/{new_config.count('}')}")
+
             if len(new_config) < len(config_content) * 0.9:
                 print("⚠️  Warning: New config is significantly smaller than original. Aborting to prevent data loss.")
                 return False
@@ -268,15 +279,18 @@ def set_launch_options_for_all_apps(localconfig_path: Path, launch_option: str =
                 return False
 
             # Write the modified config atomically
+            print(f"🔍 Debug: Writing to {localconfig_path}")
             temp_path = localconfig_path.with_suffix('.vdf.tmp')
             with open(temp_path, 'w', encoding='utf-8') as f:
                 f.write(new_config)
+            print(f"🔍 Debug: Temp file written, size: {os.path.getsize(temp_path)}")
 
             os.replace(temp_path, localconfig_path)
+            print(f"🔍 Debug: File replaced, new size: {os.path.getsize(localconfig_path)}")
             print("✅ Steam configuration updated successfully!")
 
             if restart_steam_after:
-                restart_steam()
+                start_steam()
 
             return True
         else:
@@ -289,31 +303,42 @@ def set_launch_options_for_all_apps(localconfig_path: Path, launch_option: str =
         traceback.print_exc()
         return False
 
-def restart_steam():
+def stop_steam():
+    """Stop Steam and wait for it to fully close."""
     try:
-        print("🔄 Stopping Steam...")
-        # Kill Steam processes but not this watcher script
-        # Use exact process name matching to avoid killing ourselves
-        subprocess.run(["pkill", "-x", "steam"], check=False)
-        subprocess.run(["pkill", "-x", "Steam"], check=False)
-        subprocess.run(["killall", "-q", "steam"], check=False, stderr=subprocess.DEVNULL)
-        subprocess.run(["killall", "-q", "Steam"], check=False, stderr=subprocess.DEVNULL)
+        # Find and kill the main Steam process
+        result = subprocess.run(['pgrep', '-f', 'ubuntu12_32/steam'], capture_output=True, text=True)
+        if result.returncode == 0:
+            pids = result.stdout.strip().split('\n')
+            for pid in pids:
+                if pid.strip():
+                    try:
+                        subprocess.run(['kill', pid.strip()], check=False)
+                    except:
+                        pass
 
-        # Also kill steamwebhelper and other Steam-specific processes
-        for proc in ["steamwebhelper", "streaming_client", "fossilize_replay"]:
-            subprocess.run(["pkill", "-x", proc], check=False, stderr=subprocess.DEVNULL)
+        # Fallback: try standard kill methods
+        subprocess.run(["pkill", "-f", "ubuntu12_32/steam"], check=False, stderr=subprocess.DEVNULL)
+        subprocess.run(["killall", "steam"], check=False, stderr=subprocess.DEVNULL)
 
-        # Wait for Steam to fully close
-        import time
-        print("⏳ Waiting for Steam to close completely...")
-        time.sleep(5)
+        # Kill steamwebhelper processes
+        subprocess.run(["pkill", "steamwebhelper"], check=False, stderr=subprocess.DEVNULL)
 
         # Verify Steam is closed
+        import time
+        time.sleep(2)
         result = subprocess.run(['pgrep', '-f', 'steam'], capture_output=True, text=True)
         if result.returncode == 0:
             print("⚠️  Steam processes still running. Waiting longer...")
             time.sleep(3)
 
+    except Exception as e:
+        print(f"❌ Error stopping Steam: {e}")
+
+
+def start_steam():
+    """Start Steam."""
+    try:
         print("🚀 Starting Steam...")
         # Try multiple ways to start Steam
         start_commands = [
@@ -337,12 +362,20 @@ def restart_steam():
             print("❌ Could not start Steam automatically")
             print("Please manually start Steam from your applications menu")
         else:
-            print("✅ Steam is restarting...")
-            print("   Please wait for Steam to fully load, then check your game's launch options")
+            print("✅ Steam is starting...")
 
     except Exception as e:
-        print(f"❌ Error restarting Steam: {e}")
-        print("Please manually restart Steam to apply launch options.")
+        print(f"❌ Error starting Steam: {e}")
+        print("Please manually start Steam.")
+
+
+def restart_steam():
+    """Restart Steam to apply configuration changes."""
+    print("🔄 Restarting Steam...")
+    stop_steam()
+    import time
+    time.sleep(3)
+    start_steam()
 
 def find_steam_path() -> Path:
     """Find Steam installation path."""
@@ -409,7 +442,7 @@ def main():
 
         input("Press Enter to continue or Ctrl+C to cancel...")
 
-        success = set_launch_options_for_all_apps(localconfig_path, restart_steam_after=False)
+        success = set_launch_options_for_all_apps(localconfig_path, restart_steam_after=True)
 
         if success:
             print("\n✅ Done!")
