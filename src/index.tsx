@@ -2,7 +2,6 @@ import {
   ButtonItem,
   PanelSection,
   PanelSectionRow,
-  Navigation,
   staticClasses
 } from "@decky/ui";
 import {
@@ -14,7 +13,7 @@ import {
   // routerHook
 } from "@decky/api"
 import { useState } from "react";
-import { FaShip } from "react-icons/fa";
+import { TbVariablePlus } from "react-icons/tb";
 
 // import logo from "../assets/logo.png";
 
@@ -98,13 +97,13 @@ export default definePlugin(() => {
 
   return {
     // The name shown in various decky menus
-    name: "Test Plugin",
+    name: "Launch Options",
     // The element displayed at the top of your plugin's menu
     titleView: <div className={staticClasses.Title}>Decky Example Plugin</div>,
     // The content of your plugin's menu
     content: <Content />,
     // The icon displayed in the plugin list
-    icon: <FaShip />,
+    icon: <TbVariablePlus />,
     // The function triggered when your plugin unloads
     onDismount() {
       console.log("Unloading")

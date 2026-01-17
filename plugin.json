@@ -1,6 +1,6 @@
 {
-  "name": "Example Plugin",
-  "author": "John Doe",
+  "name": "decky-launch-options",
+  "author": "Wuriko",
   "flags": ["debug", "_root"],
   "api_version": 1,
   "publish": {
