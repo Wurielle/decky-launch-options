@@ -13,7 +13,7 @@ import {
   // routerHook
 } from "@decky/api"
 import { useState } from "react";
-import { TbVariablePlus } from "react-icons/tb";
+import { FaTerminal } from "react-icons/fa";
 
 // import logo from "../assets/logo.png";
 
@@ -103,7 +103,7 @@ export default definePlugin(() => {
     // The content of your plugin's menu
     content: <Content />,
     // The icon displayed in the plugin list
-    icon: <TbVariablePlus />,
+    icon: <FaTerminal />,
     // The function triggered when your plugin unloads
     onDismount() {
       console.log("Unloading")
