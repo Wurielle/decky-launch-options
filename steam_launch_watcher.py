@@ -146,13 +146,10 @@ class SteamConfigHandler(FileSystemEventHandler):
                     apps_with_launch_options += 1
                     current_options = launch_options_match.group(1)
 
-                    # Skip if already contains %command%
-                    if '%command%' not in current_options:
-                        # Add %command% to the existing launch options
-                        if current_options.strip():
-                            new_options = f"{current_options} %command%"
-                        else:
-                            new_options = "%command%"
+                    # Skip if already contains our test command
+                    if 'notify-send' not in current_options:
+                        # Add notification command to test if launch options work
+                        new_options = "notify-send 'Steam Launch Watcher' 'Launch options modified!' && %command%"
 
                         # Try different tab variations that Steam might use
                         for tab_variation in ['\t\t', '\t', '  ']:
@@ -182,7 +179,7 @@ class SteamConfigHandler(FileSystemEventHandler):
                     else:
                         indent = '\t\t\t\t\t'  # Default Steam indentation
 
-                    new_launch_line = f'{indent}"LaunchOptions"\t\t"%command%"\n'
+                    new_launch_line = f'{indent}"LaunchOptions"\t\t"notify-send \'Steam Launch Watcher\' \'Launch options modified!\' && %command%"\n'
 
                     modifications.append({
                         'type': 'insert',
@@ -209,7 +206,7 @@ class SteamConfigHandler(FileSystemEventHandler):
                     elif mod['type'] == 'insert':
                         new_config = new_config[:mod['position']] + mod['text'] + new_config[mod['position']:]
                         print(f"✓ Created LaunchOptions for App ID {mod['app_id']} ({mod['game_name']})")
-                        print(f"  New: '%command%'")
+                        print(f"  New: 'notify-send + %command%'")
 
                 modified = True
             else:
@@ -236,10 +233,10 @@ class SteamConfigHandler(FileSystemEventHandler):
                 self.last_modified = time.time()
                 print("✅ Steam configuration updated successfully!")
 
-                # Give Steam time to detect the change
-                time.sleep(0.5)
+                # Notify Steam of the changes
+                self.notify_steam()
             else:
-                print("ℹ️  No launch options needed updating (all already have %command%)")
+                print("ℹ️  No launch options needed updating (all already have notify-send)")
 
         except Exception as e:
             print(f"❌ Error processing launch options: {e}")
@@ -247,6 +244,61 @@ class SteamConfigHandler(FileSystemEventHandler):
             traceback.print_exc()
         finally:
             self.processing = False
+
+    def restart_steam(self):
+        try:
+            print("🔄 Stopping Steam...")
+            # Kill Steam processes but not this watcher script
+            # Use exact process name matching to avoid killing ourselves
+            subprocess.run(["pkill", "-x", "steam"], check=False)
+            subprocess.run(["pkill", "-x", "Steam"], check=False)
+            subprocess.run(["killall", "-q", "steam"], check=False, stderr=subprocess.DEVNULL)
+            subprocess.run(["killall", "-q", "Steam"], check=False, stderr=subprocess.DEVNULL)
+
+            # Also kill steamwebhelper and other Steam-specific processes
+            for proc in ["steamwebhelper", "streaming_client", "fossilize_replay"]:
+                subprocess.run(["pkill", "-x", proc], check=False, stderr=subprocess.DEVNULL)
+
+            # Wait for Steam to fully close
+            import time
+            print("⏳ Waiting for Steam to close completely...")
+            time.sleep(5)
+
+            # Verify Steam is closed
+            result = subprocess.run(['pgrep', '-f', 'steam'], capture_output=True, text=True)
+            if result.returncode == 0:
+                print("⚠️  Steam processes still running. Waiting longer...")
+                time.sleep(3)
+
+            print("🚀 Starting Steam...")
+            # Try multiple ways to start Steam
+            start_commands = [
+                ["steam"],
+                ["/usr/bin/steam"],
+                ["flatpak", "run", "com.valvesoftware.Steam"],
+                ["snap", "run", "steam"]
+            ]
+
+            steam_started = False
+            for cmd in start_commands:
+                try:
+                    subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    steam_started = True
+                    print(f"✅ Steam started using: {' '.join(cmd)}")
+                    break
+                except FileNotFoundError:
+                    continue
+
+            if not steam_started:
+                print("❌ Could not start Steam automatically")
+                print("Please manually start Steam from your applications menu")
+            else:
+                print("✅ Steam is restarting...")
+                print("   Please wait for Steam to fully load, then check your game's launch options")
+
+        except Exception as e:
+            print(f"❌ Error restarting Steam: {e}")
+            print("Please manually restart Steam to apply launch options.")
 
     def notify_steam(self):
         """Notify Steam to reload configuration."""
@@ -256,6 +308,7 @@ class SteamConfigHandler(FileSystemEventHandler):
             current_time = time.time()
             os.utime(self.localconfig_path, (current_time, current_time))
             print("✅ Steam will reload configuration on next check")
+            self.restart_steam()
 
         except Exception as e:
             print(f"⚠️  Could not update file timestamp: {e}")
