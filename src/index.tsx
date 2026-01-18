@@ -2,66 +2,32 @@ import {
   ButtonItem,
   PanelSection,
   PanelSectionRow,
-  staticClasses
+  staticClasses,
+  Navigation,
 } from "@decky/ui";
 import {
-  addEventListener,
-  removeEventListener,
   callable,
   definePlugin,
-  toaster,
-  // routerHook
 } from "@decky/api"
-import { useState } from "react";
 import { FaTerminal } from "react-icons/fa";
 
-// import logo from "../assets/logo.png";
+import logo from "../assets/logo.png";
 
-// This function calls the python function "add", which takes in two numbers and returns their sum (as a number)
-// Note the type annotations:
-//  the first one: [first: number, second: number] is for the arguments
-//  the second one: number is for the return value
-const add = callable<[first: number, second: number], number>("add");
+const applyLaunchOptions = callable<[], void>("apply_launch_options");
 const restartSteam = callable<[], void>("restart_steam");
 const printDebugLogs = callable<[], void>("debug_logs");
 const startWatcher = callable<[], void>("start_watcher");
 const stopWatcher = callable<[], void>("stop_watcher");
-// This function calls the python function "start_timer", which takes in no arguments and returns nothing.
-// It starts a (python) timer which eventually emits the event 'timer_event'
-const startTimer = callable<[], void>("start_timer");
 
 function Content() {
-  const [result, setResult] = useState<number | undefined>();
-
-  const onClick = async () => {
-    const result = await add(Math.random(), Math.random());
-    setResult(result);
-  };
-
   return (
     <PanelSection title="Panel Section">
       <PanelSectionRow>
         <ButtonItem
           layout="below"
-          onClick={() => printDebugLogs()}
+          onClick={() => applyLaunchOptions()}
         >
-          Print debug logs
-        </ButtonItem>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => startWatcher()}
-        >
-          Start watcher
-        </ButtonItem>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => stopWatcher()}
-        >
-          Stop watcher
+          {'Apply Launch Options'}
         </ButtonItem>
       </PanelSectionRow>
       <PanelSectionRow>
@@ -74,28 +40,36 @@ function Content() {
       </PanelSectionRow>
       <PanelSectionRow>
         <ButtonItem
-          layout="below"
-          onClick={onClick}
+            layout="below"
+            onClick={() => printDebugLogs()}
         >
-          {result ?? "Add two numbers via Python"}
+          Print debug logs
         </ButtonItem>
       </PanelSectionRow>
       <PanelSectionRow>
         <ButtonItem
-          layout="below"
-          onClick={() => startTimer()}
+            layout="below"
+            onClick={() => startWatcher()}
         >
-          {"Start Python timer"}
+          Start watcher
+        </ButtonItem>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <ButtonItem
+            layout="below"
+            onClick={() => stopWatcher()}
+        >
+          Stop watcher
         </ButtonItem>
       </PanelSectionRow>
 
-      {/* <PanelSectionRow>
+      <PanelSectionRow>
         <div style={{ display: "flex", justifyContent: "center" }}>
           <img src={logo} />
         </div>
-      </PanelSectionRow> */}
+      </PanelSectionRow>
 
-      {/*<PanelSectionRow>
+      <PanelSectionRow>
         <ButtonItem
           layout="below"
           onClick={() => {
@@ -105,45 +79,18 @@ function Content() {
         >
           Router
         </ButtonItem>
-      </PanelSectionRow>*/}
+      </PanelSectionRow>
     </PanelSection>
   );
 };
 
 export default definePlugin(() => {
-  console.log("Template plugin initializing, this is called once on frontend startup")
-
-  // serverApi.routerHook.addRoute("/decky-plugin-test", DeckyPluginRouterTest, {
-  //   exact: true,
-  // });
-
-  // Add an event listener to the "timer_event" event from the backend
-  const listener = addEventListener<[
-    test1: string,
-    test2: boolean,
-    test3: number
-  ]>("timer_event", (test1, test2, test3) => {
-    console.log("Template got timer_event with:", test1, test2, test3)
-    toaster.toast({
-      title: "template got timer_event",
-      body: `${test1}, ${test2}, ${test3}`
-    });
-  });
-
   return {
-    // The name shown in various decky menus
     name: "Launch Options",
-    // The element displayed at the top of your plugin's menu
     titleView: <div className={staticClasses.Title}>Launch Options</div>,
-    // The content of your plugin's menu
     content: <Content />,
-    // The icon displayed in the plugin list
     icon: <FaTerminal />,
-    // The function triggered when your plugin unloads
     onDismount() {
-      console.log("Unloading")
-      removeEventListener("timer_event", listener);
-      // serverApi.routerHook.removeRoute("/decky-plugin-test");
     },
   };
 });
