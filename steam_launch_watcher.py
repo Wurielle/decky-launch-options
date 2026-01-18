@@ -31,6 +31,7 @@ import os
 import re
 import signal
 import subprocess
+import time
 from pathlib import Path
 
 # Configuration: Define the launch option to set for all games
@@ -289,6 +290,10 @@ def set_launch_options_for_all_apps(localconfig_path: Path, launch_option: str =
             print(f"🔍 Debug: File replaced, new size: {os.path.getsize(localconfig_path)}")
             print("✅ Steam configuration updated successfully!")
 
+            import time
+            current_time = time.time()
+            os.utime(localconfig_path, (current_time, current_time))
+
             if restart_steam_after:
                 start_steam()
 
@@ -417,6 +422,97 @@ def find_localconfig_vdf(steam_path: Path) -> Path:
 
     return localconfig_path
 
+def watch_localconfig(localconfig_path: Path, launch_option: str = None):
+    """
+    Watch localconfig.vdf for changes and apply launch options without restarting Steam.
+
+    Args:
+        localconfig_path: Path to Steam's localconfig.vdf file
+        launch_option: The launch option to apply (uses LAUNCH_OPTION global if None)
+    """
+    if launch_option is None:
+        launch_option = LAUNCH_OPTION
+
+    print("=" * 60)
+    print("📂 Watching localconfig.vdf for changes...")
+    print(f"📝 Launch option: {launch_option}")
+    print(f"📍 File: {localconfig_path}")
+    print("=" * 60)
+    print("\n⚠️  Press Ctrl+C to stop watching\n")
+
+    # Get initial modification time and file size
+    last_modified = localconfig_path.stat().st_mtime
+    last_size = localconfig_path.stat().st_size
+    processing = False
+
+    try:
+        while True:
+            time.sleep(2)  # Check every 2 seconds
+
+            try:
+                current_modified = localconfig_path.stat().st_mtime
+                current_size = localconfig_path.stat().st_size
+
+                # Only process if file changed AND we're not currently processing
+                if (current_modified != last_modified or current_size != last_size) and not processing:
+                    # Check if this is likely Steam's change (not ours)
+                    # We wait a moment and check again to see if file is still being written
+                    time.sleep(0.5)
+
+                    # Check again after waiting
+                    check_modified = localconfig_path.stat().st_mtime
+                    check_size = localconfig_path.stat().st_size
+
+                    # If file is still being written, wait more
+                    if check_modified != current_modified or check_size != current_size:
+                        print(f"⏳ [{time.strftime('%H:%M:%S')}] File still being written, waiting...")
+                        time.sleep(2)
+                        current_modified = localconfig_path.stat().st_mtime
+                        current_size = localconfig_path.stat().st_size
+
+                    print(f"\n🔄 [{time.strftime('%H:%M:%S')}] localconfig.vdf changed (size: {last_size} -> {current_size})")
+                    print(f"   Applying launch options...")
+
+                    # Mark as processing to avoid re-entry
+                    processing = True
+
+                    # Record the state before we modify
+                    before_modified = current_modified
+                    before_size = current_size
+
+                    # Apply launch options WITHOUT restarting Steam
+                    success = set_launch_options_for_all_apps(
+                        localconfig_path,
+                        launch_option,
+                        restart_steam_after=False
+                    )
+
+                    if success:
+                        print(f"✅ [{time.strftime('%H:%M:%S')}] Launch options applied")
+                    else:
+                        print(f"❌ [{time.strftime('%H:%M:%S')}] Failed to apply launch options")
+
+                    # Update to current state after our modification
+                    last_modified = localconfig_path.stat().st_mtime
+                    last_size = localconfig_path.stat().st_size
+
+                    processing = False
+                    print(f"📊 [{time.strftime('%H:%M:%S')}] Ready for next change...\n")
+
+            except FileNotFoundError:
+                print(f"❌ [{time.strftime('%H:%M:%S')}] localconfig.vdf not found")
+                processing = False
+                time.sleep(5)
+            except Exception as e:
+                print(f"❌ [{time.strftime('%H:%M:%S')}] Error: {e}")
+                processing = False
+                time.sleep(5)
+
+    except KeyboardInterrupt:
+        print("\n\n🛑 Stopping file watcher...")
+        print("👋 Goodbye!")
+
+
 def main():
     print("=" * 60)
     print("🎮 Steam Launch Options Manager")
@@ -436,25 +532,52 @@ def main():
         localconfig_path = find_localconfig_vdf(steam_path)
         print(f"✓ Found localconfig.vdf at: {localconfig_path}")
 
-        # Example: Set launch options for all apps
-        print(f"\n📝 Setting launch option: {LAUNCH_OPTION}")
-        print("⚠️  This will restart Steam!\n")
+        print("\n" + "=" * 60)
+        print("Choose an option:")
+        print("  1. Apply launch options once (no restart)")
+        print("  2. Apply launch options once (with restart)")
+        print("  3. Watch file and auto-apply on changes (no restart)")
+        print("=" * 60)
 
-        input("Press Enter to continue or Ctrl+C to cancel...")
+        choice = input("\nEnter choice (1-3): ").strip()
 
-        success = set_launch_options_for_all_apps(localconfig_path, restart_steam_after=True)
+        if choice == "1":
+            print(f"\n📝 Setting launch option: {LAUNCH_OPTION}")
+            success = set_launch_options_for_all_apps(localconfig_path, restart_steam_after=False)
+            if success:
+                print("\n✅ Done!")
+            else:
+                print("\n❌ Failed to set launch options")
+                return 1
 
-        if success:
-            print("\n✅ Done!")
+        elif choice == "2":
+            print(f"\n📝 Setting launch option: {LAUNCH_OPTION}")
+            print("⚠️  This will restart Steam!\n")
+            input("Press Enter to continue or Ctrl+C to cancel...")
+            success = set_launch_options_for_all_apps(localconfig_path, restart_steam_after=True)
+            if success:
+                print("\n✅ Done!")
+            else:
+                print("\n❌ Failed to set launch options")
+                return 1
+
+        elif choice == "3":
+            watch_localconfig(localconfig_path, LAUNCH_OPTION)
+
         else:
-            print("\n❌ Failed to set launch options")
+            print("❌ Invalid choice")
             return 1
 
     except FileNotFoundError as e:
         print(f"\n❌ Error: {e}")
         return 1
+    except KeyboardInterrupt:
+        print("\n\n👋 Cancelled by user")
+        return 0
     except Exception as e:
         print(f"\n❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
         return 1
 
     return 0

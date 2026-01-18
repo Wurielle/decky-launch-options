@@ -22,7 +22,8 @@ import { FaTerminal } from "react-icons/fa";
 //  the first one: [first: number, second: number] is for the arguments
 //  the second one: number is for the return value
 const add = callable<[first: number, second: number], number>("add");
-
+const restartSteam = callable<[], void>("restart_steam");
+const applyLaunchOptions = callable<[launch_option: string], {success: boolean, error?: string}>("apply_launch_options");
 // This function calls the python function "start_timer", which takes in no arguments and returns nothing.
 // It starts a (python) timer which eventually emits the event 'timer_event'
 const startTimer = callable<[], void>("start_timer");
@@ -37,6 +38,14 @@ function Content() {
 
   return (
     <PanelSection title="Panel Section">
+      <PanelSectionRow>
+        <ButtonItem
+          layout="below"
+          onClick={() => restartSteam()}
+        >
+          {'Restart Steam'}
+        </ButtonItem>
+      </PanelSectionRow>
       <PanelSectionRow>
         <ButtonItem
           layout="below"
@@ -99,7 +108,7 @@ export default definePlugin(() => {
     // The name shown in various decky menus
     name: "Launch Options",
     // The element displayed at the top of your plugin's menu
-    titleView: <div className={staticClasses.Title}>Decky Example Plugin</div>,
+    titleView: <div className={staticClasses.Title}>Launch Options</div>,
     // The content of your plugin's menu
     content: <Content />,
     // The icon displayed in the plugin list
