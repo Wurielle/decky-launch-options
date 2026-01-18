@@ -23,7 +23,9 @@ import { FaTerminal } from "react-icons/fa";
 //  the second one: number is for the return value
 const add = callable<[first: number, second: number], number>("add");
 const restartSteam = callable<[], void>("restart_steam");
-const applyLaunchOptions = callable<[launch_option: string], {success: boolean, error?: string}>("apply_launch_options");
+const printDebugLogs = callable<[], void>("debug_logs");
+const startWatcher = callable<[], void>("start_watcher");
+const stopWatcher = callable<[], void>("stop_watcher");
 // This function calls the python function "start_timer", which takes in no arguments and returns nothing.
 // It starts a (python) timer which eventually emits the event 'timer_event'
 const startTimer = callable<[], void>("start_timer");
@@ -38,6 +40,30 @@ function Content() {
 
   return (
     <PanelSection title="Panel Section">
+      <PanelSectionRow>
+        <ButtonItem
+          layout="below"
+          onClick={() => printDebugLogs()}
+        >
+          Print debug logs
+        </ButtonItem>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <ButtonItem
+          layout="below"
+          onClick={() => startWatcher()}
+        >
+          Start watcher
+        </ButtonItem>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <ButtonItem
+          layout="below"
+          onClick={() => stopWatcher()}
+        >
+          Stop watcher
+        </ButtonItem>
+      </PanelSectionRow>
       <PanelSectionRow>
         <ButtonItem
           layout="below"

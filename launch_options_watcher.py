@@ -5,26 +5,18 @@ Steam Launch Options Manager
 This script provides utilities to manage Steam game launch options programmatically.
 
 Main API Functions:
-    - set_launch_options_for_all_apps(localconfig_path, launch_option=None, restart_steam_after=True)
+    - set_launch_options_for_all_apps(localconfig_path, launch_option=None)
       Set launch options for all games in the Steam library
 
     - check_app_has_launch_options(localconfig_path, app_id)
       Check if a specific app has launch options configured
       Returns: (has_launch_options: bool, current_launch_options: str)
 
-    - restart_steam()
-      Restart Steam to apply configuration changes
-
     - find_steam_path()
       Find Steam installation path
 
     - find_localconfig_vdf(steam_path)
       Find the localconfig.vdf file for the current user
-
-Usage:
-    1. Set LAUNCH_OPTION variable to your desired launch option
-    2. Call set_launch_options_for_all_apps() with the localconfig path
-    3. Steam will automatically restart to apply changes
 """
 
 import os
@@ -90,14 +82,13 @@ def check_app_has_launch_options(localconfig_path: Path, app_id: str) -> tuple[b
         print(f"❌ Error checking app {app_id}: {e}")
         return (False, "")
 
-def set_launch_options_for_all_apps(localconfig_path: Path, launch_option: str = None, restart_steam_after: bool = True) -> bool:
+def set_launch_options_for_all_apps(localconfig_path: Path, launch_option: str = None) -> bool:
     """
     Set launch options for all games in Steam library.
 
     Args:
         localconfig_path: Path to Steam's localconfig.vdf file
         launch_option: The launch option to set (uses LAUNCH_OPTION global if None)
-        restart_steam_after: Whether to restart Steam after applying changes
 
     Returns:
         True if successful, False otherwise
@@ -106,13 +97,6 @@ def set_launch_options_for_all_apps(localconfig_path: Path, launch_option: str =
         launch_option = LAUNCH_OPTION
 
     try:
-        # Stop Steam first so it writes its config, then we can modify it
-        if restart_steam_after:
-            print("🔄 Stopping Steam...")
-            stop_steam()
-            print("⏳ Waiting for Steam to fully close and write config...")
-            import time
-            time.sleep(5)
 
         print("📝 Reading Steam configuration...")
 
@@ -294,9 +278,6 @@ def set_launch_options_for_all_apps(localconfig_path: Path, launch_option: str =
             current_time = time.time()
             os.utime(localconfig_path, (current_time, current_time))
 
-            if restart_steam_after:
-                start_steam()
-
             return True
         else:
             print("ℹ️  No launch options needed updating")
@@ -307,80 +288,6 @@ def set_launch_options_for_all_apps(localconfig_path: Path, launch_option: str =
         import traceback
         traceback.print_exc()
         return False
-
-def stop_steam():
-    """Stop Steam and wait for it to fully close."""
-    try:
-        # Find and kill the main Steam process
-        result = subprocess.run(['pgrep', '-f', 'ubuntu12_32/steam'], capture_output=True, text=True)
-        if result.returncode == 0:
-            pids = result.stdout.strip().split('\n')
-            for pid in pids:
-                if pid.strip():
-                    try:
-                        subprocess.run(['kill', pid.strip()], check=False)
-                    except:
-                        pass
-
-        # Fallback: try standard kill methods
-        subprocess.run(["pkill", "-f", "ubuntu12_32/steam"], check=False, stderr=subprocess.DEVNULL)
-        subprocess.run(["killall", "steam"], check=False, stderr=subprocess.DEVNULL)
-
-        # Kill steamwebhelper processes
-        subprocess.run(["pkill", "steamwebhelper"], check=False, stderr=subprocess.DEVNULL)
-
-        # Verify Steam is closed
-        import time
-        time.sleep(2)
-        result = subprocess.run(['pgrep', '-f', 'steam'], capture_output=True, text=True)
-        if result.returncode == 0:
-            print("⚠️  Steam processes still running. Waiting longer...")
-            time.sleep(3)
-
-    except Exception as e:
-        print(f"❌ Error stopping Steam: {e}")
-
-
-def start_steam():
-    """Start Steam."""
-    try:
-        print("🚀 Starting Steam...")
-        # Try multiple ways to start Steam
-        start_commands = [
-            ["steam"],
-            ["/usr/bin/steam"],
-            ["flatpak", "run", "com.valvesoftware.Steam"],
-            ["snap", "run", "steam"]
-        ]
-
-        steam_started = False
-        for cmd in start_commands:
-            try:
-                subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                steam_started = True
-                print(f"✅ Steam started using: {' '.join(cmd)}")
-                break
-            except FileNotFoundError:
-                continue
-
-        if not steam_started:
-            print("❌ Could not start Steam automatically")
-            print("Please manually start Steam from your applications menu")
-        else:
-            print("✅ Steam is starting...")
-
-    except Exception as e:
-        print(f"❌ Error starting Steam: {e}")
-        print("Please manually start Steam.")
-
-
-def restart_steam():
-    """Restart Steam to apply configuration changes."""
-    print("🔄 Restarting Steam...")
-    stop_steam()
-    import time
-    time.sleep(3)
-    start_steam()
 
 def find_steam_path() -> Path:
     """Find Steam installation path."""
@@ -483,8 +390,7 @@ def watch_localconfig(localconfig_path: Path, launch_option: str = None):
                     # Apply launch options WITHOUT restarting Steam
                     success = set_launch_options_for_all_apps(
                         localconfig_path,
-                        launch_option,
-                        restart_steam_after=False
+                        launch_option
                     )
 
                     if success:
@@ -532,56 +438,14 @@ def main():
         localconfig_path = find_localconfig_vdf(steam_path)
         print(f"✓ Found localconfig.vdf at: {localconfig_path}")
 
-        print("\n" + "=" * 60)
-        print("Choose an option:")
-        print("  1. Apply launch options once (no restart)")
-        print("  2. Apply launch options once (with restart)")
-        print("  3. Watch file and auto-apply on changes (no restart)")
-        print("=" * 60)
+        watch_localconfig(localconfig_path, LAUNCH_OPTION)
 
-        choice = input("\nEnter choice (1-3): ").strip()
-
-        if choice == "1":
-            print(f"\n📝 Setting launch option: {LAUNCH_OPTION}")
-            success = set_launch_options_for_all_apps(localconfig_path, restart_steam_after=False)
-            if success:
-                print("\n✅ Done!")
-            else:
-                print("\n❌ Failed to set launch options")
-                return 1
-
-        elif choice == "2":
-            print(f"\n📝 Setting launch option: {LAUNCH_OPTION}")
-            print("⚠️  This will restart Steam!\n")
-            input("Press Enter to continue or Ctrl+C to cancel...")
-            success = set_launch_options_for_all_apps(localconfig_path, restart_steam_after=True)
-            if success:
-                print("\n✅ Done!")
-            else:
-                print("\n❌ Failed to set launch options")
-                return 1
-
-        elif choice == "3":
-            watch_localconfig(localconfig_path, LAUNCH_OPTION)
-
-        else:
-            print("❌ Invalid choice")
-            return 1
-
-    except FileNotFoundError as e:
-        print(f"\n❌ Error: {e}")
-        return 1
-    except KeyboardInterrupt:
-        print("\n\n👋 Cancelled by user")
-        return 0
     except Exception as e:
-        print(f"\n❌ Unexpected error: {e}")
-        import traceback
-        traceback.print_exc()
-        return 1
-
-    return 0
-
+        print(f"❌ Error occurred: {e}")
+        print("Please check your Steam installation and configuration.")
+        print("If the issue persists, consider reporting it to the developer.")
+        print("Exiting...")
+        return
 
 if __name__ == "__main__":
     exit(main())
