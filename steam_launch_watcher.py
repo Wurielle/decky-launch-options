@@ -35,7 +35,7 @@ import time
 from pathlib import Path
 
 # Configuration: Define the launch option to set for all games
-LAUNCH_OPTION = "notify-send 'Steam Launch Watcher' 'Launch options modified!' && %command%"
+LAUNCH_OPTION = "mangohud %command%"
 
 def check_app_has_launch_options(localconfig_path: Path, app_id: str) -> tuple[bool, str]:
     """
