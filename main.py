@@ -125,7 +125,7 @@ async def spawn_detached_process(script_path):
     # We use 'preexec_fn' to call os.setsid, which creates a new session
     # and makes this process the leader.
     # On Steam Deck (Linux), this is very effective.
-    cmd = f"python /home/deck/homebrew/plugins/decky-launch-options/launch_options_watcher.py"
+    cmd = f"python {decky.DECKY_PLUGIN_DIR}/launch_options_watcher.py"
     log(cmd)
     try:
         env = os.environ.copy()
@@ -173,6 +173,7 @@ class Plugin:
     async def restart_steam(self):
         """Restart Steam."""
         try:
+            await launch_singleton_process(LAUNCH_OPTIONS_WATCHER_SCRIPT)
             log("🔄 Restarting Steam...")
             # Run the restart_steam function in an executor to avoid blocking
             loop = asyncio.get_event_loop()
@@ -223,17 +224,20 @@ class Plugin:
     async def _main(self):
         self.loop = asyncio.get_event_loop()
         log("Hello World!")
+        kill_process_by_name(LAUNCH_OPTIONS_WATCHER_SCRIPT)
 
     # Function called first during the unload process, utilize this to handle your plugin being stopped, but not
     # completely removed
     async def _unload(self):
         log("Goodnight World!")
+        kill_process_by_name(LAUNCH_OPTIONS_WATCHER_SCRIPT)
         pass
 
     # Function called after `_unload` during uninstall, utilize this to clean up processes and other remnants of your
     # plugin that may remain on the system
     async def _uninstall(self):
         log("Goodbye World!")
+        kill_process_by_name(LAUNCH_OPTIONS_WATCHER_SCRIPT)
         pass
 
     async def start_timer(self):
