@@ -2,7 +2,8 @@ import asyncio
 import os
 import subprocess
 import signal
-import time
+import sys
+import stat
 
 # The decky plugin module is located at decky-loader/plugin
 # For easy intellisense checkout the decky-loader code repo
@@ -10,6 +11,19 @@ import time
 import decky
 
 LAUNCH_OPTIONS_WATCHER_SCRIPT = "launch_options_watcher.py"
+SH_COMMAND_NAME = "dlo"
+SHORT_SH_COMMAND_PATH=os.path.join('~', SH_COMMAND_NAME)
+FULL_SH_COMMAND_PATH=os.path.join(decky.DECKY_USER_HOME, SH_COMMAND_NAME)
+PY_LAUNCHER_PATH = os.path.join(decky.DECKY_PLUGIN_DIR, "launcher.py")
+COMMAND = f"{SHORT_SH_COMMAND_PATH} %command%"
+
+with open(FULL_SH_COMMAND_PATH, "w") as file:
+    file.write("#!/bin/bash\n")
+    file.write(f"python \"{PY_LAUNCHER_PATH}\" \"$@\"\n")
+
+current_stat = os.stat(FULL_SH_COMMAND_PATH)
+os.chmod(FULL_SH_COMMAND_PATH, current_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
 
 def _stop_steam():
     """Stop Steam and wait for it to fully close."""
@@ -115,8 +129,8 @@ async def kill_process_by_name(script_name):
     except subprocess.CalledProcessError:
         log("No existing processes found.")
 
-async def spawn_detached_process(script_name):
-    cmd = f"python {os.path.join(decky.DECKY_PLUGIN_DIR, script_name)}"
+async def spawn_detached_process(script_name, args = ''):
+    cmd = f"python {os.path.join(decky.DECKY_PLUGIN_DIR, script_name)} {args}"
     try:
         env = os.environ.copy()
         # fixes: https://github.com/SteamDeckHomebrew/decky-loader/issues/756#issuecomment-3139645629
@@ -125,11 +139,11 @@ async def spawn_detached_process(script_name):
             cmd,
             env=env
         )
-        print(f"Successfully spawned {script_name}, pid: {process.pid}")
+        print(f"Successfully spawned {cmd}, pid: {process.pid}")
     except Exception as e:
         print(f"Failed to spawn: {e}")
 
-async def launch_singleton_process(script_name):
+async def launch_singleton_process(script_name, args = ''):
     """Launches the process only if no other instance is running."""
     try:
         output = subprocess.check_output(["pgrep", "-f", script_name])
@@ -149,7 +163,7 @@ async def launch_singleton_process(script_name):
 
     log(f"------------ Launching {script_name}...")
 
-    await spawn_detached_process(script_name)
+    await spawn_detached_process(script_name, args)
 
 def log(str):
     decky.logger.info(f"------- DLO: {str}")
@@ -174,11 +188,11 @@ class Plugin:
         pass
 
     async def apply_launch_options(self):
-        await launch_singleton_process(LAUNCH_OPTIONS_WATCHER_SCRIPT)
+        await launch_singleton_process(LAUNCH_OPTIONS_WATCHER_SCRIPT, f"\"{COMMAND}\"")
         await self.restart_steam()
 
     async def start_watcher(self):
-        await launch_singleton_process(LAUNCH_OPTIONS_WATCHER_SCRIPT)
+        await launch_singleton_process(LAUNCH_OPTIONS_WATCHER_SCRIPT, f"\"{COMMAND}\"")
 
     async def stop_watcher(self):
         await kill_process_by_name(LAUNCH_OPTIONS_WATCHER_SCRIPT)

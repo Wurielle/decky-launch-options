@@ -1,45 +1,21 @@
 #!/usr/bin/env python3
-"""
-Steam Launch Options Manager
-
-This script provides utilities to manage Steam game launch options programmatically.
-
-Main API Functions:
-    - set_launch_options_for_all_apps(localconfig_path, launch_option=None)
-      Set launch options for all games in the Steam library
-
-    - check_app_has_launch_options(localconfig_path, app_id)
-      Check if a specific app has launch options configured
-      Returns: (has_launch_options: bool, current_launch_options: str)
-
-    - find_steam_path()
-      Find Steam installation path
-
-    - find_localconfig_vdf(steam_path)
-      Find the localconfig.vdf file for the current user
-"""
-
 import os
 import re
 import signal
-import subprocess
 import time
 from pathlib import Path
+import sys
 
-# Configuration: Define the launch option to set for all games
-LAUNCH_OPTION = "mangohud %command%"
+LAUNCH_OPTION = "%command%"
+
+try:
+    LAUNCH_OPTION = sys.argv[1]
+except IndexError:
+    pass
+
+print(LAUNCH_OPTION)
 
 def check_app_has_launch_options(localconfig_path: Path, app_id: str) -> tuple[bool, str]:
-    """
-    Check if a specific app has launch options configured.
-
-    Args:
-        localconfig_path: Path to Steam's localconfig.vdf file
-        app_id: Steam App ID to check
-
-    Returns:
-        Tuple of (has_launch_options: bool, current_launch_options: str)
-    """
     try:
         with open(localconfig_path, 'r', encoding='utf-8', errors='ignore') as f:
             config_content = f.read()
@@ -83,16 +59,6 @@ def check_app_has_launch_options(localconfig_path: Path, app_id: str) -> tuple[b
         return (False, "")
 
 def set_launch_options_for_all_apps(localconfig_path: Path, launch_option: str = None) -> bool:
-    """
-    Set launch options for all games in Steam library.
-
-    Args:
-        localconfig_path: Path to Steam's localconfig.vdf file
-        launch_option: The launch option to set (uses LAUNCH_OPTION global if None)
-
-    Returns:
-        True if successful, False otherwise
-    """
     if launch_option is None:
         launch_option = LAUNCH_OPTION
 
