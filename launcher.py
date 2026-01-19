@@ -15,38 +15,30 @@ def get_steam_appid():
     return None
 
 def get_final_args(config, appid):
-    # 1. Start with the original Steam command
-    # sys.argv[1:] is the [executable, arg1, arg2...]
     final_args = sys.argv[1:]
-
-    # 2. Get the profile for this game
     profile = config["profiles"].get(str(appid), {})
 
-    # 3. Create a lookup for launch options by ID for speed
-    options_map = {opt["id"]: opt for opt in config["launch_options"]}
+    # Iterate through EVERY possible launch option
+    for opt in config["launch_options"]:
+        opt_id = opt["id"]
 
-    # 4. Iterate through the options in the profile
-    for opt_id, is_enabled in profile.items():
-        opt = options_map.get(opt_id)
-        if not opt:
-            continue
+        # Check if the profile has a setting; if not, default to False
+        is_enabled = profile.get(opt_id, False)
 
-        # Determine which command string to use
+        # Determine command
         raw_command = opt["onCommand"] if is_enabled else opt["offCommand"]
 
         if not raw_command:
             continue
 
-        # 5. Handle the "%command%" placeholder
-        # We split the command string into a list and replace %command% with our current args
-        parts = raw_command.replace("~", os.path.expanduser("~")).split()
+        # Standard replacement logic
+        full_path_cmd = raw_command.replace("~", os.path.expanduser("~"))
+        parts = full_path_cmd.split()
 
         if "%command%" in parts:
             idx = parts.index("%command%")
-            # Replace the placeholder with the current accumulated command list
             final_args = parts[:idx] + final_args + parts[idx+1:]
         else:
-            # Fallback if %command% isn't in the string
             final_args = parts + final_args
 
     return final_args
