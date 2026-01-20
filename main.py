@@ -2,20 +2,25 @@ import asyncio
 import os
 import subprocess
 import signal
-import sys
 import stat
-
+import json
+from pathlib import Path
 # The decky plugin module is located at decky-loader/plugin
 # For easy intellisense checkout the decky-loader code repo
 # and add the `decky-loader/plugin/imports` path to `python.analysis.extraPaths` in `.vscode/settings.json`
 import decky
-
+CONFIG_FOLDER_NAME = 'dlo'
+CONFIG_FOLDER = os.path.join(decky.DECKY_USER_HOME, CONFIG_FOLDER_NAME)
 LAUNCH_OPTIONS_WATCHER_SCRIPT = "launch_options_watcher.py"
-SH_COMMAND_NAME = "dlo"
-SHORT_SH_COMMAND_PATH=os.path.join('~', SH_COMMAND_NAME)
-FULL_SH_COMMAND_PATH=os.path.join(decky.DECKY_USER_HOME, SH_COMMAND_NAME)
-PY_LAUNCHER_PATH = os.path.join(decky.DECKY_PLUGIN_DIR, "launcher.py")
+SH_COMMAND_NAME = "run"
+SHORT_SH_COMMAND_PATH=os.path.join('~', CONFIG_FOLDER_NAME, SH_COMMAND_NAME)
+FULL_SH_COMMAND_PATH=os.path.join(CONFIG_FOLDER, SH_COMMAND_NAME)
+PY_LAUNCHER_PATH = os.path.join(decky.DECKY_PLUGIN_DIR, "run.py")
 COMMAND = f"{SHORT_SH_COMMAND_PATH} %command%"
+CONFIG_PATH = f"{os.path.join(CONFIG_FOLDER, 'config.json')}"
+
+folder_path = Path(CONFIG_FOLDER)
+folder_path.mkdir(parents=True, exist_ok=True)
 
 with open(FULL_SH_COMMAND_PATH, "w") as file:
     file.write("#!/bin/bash\n")
@@ -186,6 +191,30 @@ class Plugin:
         log("------------ Debug logs")
         log("Debug logs ------------")
         pass
+
+    def _write_json(self, file_path, data):
+        path = Path(file_path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        with open(path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, indent=4)
+
+    def _read_json(self, file_path):
+        path = Path(file_path)
+        if not path.exists():
+            return None
+
+        try:
+            with open(path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, FileNotFoundError):
+            return None
+
+    async def set_config(self, data):
+        return await asyncio.to_thread(self._write_json, CONFIG_PATH, data)
+
+    async def get_config(self):
+        return await asyncio.to_thread(self._read_json, CONFIG_PATH)
 
     async def apply_launch_options(self):
         await launch_singleton_process(LAUNCH_OPTIONS_WATCHER_SCRIPT, f"\"{COMMAND}\"")

@@ -3,7 +3,7 @@ import sys
 import datetime
 
 print("Python logic is running...")
-LOG_FILE = "/home/deck/dlo_debug.log"
+LOG_FILE = "/home/deck/dlo/debug.log"
 executable = sys.argv[1]
 args = sys.argv[1:]
 

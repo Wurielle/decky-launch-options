@@ -10,13 +10,18 @@ function CreateLaunchOptionForm({ configContext }: {configContext: ReturnType<ty
         offCommand: '',
     })
     function submit() {
-        return createLaunchOption({
+        createLaunchOption({
             id: uuid(),
             ...data,
         })
+        setData({
+            name: '',
+            onCommand: '',
+            offCommand: '',
+        })
     }
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div>
             <div>
                 <TextField label={'Name'} style={{ width: '100%' }} value={data.name} onChange={(e) => setData((draft) => {
                     draft.name = e.target.value
@@ -49,25 +54,23 @@ function UpdateLaunchOptionForm({ data, configContext }: { data: LaunchOption, c
         return deleteLaunchOption(data.id)
     }
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <form onSubmit={() => {}}>
-                <div>
-                    <TextField label={'Name'} style={{ width: '100%' }} value={data.name} onChange={(e) => updateLaunchOption(data, 'name', e.target.value)} />
-                </div>
-                <div>
-                    <TextField label={'On command'} style={{ width: '100%' }} value={data.onCommand} onChange={(e) => updateLaunchOption(data, 'onCommand', e.target.value)} />
-                </div>
-                <div>
-                    <TextField label={'Off command'} style={{ width: '100%' }} value={data.offCommand} onChange={(e) => updateLaunchOption(data, 'offCommand', e.target.value)}/>
-                </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                    <DialogButton style={{ flex: 1 }}
-                                  onButtonUp={(e) => { if(e.detail.button === 1) deleteLO(); }}
-                                  onMouseUp={deleteLO}>
-                        Remove launch option
-                    </DialogButton>
-                </div>
-            </form>
+        <div>
+            <div>
+                <TextField label={'Name'} style={{ width: '100%' }} value={data.name} onChange={(e) => updateLaunchOption(data, 'name', e.target.value)} />
+            </div>
+            <div>
+                <TextField label={'On command'} style={{ width: '100%' }} value={data.onCommand} onChange={(e) => updateLaunchOption(data, 'onCommand', e.target.value)} />
+            </div>
+            <div>
+                <TextField label={'Off command'} style={{ width: '100%' }} value={data.offCommand} onChange={(e) => updateLaunchOption(data, 'offCommand', e.target.value)}/>
+            </div>
+            <div style={{ display: 'flex', gap: '10px' }}>
+                <DialogButton style={{ flex: 1 }}
+                              onButtonUp={(e) => { if(e.detail.button === 1) deleteLO(); }}
+                              onMouseUp={deleteLO}>
+                    Remove launch option
+                </DialogButton>
+            </div>
         </div>
     )
 }

@@ -13,6 +13,9 @@ import {
 import { FaTerminal } from "react-icons/fa";
 import { ROUTES } from './consts'
 import { LaunchOptionsPage } from './teams/launch-options/views'
+import { QueryClientProvider, QueryClient } from '@tanstack/react-query'
+
+const queryClient = new QueryClient()
 
 const applyLaunchOptions = callable<[], void>("apply_launch_options");
 const restartSteam = callable<[], void>("restart_steam");
@@ -81,7 +84,11 @@ function Content() {
 export default definePlugin(() => {
     routerHook.removeRoute(ROUTES.LAUNCH_OPTIONS)
     routerHook.addRoute(ROUTES.LAUNCH_OPTIONS, () => {
-        return <LaunchOptionsPage/>;
+        return (
+            <QueryClientProvider client={queryClient}>
+                <LaunchOptionsPage/>
+            </QueryClientProvider>
+        ) ;
     });
   return {
     name: "Launch Options",

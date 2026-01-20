@@ -1,5 +1,8 @@
 import { useImmer } from 'use-immer'
 import set from 'lodash.set'
+import { callable } from '@decky/api'
+import { useEffect } from 'react'
+import { useMutation, useQuery } from '@tanstack/react-query'
 
 export type LaunchOption = {
     id: string
@@ -11,11 +14,33 @@ type Config = {
     profiles: Record<string, Record<string, boolean>>
     launchOptions: LaunchOption[]
 }
+const get_config = callable<[], Config | null>("get_config");
+const set_config = callable<[Config], void>("set_config");
 export function useConfig() {
     const [config, setConfig] = useImmer<Config>({
         profiles: {},
         launchOptions: []
     })
+
+    const getConfigQuery = useQuery({
+        queryKey: ['config'],
+        queryFn() {
+            return get_config()
+        }
+    })
+    const setConfigMutation = useMutation<void, Error, Config>({
+        mutationFn(data){
+            return set_config(data)
+        }
+    })
+    useEffect(() => {
+        if (getConfigQuery.isFetched && getConfigQuery.data) {
+            setConfig(getConfigQuery.data)
+        }
+    }, [getConfigQuery.data, getConfigQuery.isFetched])
+    useEffect(() => {
+        if (getConfigQuery.isFetched) setConfigMutation.mutate(config)
+    }, [config, getConfigQuery.isFetched])
     return {
         config,
         createLaunchOption: (launchOption: LaunchOption) => {
