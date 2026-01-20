@@ -19,7 +19,7 @@ def get_final_args(config, appid):
     profile = config["profiles"].get(str(appid), {})
 
     # Iterate through EVERY possible launch option
-    for opt in config["launch_options"]:
+    for opt in config["launchOptions"]:
         opt_id = opt["id"]
 
         # Check if the profile has a setting; if not, default to False
@@ -52,7 +52,7 @@ config = {
             "987654321": True,
         },
     },
-    "launch_options": [
+    "launchOptions": [
         {
             "id": "123456789",
             "name": "lsfg",

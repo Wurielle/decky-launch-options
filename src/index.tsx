@@ -8,10 +8,11 @@ import {
 import {
   callable,
   definePlugin,
+    routerHook,
 } from "@decky/api"
 import { FaTerminal } from "react-icons/fa";
-
-import logo from "../assets/logo.png";
+import { ROUTES } from './consts'
+import { LaunchOptionsPage } from './teams/launch-options/views'
 
 const applyLaunchOptions = callable<[], void>("apply_launch_options");
 const restartSteam = callable<[], void>("restart_steam");
@@ -22,6 +23,17 @@ const stopWatcher = callable<[], void>("stop_watcher");
 function Content() {
   return (
     <PanelSection title="Panel Section">
+        <PanelSectionRow>
+            <ButtonItem
+                layout="below"
+                onClick={() => {
+                    Navigation.Navigate("/launch-options");
+                    Navigation.CloseSideMenus();
+                }}
+            >
+                Manage launch options
+            </ButtonItem>
+        </PanelSectionRow>
       <PanelSectionRow>
         <ButtonItem
           layout="below"
@@ -62,35 +74,24 @@ function Content() {
           Stop watcher
         </ButtonItem>
       </PanelSectionRow>
-
-      <PanelSectionRow>
-        <div style={{ display: "flex", justifyContent: "center" }}>
-          <img src={logo} />
-        </div>
-      </PanelSectionRow>
-
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          onClick={() => {
-            Navigation.Navigate("/decky-plugin-test");
-            Navigation.CloseSideMenus();
-          }}
-        >
-          Router
-        </ButtonItem>
-      </PanelSectionRow>
     </PanelSection>
   );
 };
 
 export default definePlugin(() => {
+    routerHook.removeRoute(ROUTES.LAUNCH_OPTIONS)
+    routerHook.addRoute(ROUTES.LAUNCH_OPTIONS, () => {
+        return <LaunchOptionsPage/>;
+    });
   return {
     name: "Launch Options",
     titleView: <div className={staticClasses.Title}>Launch Options</div>,
     content: <Content />,
     icon: <FaTerminal />,
     onDismount() {
+        Object.values(ROUTES).forEach((route) => {
+            routerHook.removeRoute(route)
+        })
     },
   };
 });
