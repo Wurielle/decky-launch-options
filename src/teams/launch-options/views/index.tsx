@@ -8,6 +8,7 @@ function CreateLaunchOptionForm({ configContext }: {configContext: ReturnType<ty
         name: '',
         onCommand: '',
         offCommand: '',
+        enableGlobally: false,
     })
     function submit() {
         createLaunchOption({
@@ -18,6 +19,7 @@ function CreateLaunchOptionForm({ configContext }: {configContext: ReturnType<ty
             name: '',
             onCommand: '',
             offCommand: '',
+            enableGlobally: false,
         })
     }
     return (

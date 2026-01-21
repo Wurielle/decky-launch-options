@@ -9,17 +9,20 @@ from pathlib import Path
 # For easy intellisense checkout the decky-loader code repo
 # and add the `decky-loader/plugin/imports` path to `python.analysis.extraPaths` in `.vscode/settings.json`
 import decky
-CONFIG_FOLDER_NAME = 'dlo'
-CONFIG_FOLDER = os.path.join(decky.DECKY_USER_HOME, CONFIG_FOLDER_NAME)
+
 LAUNCH_OPTIONS_WATCHER_SCRIPT = "launch_options_watcher.py"
+PY_LAUNCHER_PATH = os.path.join(decky.DECKY_PLUGIN_DIR, "run.py")
+
+CONFIG_FOLDER_NAME = 'dlo'
+CONFIG_FOLDER_PATH = os.path.join(decky.DECKY_USER_HOME, CONFIG_FOLDER_NAME)
+CONFIG_PATH = f"{os.path.join(CONFIG_FOLDER_PATH, 'config.json')}"
+
 SH_COMMAND_NAME = "run"
 SHORT_SH_COMMAND_PATH=os.path.join('~', CONFIG_FOLDER_NAME, SH_COMMAND_NAME)
-FULL_SH_COMMAND_PATH=os.path.join(CONFIG_FOLDER, SH_COMMAND_NAME)
-PY_LAUNCHER_PATH = os.path.join(decky.DECKY_PLUGIN_DIR, "run.py")
+FULL_SH_COMMAND_PATH=os.path.join(CONFIG_FOLDER_PATH, SH_COMMAND_NAME)
 COMMAND = f"{SHORT_SH_COMMAND_PATH} %command%"
-CONFIG_PATH = f"{os.path.join(CONFIG_FOLDER, 'config.json')}"
 
-folder_path = Path(CONFIG_FOLDER)
+folder_path = Path(CONFIG_FOLDER_PATH)
 folder_path.mkdir(parents=True, exist_ok=True)
 
 with open(FULL_SH_COMMAND_PATH, "w") as file:

@@ -9,6 +9,7 @@ export type LaunchOption = {
     name: string
     onCommand: string
     offCommand: string
+    enableGlobally: boolean
 }
 type Config = {
     profiles: Record<string, Record<string, boolean>>
@@ -44,7 +45,6 @@ export function useConfig() {
     return {
         config,
         createLaunchOption: (launchOption: LaunchOption) => {
-            console.log(launchOption)
             setConfig((draft) => {
                 draft.launchOptions.push(launchOption)
             })

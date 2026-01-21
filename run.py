@@ -1,11 +1,38 @@
 import os
 import sys
 import datetime
+import json
+from pathlib import Path
 
-print("Python logic is running...")
-LOG_FILE = "/home/deck/dlo/debug.log"
+CONFIG_FOLDER_NAME = 'dlo'
+CONFIG_FOLDER_PATH = os.path.join('/home/deck', CONFIG_FOLDER_NAME)
+CONFIG_PATH = f"{os.path.join(CONFIG_FOLDER_PATH, 'config.json')}"
+
+LOG_FILE = os.path.join(CONFIG_FOLDER_PATH, 'debug.log')
+
 executable = sys.argv[1]
 args = sys.argv[1:]
+
+def _write_json(file_path, data):
+    path = Path(file_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=4)
+
+def _read_json(file_path):
+    path = Path(file_path)
+    if not path.exists():
+        return None
+
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        return None
+
+def get_config():
+    return _read_json(CONFIG_PATH)
 
 def get_steam_appid():
     appid_arg = next((arg for arg in sys.argv if "AppId=" in arg), None)
@@ -21,17 +48,14 @@ def get_final_args(config, appid):
     # Iterate through EVERY possible launch option
     for opt in config["launchOptions"]:
         opt_id = opt["id"]
+        enable_globally = opt.get("enableGlobally", False)
+        is_enabled = profile.get(opt_id, enable_globally)
 
-        # Check if the profile has a setting; if not, default to False
-        is_enabled = profile.get(opt_id, False)
-
-        # Determine command
         raw_command = opt["onCommand"] if is_enabled else opt["offCommand"]
 
         if not raw_command:
             continue
 
-        # Standard replacement logic
         full_path_cmd = raw_command.replace("~", os.path.expanduser("~"))
         parts = full_path_cmd.split()
 
@@ -45,28 +69,7 @@ def get_final_args(config, appid):
 
 appid = get_steam_appid()
 
-config = {
-    "profiles": {
-        "3527290": {
-            "123456789": True,
-            "987654321": True,
-        },
-    },
-    "launchOptions": [
-        {
-            "id": "123456789",
-            "name": "lsfg",
-            "onCommand": "~/lsfg %command%",
-            "offCommand": "",
-        },
-        {
-            "id": "987654321",
-            "name": "fgmod",
-            "onCommand": "~/fgmod/fgmod %command%",
-            "offCommand": "~/fgmod/fgmod-uninstaller.sh %command%",
-        },
-    ]
-}
+config = get_config()
 
 executable_args = get_final_args(config, appid)
 
@@ -82,14 +85,12 @@ def write_logs():
 
 write_logs()
 
-if len(sys.argv) > 1:
+if len(sys.argv) > 1 and config:
     executable_args = get_final_args(config, appid)
-
     if executable_args:
         executable = executable_args[0]
         os.execvpe(executable, executable_args, os.environ)
     else:
         os.execvpe(executable, args, os.environ)
-
 else:
-    print("Error: No game command received from Steam.")
+    os.execvpe(executable, args, os.environ)
