@@ -1,4 +1,4 @@
-import { TextField, DialogButton, SidebarNavigation } from '@decky/ui'
+import { TextField, DialogButton, SidebarNavigation, ToggleField } from '@decky/ui'
 import { LaunchOption, useConfig } from '../../../hooks'
 import { useImmer } from 'use-immer'
 import {v4 as uuid} from 'uuid'
@@ -39,6 +39,11 @@ function CreateLaunchOptionForm({ configContext }: {configContext: ReturnType<ty
                     draft.offCommand = e.target.value
                 })} />
             </div>
+            <div style={{ marginBottom: 22 }}>
+                <ToggleField label={'Enable globally'} bottomSeparator={'none'} checked={data.enableGlobally} onChange={(value) => setData((draft) => {
+                    draft.enableGlobally = value
+                })} />
+            </div>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <DialogButton style={{ flex: 1 }}
                               onButtonUp={(e) => { if(e.detail.button === 1) submit(); }}
@@ -65,6 +70,9 @@ function UpdateLaunchOptionForm({ data, configContext }: { data: LaunchOption, c
             </div>
             <div>
                 <TextField label={'Off command'} style={{ width: '100%' }} value={data.offCommand} onChange={(e) => updateLaunchOption(data, 'offCommand', e.target.value)}/>
+            </div>
+            <div style={{ marginBottom: 22 }}>
+                <ToggleField label={'Enable globally'} bottomSeparator={'none'} checked={data.enableGlobally} onChange={(value) => updateLaunchOption(data, 'enableGlobally', value)} />
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
                 <DialogButton style={{ flex: 1 }}
