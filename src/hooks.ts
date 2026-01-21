@@ -1,9 +1,8 @@
-import { useImmer } from 'use-immer'
 import set from 'lodash.set'
 import { callable } from '@decky/api'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
-
+import {produce, WritableDraft} from 'immer'
 export type LaunchOption = {
     id: string
     name: string
@@ -18,7 +17,7 @@ type Config = {
 const get_config = callable<[], Config | null>("get_config");
 const set_config = callable<[Config], void>("set_config");
 export function useConfig() {
-    const [config, setConfig] = useImmer<Config>({
+    const [config, _setConfig] = useState<Config>({
         profiles: {},
         launchOptions: []
     })
@@ -34,14 +33,19 @@ export function useConfig() {
             return set_config(data)
         }
     })
+
+    const setConfig = (draftConfig:(draft: WritableDraft<Config>) => void) => {
+        const newConfig = produce(config, draftConfig)
+        _setConfig(newConfig)
+        setConfigMutation.mutate(newConfig)
+    }
+
     useEffect(() => {
         if (getConfigQuery.isFetched && getConfigQuery.data) {
-            setConfig(getConfigQuery.data)
+            _setConfig(getConfigQuery.data)
         }
     }, [getConfigQuery.data, getConfigQuery.isFetched])
-    useEffect(() => {
-        if (getConfigQuery.isFetched) setConfigMutation.mutate(config)
-    }, [config, getConfigQuery.isFetched])
+
     return {
         config,
         createLaunchOption: (launchOption: LaunchOption) => {
