@@ -48,9 +48,10 @@ export function useConfig() {
 
     return {
         config,
+        loading: getConfigQuery.isLoading,
         createLaunchOption: (launchOption: LaunchOption) => {
             setConfig((draft) => {
-                draft.launchOptions.push(launchOption)
+                draft.launchOptions.unshift(launchOption)
             })
         },
         updateLaunchOption: (launchOption: LaunchOption, path: string, value: any) => {

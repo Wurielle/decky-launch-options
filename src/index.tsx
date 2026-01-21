@@ -1,10 +1,10 @@
 import {
-  ButtonItem,
-  PanelSection,
-  PanelSectionRow,
-  staticClasses,
-  Navigation,
-} from "@decky/ui";
+    ButtonItem,
+    PanelSection,
+    PanelSectionRow,
+    staticClasses,
+    Navigation, showModal, ConfirmModal,
+} from "@decky/ui"
 import {
   callable,
   definePlugin,
@@ -40,7 +40,19 @@ function Content() {
       <PanelSectionRow>
         <ButtonItem
           layout="below"
-          onClick={() => applyLaunchOptions()}
+          onClick={() => showModal(
+              <ConfirmModal
+                  strTitle={`Apply launch options`}
+                  strDescription={
+                      `Do you want to apply launch options to all apps? This will force Steam to restart.`
+                  }
+                  strOKButtonText="Confirm"
+                  strCancelButtonText="Cancel"
+                  onOK={() => {
+                      return applyLaunchOptions()
+                  }}
+            />
+          )}
         >
           {'Apply Launch Options'}
         </ButtonItem>
