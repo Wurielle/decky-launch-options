@@ -1,40 +1,19 @@
 import set from 'lodash.set'
-import { callable } from '@decky/api'
 import { useEffect, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
-import {produce, WritableDraft} from 'immer'
-export type LaunchOption = {
-    id: string
-    name: string
-    onCommand: string
-    offCommand: string
-    enableGlobally: boolean
-}
-type Config = {
-    profiles: Record<string, Record<string, boolean>>
-    launchOptions: LaunchOption[]
-}
-const get_config = callable<[], Config | null>("get_config");
-const set_config = callable<[Config], void>("set_config");
+import { produce, WritableDraft } from 'immer'
+import { Config, LaunchOption } from './shared'
+import { useGetConfigQuery, useSetConfigMutation } from './query'
+
 export function useConfig() {
     const [config, _setConfig] = useState<Config>({
         profiles: {},
-        launchOptions: []
+        launchOptions: [],
     })
 
-    const getConfigQuery = useQuery({
-        queryKey: ['config'],
-        queryFn() {
-            return get_config()
-        }
-    })
-    const setConfigMutation = useMutation<void, Error, Config>({
-        mutationFn(data){
-            return set_config(data)
-        }
-    })
+    const getConfigQuery = useGetConfigQuery()
+    const setConfigMutation = useSetConfigMutation()
 
-    const setConfig = (draftConfig:(draft: WritableDraft<Config>) => void) => {
+    const setConfig = (draftConfig: (draft: WritableDraft<Config>) => void) => {
         const newConfig = produce(config, draftConfig)
         _setConfig(newConfig)
         setConfigMutation.mutate(newConfig)
@@ -65,6 +44,6 @@ export function useConfig() {
                 const index = draft.launchOptions.findIndex((item) => item.id === id)
                 if (index !== -1) draft.launchOptions.splice(index, 1)
             })
-        }
+        },
     }
 }
