@@ -45,5 +45,26 @@ export function useConfig() {
                 if (index !== -1) draft.launchOptions.splice(index, 1)
             })
         },
+        setAppLaunchOptionState: (appid: string, launchOptionId: string, value: boolean) => {
+            setConfig((draft) => {
+                const launchOption = draft.launchOptions.find((item) => item.id === launchOptionId)
+                if (!launchOption) return
+                if (!draft.profiles[appid]) draft.profiles[appid] = {}
+                const appProfile = draft.profiles[appid]
+                if (launchOption.enableGlobally && value) {
+                    delete appProfile[launchOptionId]
+                    return
+                }
+                appProfile[launchOptionId] = value
+            })
+        },
+        getAppLaunchOptionState: (appid: string, launchOptionId: string) => {
+            const launchOption = config.launchOptions.find((item) => item.id === launchOptionId)
+            const appProfile = config.profiles[appid]
+            if (appProfile && launchOptionId in appProfile) {
+                return appProfile[launchOptionId]
+            }
+            return !!launchOption?.enableGlobally
+        },
     }
 }

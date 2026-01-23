@@ -6,7 +6,7 @@ import { routes } from '../../../../shared'
 export function AppLaunchOptionsPage() {
     const { appid } = useParams<{ appid: string }>()
     const [tab, setTab] = useState<'local' | 'global'>('local')
-    const { config } = useConfig()
+    const { config, getAppLaunchOptionState, setAppLaunchOptionState } = useConfig()
     const localLaunchOptions = useMemo(() => {
         return config.launchOptions.filter((item) => !item.enableGlobally)
     }, [config])
@@ -33,7 +33,7 @@ export function AppLaunchOptionsPage() {
             <Tabs activeTab={ tab } onShowTab={ setTab } tabs={ [
                 {
                     id: 'local',
-                    title: 'Local',
+                    title: 'Locally enabled',
                     content: (
                         <div>
                             <PanelSectionRow>
@@ -50,18 +50,20 @@ export function AppLaunchOptionsPage() {
                             { localLaunchOptions.map((launchOption) => (
                                 <div>
                                     <ToggleField
+                                        checked={ getAppLaunchOptionState(appid, launchOption.id) }
+                                        onChange={ (value) => setAppLaunchOptionState(appid, launchOption.id, value) }
                                         description={ [launchOption.onCommand && `ON: ${ launchOption.onCommand }`, launchOption.offCommand && `OFF: ${ launchOption.offCommand }`].filter(Boolean).join(' | ') }
-                                        checked={ false }
                                         label={ launchOption.name }/>
                                 </div>
                             )) }
                         </div>
                     ),
-                    renderTabAddon: () => <span className={ TabCount }>1</span>,
+                    renderTabAddon: () => <span
+                        className={ TabCount }>{ localLaunchOptions.filter((launchOption) => getAppLaunchOptionState(appid, launchOption.id)).length }</span>,
                 },
                 {
                     id: 'global',
-                    title: 'Global',
+                    title: 'Globally enabled',
                     content: (
                         <div>
                             <PanelSectionRow>
@@ -78,14 +80,16 @@ export function AppLaunchOptionsPage() {
                             { globalLaunchOptions.map((launchOption) => (
                                 <div>
                                     <ToggleField
+                                        checked={ getAppLaunchOptionState(appid, launchOption.id) }
+                                        onChange={ (value) => setAppLaunchOptionState(appid, launchOption.id, value) }
                                         description={ [launchOption.onCommand && `ON: ${ launchOption.onCommand }`, launchOption.offCommand && `OFF: ${ launchOption.offCommand }`].filter(Boolean).join(' | ') }
-                                        checked={ false }
                                         label={ launchOption.name }/>
                                 </div>
                             )) }
                         </div>
                     ),
-                    renderTabAddon: () => <span className={ TabCount }>1</span>,
+                    renderTabAddon: () => <span
+                        className={ TabCount }>{ globalLaunchOptions.filter((launchOption) => launchOption.enableGlobally && getAppLaunchOptionState(appid, launchOption.id)).length }</span>,
                 },
             ] }/>
         </div>
