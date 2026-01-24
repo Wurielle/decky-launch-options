@@ -2,6 +2,8 @@ name: Decky CLI Build and Package
 
 on:
   push:
+    branches:
+      - main
 
 jobs:
   build:
