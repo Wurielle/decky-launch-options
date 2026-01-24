@@ -1,3 +1,49 @@
+
+# Development
+
+This project uses [ahoy](https://ahoyapi.dev/) as an IDE-agnostic task runner.
+
+## Pre-requisites:
+* [Docker Engine](https://docs.docker.com/engine/install/)
+* [pnpm](https://pnpm.io/installation#using-npm)
+* [ahoy](https://github.com/ahoy-cli/ahoy)
+
+1. **Configure deployment settings**
+
+   Copy `.env` to `.env.local` and update with your Steam Deck details:
+   ```bash
+   cp .env .env.local
+   ```
+   Edit `.env.local` to match your Steam Deck's IP, user, etc.
+
+1. **Set up SSH key authentication (to avoid password prompts)**
+   ```bash
+   # Generate SSH key if you don't have one
+   ssh-keygen -t rsa -b 4096
+   
+   # Copy your SSH key to the Steam Deck (enter password once)
+   ssh-copy-id -p <DECK_PORT> <DECK_USER>@<DECK_IP>
+
+   # Add your SSH key to ssh-agent (run once per session)
+   eval "$(ssh-agent -s)"
+   ssh-add ~/.ssh/id_rsa
+   ```
+   
+## Available commands
+   - `ahoy` - List all available commands
+   - `ahoy setup` - Initial project setup
+   - `ahoy build` - Build the plugin
+   - `ahoy deploy` - Deploy to Steam Deck
+   - `ahoy builddeploy` - Build and deploy in one command
+   - `ahoy restartdecky` - Restart Decky Loader on Steam Deck
+
+## Debugging
+* [Chrome Inspect](chrome://inspect/#devices) 
+  * Discover network targets
+    * <DECK_IP>:8081
+
+---
+
 # Decky Plugin Template [![Chat](https://img.shields.io/badge/chat-on%20discord-7289da.svg)](https://deckbrew.xyz/discord)
 
 Reference example for using [decky-frontend-lib](https://github.com/SteamDeckHomebrew/decky-frontend-lib) (@decky/ui) in a [decky-loader](https://github.com/SteamDeckHomebrew/decky-loader) plugin.
@@ -28,7 +74,7 @@ If you would like to build plugins that have their own custom backends, Docker i
    2. ``pnpm run build``
    - These setup pnpm and build the frontend code for testing.
 3. Consult the [decky-frontend-lib](https://github.com/SteamDeckHomebrew/decky-frontend-lib) repository for ways to accomplish your tasks.
-   - Documentation and examples are still rough, 
+   - Documentation and examples are still rough,
    - Decky loader primarily targets Steam Deck hardware so keep this in mind when developing your plugin.
 4. If using VSCodium/VSCode, run the `setup` and `build` and `deploy` tasks. If not using VSCodium etc. you can derive your own makefile or just manually utilize the scripts for these commands as you see fit.
 
