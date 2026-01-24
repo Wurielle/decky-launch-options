@@ -1,11 +1,17 @@
 {
-  "name": "decky-launch-options",
-  "author": "Wuriko",
-  "flags": ["debug", "_root"],
+  "name": "Launch Options",
+  "author": "Wurielle",
+  "flags": [
+    "debug",
+    "_root"
+  ],
   "api_version": 1,
   "publish": {
-    "tags": ["template", "root"],
-    "description": "Decky example plugin.",
+    "tags": [
+      "template",
+      "root"
+    ],
+    "description": "Manage launch options for your games easily.",
     "image": "https://opengraph.githubassets.com/1/SteamDeckHomebrew/PluginLoader"
   }
 }

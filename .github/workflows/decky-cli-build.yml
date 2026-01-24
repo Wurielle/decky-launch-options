@@ -1,0 +1,36 @@
+name: Decky CLI Build and Package
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Setup PNPM@9
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Decky CLI Build
+        run: |
+          mkdir $(pwd)/cli
+          curl -L -o $(pwd)/cli/decky "https://github.com/SteamDeckHomebrew/cli/releases/latest/download/decky-linux-x86_64"
+          chmod +x $(pwd)/cli/decky
+          $(pwd)/cli/decky plugin build $(pwd)
+          unzip "out/Launch Options.zip" -d "out/Launch Options"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: decky-launch-options
+          path: out/Launch Options/*

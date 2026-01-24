@@ -8,7 +8,10 @@ from pathlib import Path
 # For easy intellisense checkout the decky-loader code repo
 # and add the `decky-loader/plugin/imports` path to `python.analysis.extraPaths` in `.vscode/settings.json`
 import decky
-from shared import SETTINGS_FOLDER_NAME, SETTINGS_FOLDER_PATH, SETTINGS_PATH
+
+SETTINGS_FOLDER_NAME = '.dlo'
+SETTINGS_FOLDER_PATH = os.path.join(os.path.expanduser('~'), SETTINGS_FOLDER_NAME)
+SETTINGS_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'settings.json')}"
 
 PY_LAUNCHER_PATH = os.path.join(decky.DECKY_PLUGIN_DIR, "run.py")
 

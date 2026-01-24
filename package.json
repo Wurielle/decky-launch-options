@@ -1,7 +1,7 @@
 {
   "name": "decky-launch-options",
   "version": "0.0.1",
-  "description": "A Decky Loader plugin to manage launch options.",
+  "description": "Manage launch options for your games easily.",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/SteamDeckHomebrew/decky-plugin-template.git"
+    "url": "git+https://github.com/Wurielle/decky-launch-options.git"
   },
   "keywords": [
     "decky",
@@ -19,12 +19,11 @@
     "steam-deck",
     "deck"
   ],
-  "author": "You <you@you.tld>",
   "license": "BSD-3-Clause",
   "bugs": {
-    "url": "https://github.com/SteamDeckHomebrew/decky-plugin-template/issues"
+    "url": "https://github.com/Wurielle/decky-launch-options.git/issues"
   },
-  "homepage": "https://github.com/SteamDeckHomebrew/decky-plugin-template#readme",
+  "homepage": "https://github.com/Wurielle/decky-launch-options.git#readme",
   "devDependencies": {
     "@decky/rollup": "^1.0.2",
     "@decky/ui": "^4.11.1",

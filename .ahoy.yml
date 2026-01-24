@@ -57,10 +57,10 @@ commands:
     usage: Extract plugin zip on Steam Deck
     cmd: |
       ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
-        "echo ${DECK_PASS} | sudo -S mkdir -m 755 -p \"\$(echo \"${DECK_DIR}/homebrew/plugins/${PLUGIN_NAME}\" | sed \"s| |-|g\")\" && \
-         echo ${DECK_PASS} | sudo -S chown ${DECK_USER}:${DECK_USER} \"\$(echo \"${DECK_DIR}/homebrew/plugins/${PLUGIN_NAME}\" | sed \"s| |-|g\")\" && \
-         echo ${DECK_PASS} | sudo -S bsdtar -xzpf \"${DECK_DIR}/homebrew/plugins/${PLUGIN_NAME}.zip\" \
-         -C \"\$(echo \"${DECK_DIR}/homebrew/plugins/${PLUGIN_NAME}\" | sed \"s| |-|g\")\" --strip-components=1 --fflags"
+        "echo ${DECK_PASS} | sudo -S mkdir -m 755 -p \"\$(echo '${DECK_DIR}/homebrew/plugins/${PLUGIN_UNZIP_NAME}')\" && \
+         echo ${DECK_PASS} | sudo -S chown ${DECK_USER}:${DECK_USER} \"\$(echo '${DECK_DIR}/homebrew/plugins/${PLUGIN_UNZIP_NAME}')\" && \
+         echo ${DECK_PASS} | sudo -S bsdtar -xzpf '${DECK_DIR}/homebrew/plugins/${PLUGIN_NAME}.zip' \
+         -C \"\$(echo '${DECK_DIR}/homebrew/plugins/${PLUGIN_UNZIP_NAME}' | sed 's| |-|g')\" --strip-components=1 --fflags"
 
   deploy:
     usage: Deploy plugin to Steam Deck (copy and extract)
@@ -96,7 +96,8 @@ entrypoint:
   - "-c"
   - "-e"
   - |
-    [ -f .env ] && [ -s .env ] && export $(grep -v '^#' .env | xargs) && if [ -f .env.local ] && [ -s .env.local ]; then export $(grep -v '^#' .env.local | xargs); fi
+    [ -f .env ] && [ -s .env ] && set -a && source .env && set +a
+    [ -f .env.local ] && [ -s .env.local ] && set -a && source .env.local && set +a
     bash -e -c "$0" "$@"
   - '{{cmd}}'
   - '{{name}}'
