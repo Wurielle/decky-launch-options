@@ -4,9 +4,7 @@ import os
 import sys
 from pathlib import Path
 
-CONFIG_FOLDER_NAME = 'dlo'
-CONFIG_FOLDER_PATH = os.path.join('/home/deck', CONFIG_FOLDER_NAME)
-CONFIG_PATH = f"{os.path.join(CONFIG_FOLDER_PATH, 'config.json')}"
+from shared import CONFIG_FOLDER_PATH, CONFIG_PATH
 
 LOG_FILE = os.path.join(CONFIG_FOLDER_PATH, 'debug.log')
 

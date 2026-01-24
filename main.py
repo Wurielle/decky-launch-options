@@ -8,27 +8,14 @@ from pathlib import Path
 # For easy intellisense checkout the decky-loader code repo
 # and add the `decky-loader/plugin/imports` path to `python.analysis.extraPaths` in `.vscode/settings.json`
 import decky
+from shared import CONFIG_FOLDER_NAME, CONFIG_FOLDER_PATH, CONFIG_PATH
 
 PY_LAUNCHER_PATH = os.path.join(decky.DECKY_PLUGIN_DIR, "run.py")
-
-CONFIG_FOLDER_NAME = 'dlo'
-CONFIG_FOLDER_PATH = os.path.join(decky.DECKY_USER_HOME, CONFIG_FOLDER_NAME)
-CONFIG_PATH = f"{os.path.join(CONFIG_FOLDER_PATH, 'config.json')}"
 
 SH_COMMAND_NAME = "run"
 SHORT_SH_COMMAND_PATH = os.path.join('~', CONFIG_FOLDER_NAME, SH_COMMAND_NAME)
 FULL_SH_COMMAND_PATH = os.path.join(CONFIG_FOLDER_PATH, SH_COMMAND_NAME)
 COMMAND = f"{SHORT_SH_COMMAND_PATH} %command%"
-
-folder_path = Path(CONFIG_FOLDER_PATH)
-folder_path.mkdir(parents=True, exist_ok=True)
-
-with open(FULL_SH_COMMAND_PATH, "w") as file:
-    file.write("#!/bin/bash\n")
-    file.write(f"python \"{PY_LAUNCHER_PATH}\" \"$@\"\n")
-
-current_stat = os.stat(FULL_SH_COMMAND_PATH)
-os.chmod(FULL_SH_COMMAND_PATH, current_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 info = {
     "CONFIG_FOLDER_NAME": CONFIG_FOLDER_NAME,
@@ -46,6 +33,17 @@ def log(str):
 
 
 class Plugin:
+    async def prepare(self):
+        folder_path = Path(CONFIG_FOLDER_PATH)
+        folder_path.mkdir(parents=True, exist_ok=True)
+
+        with open(FULL_SH_COMMAND_PATH, "w") as file:
+            file.write("#!/bin/bash\n")
+            file.write(f"python \"{PY_LAUNCHER_PATH}\" \"$@\"\n")
+
+        current_stat = os.stat(FULL_SH_COMMAND_PATH)
+        os.chmod(FULL_SH_COMMAND_PATH, current_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
     async def get_steam_path(self) -> Path:
         steam_paths = [
             Path.home() / ".steam" / "steam",
@@ -175,7 +173,7 @@ class Plugin:
 
     async def _main(self):
         self.loop = asyncio.get_event_loop()
-        print(await self.get_localconfig_vdf_path())
+        await self.prepare()
 
     async def _unload(self):
         await self.cleanup()
