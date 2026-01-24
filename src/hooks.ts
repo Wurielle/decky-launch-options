@@ -63,11 +63,12 @@ export function useConfig() {
         getAppLaunchOptionState: (appid: string, launchOptionId: string) => {
             const launchOption = config.launchOptions.find((item) => item.id === launchOptionId)
             const appProfile = config.profiles[appid]
-            if (appProfile && launchOptionId in appProfile) {
+            if (appProfile && launchOptionId in appProfile.state) {
                 return appProfile.state[launchOptionId]
             }
             return !!launchOption?.enableGlobally
         },
+        getAppOriginalLaunchOptions: (appid: string) => config.profiles[appid]?.originalLaunchOptions || '',
         setAppOriginalLaunchOptions: (appid: string, command: string) => {
             setConfig((draft) => {
                 draft.profiles[appid] = profileFactory({

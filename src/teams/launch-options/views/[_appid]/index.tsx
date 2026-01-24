@@ -1,4 +1,14 @@
-import { ButtonItem, findModule, Navigation, PanelSectionRow, Tabs, ToggleField, useParams } from '@decky/ui'
+import {
+    ButtonItem,
+    Field,
+    findModule,
+    Navigation,
+    PanelSectionRow,
+    Tabs,
+    TextField,
+    ToggleField,
+    useParams,
+} from '@decky/ui'
 import { useMemo, useState } from 'react'
 import { useConfig } from '../../../../hooks'
 import { routes } from '../../../../shared'
@@ -6,7 +16,13 @@ import { routes } from '../../../../shared'
 export function AppLaunchOptionsPage() {
     const { appid } = useParams<{ appid: string }>()
     const [tab, setTab] = useState<'local' | 'global'>('local')
-    const { config, getAppLaunchOptionState, setAppLaunchOptionState } = useConfig()
+    const {
+        config,
+        getAppLaunchOptionState,
+        setAppLaunchOptionState,
+        getAppOriginalLaunchOptions,
+        setAppOriginalLaunchOptions,
+    } = useConfig()
     const localLaunchOptions = useMemo(() => {
         return config.launchOptions.filter((item) => !item.enableGlobally)
     }, [config])
@@ -46,6 +62,12 @@ export function AppLaunchOptionsPage() {
                                     Manage launch options
                                 </ButtonItem>
                             </PanelSectionRow>
+                            <Field label={ 'Original launch options' }>
+                                <TextField
+                                    value={ getAppOriginalLaunchOptions(appid) }
+                                    onChange={ (e) => setAppOriginalLaunchOptions(appid, e.target.value) }
+                                    style={ { width: 400 } }/>
+                            </Field>
                             { localLaunchOptions.map((launchOption) => (
                                 <div>
                                     <ToggleField
@@ -58,7 +80,7 @@ export function AppLaunchOptionsPage() {
                         </div>
                     ),
                     renderTabAddon: () => <span
-                        className={ TabCount }>{ localLaunchOptions.filter((launchOption) => getAppLaunchOptionState(appid, launchOption.id)).length }</span>,
+                        className={ TabCount }>{ localLaunchOptions.filter((launchOption) => getAppLaunchOptionState(appid, launchOption.id)).length+(Number(!!getAppOriginalLaunchOptions(appid))) }</span>,
                 },
                 {
                     id: 'global',
