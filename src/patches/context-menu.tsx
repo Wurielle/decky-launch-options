@@ -22,9 +22,8 @@ const spliceItem = (children: any[], appid: number) => {
         findInReactTree(item, (x) => x?.onSelected && x.onSelected.toString().includes('AppProperties')),
     )
     children.splice(propertiesMenuItemIdx, 0, (
-        <ApplyLaunchOptions appid={ appid }>
+        <ApplyLaunchOptions key="decky-launch-options" appid={ appid }>
             <MenuItem
-                key="decky-launch-options"
                 onSelected={ () => {
                     Navigation.Navigate(routes.appLaunchOptions(appid))
                 } }
