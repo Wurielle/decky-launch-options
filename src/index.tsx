@@ -11,7 +11,7 @@ import { libraryAppPatch } from './patches/library-app'
 
 function Content() {
     return (
-        <PanelSection title="Panel Section">
+        <PanelSection>
             <PanelSectionRow>
                 <ButtonItem
                     layout="below"

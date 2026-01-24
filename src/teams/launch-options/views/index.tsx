@@ -12,9 +12,10 @@ import { useImmer } from 'use-immer'
 import { v4 as uuid } from 'uuid'
 import { FaPlus, FaTerminal } from "react-icons/fa"
 import { LaunchOption } from '../../../shared'
+import { PluginProvider, usePlugin } from '../../../components/plugin-provider'
 
-function CreateLaunchOptionForm({ settingsContext }: { settingsContext: ReturnType<typeof useSettings> }) {
-    const { createLaunchOption } = settingsContext
+function CreateLaunchOptionForm() {
+    const { createLaunchOption } = usePlugin().settings
     const [data, setData] = useImmer<Omit<LaunchOption, 'id'>>({
         name: '',
         on: '',
@@ -71,11 +72,10 @@ function CreateLaunchOptionForm({ settingsContext }: { settingsContext: ReturnTy
     )
 }
 
-function UpdateLaunchOptionForm({ data, settingsContext }: {
+function UpdateLaunchOptionForm({ data }: {
     data: LaunchOption,
-    settingsContext: ReturnType<typeof useSettings>
 }) {
-    const { updateLaunchOption, deleteLaunchOption } = settingsContext
+    const { updateLaunchOption, deleteLaunchOption } = usePlugin().settings
 
     function remove() {
         return showModal(
@@ -127,38 +127,40 @@ function UpdateLaunchOptionForm({ data, settingsContext }: {
 }
 
 export function LaunchOptionsPage() {
-    const settingsContext = useSettings()
+    const { settings, loading } = useSettings()
     return (
-        <div
-            style={ {
-                marginTop: "40px",
-                height: "calc(100% - 40px)",
-            } }
-        >
-            {
-                settingsContext.loading ? (
-                    <SteamSpinner width={ "100%" } height={ "100%" }/>
-                ) : (
-                    <SidebarNavigation
-                        title={ 'Launch options' }
-                        showTitle={ true }
-                        pages={ [
-                            {
-                                icon: <FaPlus/>,
-                                title: 'New launch option',
-                                content: <CreateLaunchOptionForm settingsContext={ settingsContext }/>,
-                            },
-                            ...settingsContext.settings.launchOptions.map((launchOption) => ({
-                                icon: <FaTerminal/>,
-                                title: launchOption.name || 'Unnamed',
-                                content: <UpdateLaunchOptionForm settingsContext={ settingsContext }
-                                                                 key={ launchOption.id }
-                                                                 data={ launchOption }/>,
-                            })),
-                        ] }
-                    />
-                )
-            }
-        </div>
+        <PluginProvider>
+            <div
+                style={ {
+                    marginTop: "40px",
+                    height: "calc(100% - 40px)",
+                } }
+            >
+                {
+                    loading ? (
+                        <SteamSpinner width={ "100%" } height={ "100%" }/>
+                    ) : (
+                        <SidebarNavigation
+                            title={ 'Launch options' }
+                            showTitle={ true }
+                            pages={ [
+                                {
+                                    icon: <FaPlus/>,
+                                    title: 'New launch option',
+                                    content: <CreateLaunchOptionForm/>,
+                                },
+                                ...settings.launchOptions.map((launchOption) => ({
+                                    icon: <FaTerminal/>,
+                                    title: launchOption.name || 'Unnamed',
+                                    content: <UpdateLaunchOptionForm
+                                        key={ launchOption.id }
+                                        data={ launchOption }/>,
+                                })),
+                            ] }
+                        />
+                    )
+                }
+            </div>
+        </PluginProvider>
     )
 }

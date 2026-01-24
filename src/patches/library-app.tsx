@@ -13,12 +13,14 @@ export const libraryAppPatch = () => {
                 const patchHandler = createReactTreePatcher([
                     (tree: any) => findInReactTree(tree, (x: any) => x?.props?.children?.props?.overview)?.props?.children,
                 ], (_: Array<Record<string, unknown>>, ret?: ReactElement) => {
-                    const dloComponent = ret?.props?.children.find((child: ReactElement) => {
+                    // @ts-ignore
+                    const dloComponent = ret?.props?.children?.find((child: ReactElement) => {
                         const props = (child?.props || {}) as Record<string, unknown>
                         return 'data-apply-launch-options' in props
                     })
                     if (!dloComponent) {
-                        ret?.props?.children.push(
+                        // @ts-ignore
+                        ret?.props?.children?.push(
                             <ApplyLaunchOptions data-apply-launch-options/>,
                         )
                     }
