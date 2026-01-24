@@ -46,6 +46,20 @@ def get_steam_appid():
     return None
 
 
+def apply_command_to_args(raw_command, current_args):
+    if not raw_command:
+        return current_args
+
+    full_path_cmd = raw_command.replace("~", os.path.expanduser("~"))
+    parts = full_path_cmd.split()
+
+    if "%command%" in parts:
+        idx = parts.index("%command%")
+        return parts[:idx] + current_args + parts[idx + 1:]
+    else:
+        return parts + current_args
+
+
 def get_final_args(config, appid):
     final_args = sys.argv[1:]
     profile = config["profiles"].get(str(appid), {})
@@ -53,14 +67,7 @@ def get_final_args(config, appid):
     profile_original_launch_options = profile.get("originalLaunchOptions", "")
 
     # Add original launch options if they exist
-    if profile_original_launch_options:
-        full_path_cmd = profile_original_launch_options.replace("~", os.path.expanduser("~"))
-        parts = full_path_cmd.split()
-        if "%command%" in parts:
-            idx = parts.index("%command%")
-            final_args = parts[:idx] + final_args + parts[idx + 1:]
-        else:
-            final_args = parts + final_args
+    final_args = apply_command_to_args(profile_original_launch_options, final_args)
 
     # Iterate through EVERY possible launch option
     for opt in config["launchOptions"]:
@@ -69,18 +76,7 @@ def get_final_args(config, appid):
         is_enabled = profile_state.get(opt_id, enable_globally)
 
         raw_command = opt["onCommand"] if is_enabled else opt["offCommand"]
-
-        if not raw_command:
-            continue
-
-        full_path_cmd = raw_command.replace("~", os.path.expanduser("~"))
-        parts = full_path_cmd.split()
-
-        if "%command%" in parts:
-            idx = parts.index("%command%")
-            final_args = parts[:idx] + final_args + parts[idx + 1:]
-        else:
-            final_args = parts + final_args
+        final_args = apply_command_to_args(raw_command, final_args)
 
     return final_args
 
