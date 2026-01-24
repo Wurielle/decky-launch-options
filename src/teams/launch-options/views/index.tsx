@@ -17,8 +17,8 @@ function CreateLaunchOptionForm({ settingsContext }: { settingsContext: ReturnTy
     const { createLaunchOption } = settingsContext
     const [data, setData] = useImmer<Omit<LaunchOption, 'id'>>({
         name: '',
-        onCommand: '',
-        offCommand: '',
+        on: '',
+        off: '',
         enableGlobally: false,
     })
 
@@ -29,8 +29,8 @@ function CreateLaunchOptionForm({ settingsContext }: { settingsContext: ReturnTy
         })
         setData({
             name: '',
-            onCommand: '',
-            offCommand: '',
+            on: '',
+            off: '',
             enableGlobally: false,
         })
     }
@@ -50,15 +50,15 @@ function CreateLaunchOptionForm({ settingsContext }: { settingsContext: ReturnTy
                            }) }/>
             </div>
             <div>
-                <TextField label={ 'On command' } style={ { width: '100%' } } value={ data.onCommand }
+                <TextField label={ 'On' } style={ { width: '100%' } } value={ data.on }
                            onChange={ (e) => setData((draft) => {
-                               draft.onCommand = e.target.value
+                               draft.on = e.target.value
                            }) }/>
             </div>
             <div>
-                <TextField label={ 'Off command' } style={ { width: '100%' } } value={ data.offCommand }
+                <TextField label={ 'Off' } style={ { width: '100%' } } value={ data.off }
                            onChange={ (e) => setData((draft) => {
-                               draft.offCommand = e.target.value
+                               draft.off = e.target.value
                            }) }/>
             </div>
             <div style={ { display: 'flex', gap: '10px' } }>
@@ -104,12 +104,12 @@ function UpdateLaunchOptionForm({ data, settingsContext }: {
                            onChange={ (e) => updateLaunchOption(data, 'name', e.target.value) }/>
             </div>
             <div>
-                <TextField label={ 'On command' } style={ { width: '100%' } } value={ data.onCommand }
-                           onChange={ (e) => updateLaunchOption(data, 'onCommand', e.target.value) }/>
+                <TextField label={ 'On' } style={ { width: '100%' } } value={ data.on }
+                           onChange={ (e) => updateLaunchOption(data, 'on', e.target.value) }/>
             </div>
             <div>
-                <TextField label={ 'Off command' } style={ { width: '100%' } } value={ data.offCommand }
-                           onChange={ (e) => updateLaunchOption(data, 'offCommand', e.target.value) }/>
+                <TextField label={ 'Off' } style={ { width: '100%' } } value={ data.off }
+                           onChange={ (e) => updateLaunchOption(data, 'off', e.target.value) }/>
             </div>
             <div style={ { display: 'flex', gap: '10px' } }>
                 <DialogButton style={ { flex: 1 } }

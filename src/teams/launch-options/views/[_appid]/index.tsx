@@ -73,7 +73,7 @@ export function AppLaunchOptionsPage() {
                                     <ToggleField
                                         checked={ getAppLaunchOptionState(appid, launchOption.id) }
                                         onChange={ (value) => setAppLaunchOptionState(appid, launchOption.id, value) }
-                                        description={ [launchOption.onCommand && `ON: ${ launchOption.onCommand }`, launchOption.offCommand && `OFF: ${ launchOption.offCommand }`].filter(Boolean).join(' | ') }
+                                        description={ [launchOption.on && `ON: ${ launchOption.on }`, launchOption.off && `OFF: ${ launchOption.off }`].filter(Boolean).join(' | ') }
                                         label={ launchOption.name }/>
                                 </div>
                             )) }
@@ -103,7 +103,7 @@ export function AppLaunchOptionsPage() {
                                     <ToggleField
                                         checked={ getAppLaunchOptionState(appid, launchOption.id) }
                                         onChange={ (value) => setAppLaunchOptionState(appid, launchOption.id, value) }
-                                        description={ [launchOption.onCommand && `ON: ${ launchOption.onCommand }`, launchOption.offCommand && `OFF: ${ launchOption.offCommand }`].filter(Boolean).join(' | ') }
+                                        description={ [launchOption.on && `ON: ${ launchOption.on }`, launchOption.off && `OFF: ${ launchOption.off }`].filter(Boolean).join(' | ') }
                                         label={ launchOption.name }/>
                                 </div>
                             )) }

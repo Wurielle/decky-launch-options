@@ -73,7 +73,7 @@ def get_final_args(settings, appid):
         enable_globally = opt.get("enableGlobally", False)
         is_enabled = profile_state.get(opt_id, enable_globally)
 
-        raw_command = opt["onCommand"] if is_enabled else opt["offCommand"]
+        raw_command = opt["on"] if is_enabled else opt["off"]
         final_args = apply_command_to_args(raw_command, final_args)
 
     return final_args

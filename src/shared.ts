@@ -17,8 +17,8 @@ export type Profile = {
 export type LaunchOption = {
     id: string
     name: string
-    onCommand: string
-    offCommand: string
+    on: string
+    off: string
     enableGlobally: boolean
 }
 
