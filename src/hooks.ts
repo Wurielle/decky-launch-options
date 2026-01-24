@@ -25,7 +25,6 @@ export function useConfig() {
         }
     }, [getConfigQuery.data, getConfigQuery.isFetched])
 
-    const createProfile = (Confi)
     return {
         config,
         loading: getConfigQuery.isLoading,
@@ -51,10 +50,7 @@ export function useConfig() {
                 const launchOption = draft.launchOptions.find((item) => item.id === launchOptionId)
                 if (!launchOption) return
                 if (!draft.profiles[appid]) {
-                    draft.profiles[appid] = profileFactory({
-                        state: {},
-                        originalLaunchOptions: '',
-                    })
+                    draft.profiles[appid] = profileFactory()
                 }
                 const appProfile = draft.profiles[appid]
                 if (launchOption.enableGlobally && value) {
@@ -72,7 +68,7 @@ export function useConfig() {
             }
             return !!launchOption?.enableGlobally
         },
-        setAppOriginalCommand: (appid: string, command: string) => {
+        setAppOriginalLaunchOptions: (appid: string, command: string) => {
             setConfig((draft) => {
                 draft.profiles[appid] = profileFactory({
                     ...draft.profiles[appid],

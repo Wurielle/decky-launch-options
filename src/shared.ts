@@ -3,7 +3,7 @@ export const routes = {
     appLaunchOptions: (appid: number | string = ':appid') => `/launch-options/${ appid }`,
 }
 
-export const profileFactory = (profile: Partial<Profile>) => ({
+export const profileFactory = (profile: Partial<Profile> = {}) => ({
     state: {},
     originalLaunchOptions: '',
     ...profile,

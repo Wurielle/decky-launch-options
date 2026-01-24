@@ -21,6 +21,7 @@ const get_info = callable<[], {
 }>("get_info")
 const get_config = callable<[], Config | null>("get_config")
 const set_config = callable<[Config], void>("set_config")
+const get_original_command = callable<[string], string | null>("get_original_command")
 
 export const useGetInfoQuery = () => useQuery({
     queryKey: keys.info(),
@@ -48,11 +49,12 @@ export const useSetConfigMutation = () => useMutation<void, Error, Config>({
 })
 
 export const useApplyLaunchOptionsMutation = () => {
-    const { setAppOriginalCommand } = useConfig()
+    const { setAppOriginalLaunchOptions } = useConfig()
     return useMutation<void, Error, { appid: number, command: string }>({
         mutationFn(data) {
-            setAppOriginalCommand(String(data.appid), 'N/A')
-            return Promise.resolve()
+            return get_original_command(String(data.appid)).then((launchOptions) => {
+                if (launchOptions !== null) setAppOriginalLaunchOptions(String(data.appid), launchOptions)
+            })
         },
         onSuccess(_, data) {
             SteamClient.Apps.SetAppLaunchOptions(data.appid, data.command)
