@@ -22,7 +22,7 @@ export type LaunchOption = {
     enableGlobally: boolean
 }
 
-export type Config = {
+export type Settings = {
     profiles: Record<string, Profile>
     launchOptions: LaunchOption[]
 }

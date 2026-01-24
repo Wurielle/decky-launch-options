@@ -8,19 +8,19 @@ from pathlib import Path
 # For easy intellisense checkout the decky-loader code repo
 # and add the `decky-loader/plugin/imports` path to `python.analysis.extraPaths` in `.vscode/settings.json`
 import decky
-from shared import CONFIG_FOLDER_NAME, CONFIG_FOLDER_PATH, CONFIG_PATH
+from shared import SETTINGS_FOLDER_NAME, SETTINGS_FOLDER_PATH, SETTINGS_PATH
 
 PY_LAUNCHER_PATH = os.path.join(decky.DECKY_PLUGIN_DIR, "run.py")
 
 SH_COMMAND_NAME = "run"
-SHORT_SH_COMMAND_PATH = os.path.join('~', CONFIG_FOLDER_NAME, SH_COMMAND_NAME)
-FULL_SH_COMMAND_PATH = os.path.join(CONFIG_FOLDER_PATH, SH_COMMAND_NAME)
+SHORT_SH_COMMAND_PATH = os.path.join('~', SETTINGS_FOLDER_NAME, SH_COMMAND_NAME)
+FULL_SH_COMMAND_PATH = os.path.join(SETTINGS_FOLDER_PATH, SH_COMMAND_NAME)
 COMMAND = f"{SHORT_SH_COMMAND_PATH} %command%"
 
 info = {
-    "CONFIG_FOLDER_NAME": CONFIG_FOLDER_NAME,
-    "CONFIG_FOLDER_PATH": CONFIG_FOLDER_PATH,
-    "CONFIG_PATH": CONFIG_PATH,
+    "SETTINGS_FOLDER_NAME": SETTINGS_FOLDER_NAME,
+    "SETTINGS_FOLDER_PATH": SETTINGS_FOLDER_PATH,
+    "SETTINGS_PATH": SETTINGS_PATH,
     "SH_COMMAND_NAME": SH_COMMAND_NAME,
     "SHORT_SH_COMMAND_PATH": SHORT_SH_COMMAND_PATH,
     "FULL_SH_COMMAND_PATH": FULL_SH_COMMAND_PATH,
@@ -34,7 +34,7 @@ def log(str):
 
 class Plugin:
     async def prepare(self):
-        folder_path = Path(CONFIG_FOLDER_PATH)
+        folder_path = Path(SETTINGS_FOLDER_PATH)
         folder_path.mkdir(parents=True, exist_ok=True)
 
         with open(FULL_SH_COMMAND_PATH, "w") as file:
@@ -162,11 +162,11 @@ class Plugin:
     async def get_info(self):
         return info
 
-    async def set_config(self, data):
-        return await asyncio.to_thread(self._write_json, CONFIG_PATH, data)
+    async def set_settings(self, data):
+        return await asyncio.to_thread(self._write_json, SETTINGS_PATH, data)
 
-    async def get_config(self):
-        return await asyncio.to_thread(self._read_json, CONFIG_PATH)
+    async def get_settings(self):
+        return await asyncio.to_thread(self._read_json, SETTINGS_PATH)
 
     async def cleanup(self):
         pass

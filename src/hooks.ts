@@ -1,52 +1,52 @@
 import set from 'lodash.set'
 import { useEffect, useState } from 'react'
 import { produce, WritableDraft } from 'immer'
-import { Config, LaunchOption, profileFactory } from './shared'
-import { useGetConfigQuery, useSetConfigMutation } from './query'
+import { LaunchOption, profileFactory, Settings } from './shared'
+import { useGetSettingsQuery, useSetSettingsMutation } from './query'
 
-export function useConfig() {
-    const [config, _setConfig] = useState<Config>({
+export function useSettings() {
+    const [settings, _setSettings] = useState<Settings>({
         profiles: {},
         launchOptions: [],
     })
 
-    const getConfigQuery = useGetConfigQuery()
-    const setConfigMutation = useSetConfigMutation()
+    const getSettingsQuery = useGetSettingsQuery()
+    const setSettingsMutation = useSetSettingsMutation()
 
-    const setConfig = (draftConfig: (draft: WritableDraft<Config>) => void) => {
-        const newConfig = produce(config, draftConfig)
-        _setConfig(newConfig)
-        setConfigMutation.mutate(newConfig)
+    const setSettings = (draftSettings: (draft: WritableDraft<Settings>) => void) => {
+        const newSettings = produce(settings, draftSettings)
+        _setSettings(newSettings)
+        setSettingsMutation.mutate(newSettings)
     }
 
     useEffect(() => {
-        if (getConfigQuery.isFetched && getConfigQuery.data) {
-            _setConfig(getConfigQuery.data)
+        if (getSettingsQuery.isFetched && getSettingsQuery.data) {
+            _setSettings(getSettingsQuery.data)
         }
-    }, [getConfigQuery.data, getConfigQuery.isFetched])
+    }, [getSettingsQuery.data, getSettingsQuery.isFetched])
 
     return {
-        config,
-        loading: getConfigQuery.isLoading,
+        settings,
+        loading: getSettingsQuery.isLoading,
         createLaunchOption: (launchOption: LaunchOption) => {
-            setConfig((draft) => {
+            setSettings((draft) => {
                 draft.launchOptions.unshift(launchOption)
             })
         },
         updateLaunchOption: (launchOption: LaunchOption, path: string, value: any) => {
-            setConfig((draft) => {
+            setSettings((draft) => {
                 const index = draft.launchOptions.findIndex((item) => item.id === launchOption.id)
                 if (index !== -1) set(draft, ['launchOptions', index, path], value)
             })
         },
         deleteLaunchOption: (id: LaunchOption['id']) => {
-            setConfig((draft) => {
+            setSettings((draft) => {
                 const index = draft.launchOptions.findIndex((item) => item.id === id)
                 if (index !== -1) draft.launchOptions.splice(index, 1)
             })
         },
         setAppLaunchOptionState: (appid: string, launchOptionId: string, value: boolean) => {
-            setConfig((draft) => {
+            setSettings((draft) => {
                 const launchOption = draft.launchOptions.find((item) => item.id === launchOptionId)
                 if (!launchOption) return
                 if (!draft.profiles[appid]) {
@@ -61,16 +61,16 @@ export function useConfig() {
             })
         },
         getAppLaunchOptionState: (appid: string, launchOptionId: string) => {
-            const launchOption = config.launchOptions.find((item) => item.id === launchOptionId)
-            const appProfile = config.profiles[appid]
+            const launchOption = settings.launchOptions.find((item) => item.id === launchOptionId)
+            const appProfile = settings.profiles[appid]
             if (appProfile && launchOptionId in appProfile.state) {
                 return appProfile.state[launchOptionId]
             }
             return !!launchOption?.enableGlobally
         },
-        getAppOriginalLaunchOptions: (appid: string) => config.profiles[appid]?.originalLaunchOptions || '',
+        getAppOriginalLaunchOptions: (appid: string) => settings.profiles[appid]?.originalLaunchOptions || '',
         setAppOriginalLaunchOptions: (appid: string, command: string) => {
-            setConfig((draft) => {
+            setSettings((draft) => {
                 draft.profiles[appid] = profileFactory({
                     ...draft.profiles[appid],
                     originalLaunchOptions: command,

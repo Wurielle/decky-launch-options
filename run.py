@@ -4,9 +4,9 @@ import os
 import sys
 from pathlib import Path
 
-from shared import CONFIG_FOLDER_PATH, CONFIG_PATH
+from shared import SETTINGS_FOLDER_PATH, SETTINGS_PATH
 
-LOG_FILE = os.path.join(CONFIG_FOLDER_PATH, 'debug.log')
+LOG_FILE = os.path.join(SETTINGS_FOLDER_PATH, 'debug.log')
 
 executable = sys.argv[1]
 args = sys.argv[1:]
@@ -32,8 +32,8 @@ def _read_json(file_path):
         return None
 
 
-def get_config():
-    return _read_json(CONFIG_PATH)
+def get_settings():
+    return _read_json(SETTINGS_PATH)
 
 
 def get_steam_appid():
@@ -58,9 +58,9 @@ def apply_command_to_args(raw_command, current_args):
         return parts + current_args
 
 
-def get_final_args(config, appid):
+def get_final_args(settings, appid):
     final_args = sys.argv[1:]
-    profile = config["profiles"].get(str(appid), {})
+    profile = settings["profiles"].get(str(appid), {})
     profile_state = profile.get("state", {})
     profile_original_launch_options = profile.get("originalLaunchOptions", "")
 
@@ -68,7 +68,7 @@ def get_final_args(config, appid):
     final_args = apply_command_to_args(profile_original_launch_options, final_args)
 
     # Iterate through EVERY possible launch option
-    for opt in config["launchOptions"]:
+    for opt in settings["launchOptions"]:
         opt_id = opt["id"]
         enable_globally = opt.get("enableGlobally", False)
         is_enabled = profile_state.get(opt_id, enable_globally)
@@ -81,9 +81,9 @@ def get_final_args(config, appid):
 
 appid = get_steam_appid()
 
-config = get_config()
+settings = get_settings()
 
-executable_args = get_final_args(config, appid)
+executable_args = get_final_args(settings, appid)
 
 
 def write_logs():
@@ -99,8 +99,8 @@ def write_logs():
 
 write_logs()
 
-if len(sys.argv) > 1 and config:
-    executable_args = get_final_args(config, appid)
+if len(sys.argv) > 1 and settings:
+    executable_args = get_final_args(settings, appid)
     if executable_args:
         executable = executable_args[0]
         os.execvpe(executable, executable_args, os.environ)

@@ -10,25 +10,25 @@ import {
     useParams,
 } from '@decky/ui'
 import { useMemo, useState } from 'react'
-import { useConfig } from '../../../../hooks'
+import { useSettings } from '../../../../hooks'
 import { routes } from '../../../../shared'
 
 export function AppLaunchOptionsPage() {
     const { appid } = useParams<{ appid: string }>()
     const [tab, setTab] = useState<'local' | 'global'>('local')
     const {
-        config,
+        settings,
         getAppLaunchOptionState,
         setAppLaunchOptionState,
         getAppOriginalLaunchOptions,
         setAppOriginalLaunchOptions,
-    } = useConfig()
+    } = useSettings()
     const localLaunchOptions = useMemo(() => {
-        return config.launchOptions.filter((item) => !item.enableGlobally)
-    }, [config])
+        return settings.launchOptions.filter((item) => !item.enableGlobally)
+    }, [settings])
     const globalLaunchOptions = useMemo(() => {
-        return config.launchOptions.filter((item) => item.enableGlobally)
-    }, [config])
+        return settings.launchOptions.filter((item) => item.enableGlobally)
+    }, [settings])
     const { TabCount } = findModule((mod) => {
         if (typeof mod !== 'object') return false
 

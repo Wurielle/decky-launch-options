@@ -7,14 +7,14 @@ import {
     TextField,
     ToggleField,
 } from '@decky/ui'
-import { useConfig } from '../../../hooks'
+import { useSettings } from '../../../hooks'
 import { useImmer } from 'use-immer'
 import { v4 as uuid } from 'uuid'
 import { FaPlus, FaTerminal } from "react-icons/fa"
 import { LaunchOption } from '../../../shared'
 
-function CreateLaunchOptionForm({ configContext }: { configContext: ReturnType<typeof useConfig> }) {
-    const { createLaunchOption } = configContext
+function CreateLaunchOptionForm({ settingsContext }: { settingsContext: ReturnType<typeof useSettings> }) {
+    const { createLaunchOption } = settingsContext
     const [data, setData] = useImmer<Omit<LaunchOption, 'id'>>({
         name: '',
         onCommand: '',
@@ -71,11 +71,11 @@ function CreateLaunchOptionForm({ configContext }: { configContext: ReturnType<t
     )
 }
 
-function UpdateLaunchOptionForm({ data, configContext }: {
+function UpdateLaunchOptionForm({ data, settingsContext }: {
     data: LaunchOption,
-    configContext: ReturnType<typeof useConfig>
+    settingsContext: ReturnType<typeof useSettings>
 }) {
-    const { updateLaunchOption, deleteLaunchOption } = configContext
+    const { updateLaunchOption, deleteLaunchOption } = settingsContext
 
     function remove() {
         return showModal(
@@ -127,7 +127,7 @@ function UpdateLaunchOptionForm({ data, configContext }: {
 }
 
 export function LaunchOptionsPage() {
-    const configContext = useConfig()
+    const settingsContext = useSettings()
     return (
         <div
             style={ {
@@ -136,7 +136,7 @@ export function LaunchOptionsPage() {
             } }
         >
             {
-                configContext.loading ? (
+                settingsContext.loading ? (
                     <SteamSpinner width={ "100%" } height={ "100%" }/>
                 ) : (
                     <SidebarNavigation
@@ -146,12 +146,13 @@ export function LaunchOptionsPage() {
                             {
                                 icon: <FaPlus/>,
                                 title: 'New launch option',
-                                content: <CreateLaunchOptionForm configContext={ configContext }/>,
+                                content: <CreateLaunchOptionForm settingsContext={ settingsContext }/>,
                             },
-                            ...configContext.config.launchOptions.map((launchOption) => ({
+                            ...settingsContext.settings.launchOptions.map((launchOption) => ({
                                 icon: <FaTerminal/>,
                                 title: launchOption.name || 'Unnamed',
-                                content: <UpdateLaunchOptionForm configContext={ configContext } key={ launchOption.id }
+                                content: <UpdateLaunchOptionForm settingsContext={ settingsContext }
+                                                                 key={ launchOption.id }
                                                                  data={ launchOption }/>,
                             })),
                         ] }
