@@ -1,10 +1,11 @@
 import asyncio
+import json
 import os
-import subprocess
 import signal
 import stat
-import json
+import subprocess
 from pathlib import Path
+
 # The decky plugin module is located at decky-loader/plugin
 # For easy intellisense checkout the decky-loader code repo
 # and add the `decky-loader/plugin/imports` path to `python.analysis.extraPaths` in `.vscode/settings.json`
@@ -18,8 +19,8 @@ CONFIG_FOLDER_PATH = os.path.join(decky.DECKY_USER_HOME, CONFIG_FOLDER_NAME)
 CONFIG_PATH = f"{os.path.join(CONFIG_FOLDER_PATH, 'config.json')}"
 
 SH_COMMAND_NAME = "run"
-SHORT_SH_COMMAND_PATH=os.path.join('~', CONFIG_FOLDER_NAME, SH_COMMAND_NAME)
-FULL_SH_COMMAND_PATH=os.path.join(CONFIG_FOLDER_PATH, SH_COMMAND_NAME)
+SHORT_SH_COMMAND_PATH = os.path.join('~', CONFIG_FOLDER_NAME, SH_COMMAND_NAME)
+FULL_SH_COMMAND_PATH = os.path.join(CONFIG_FOLDER_PATH, SH_COMMAND_NAME)
 COMMAND = f"{SHORT_SH_COMMAND_PATH} %command%"
 
 folder_path = Path(CONFIG_FOLDER_PATH)
@@ -31,6 +32,16 @@ with open(FULL_SH_COMMAND_PATH, "w") as file:
 
 current_stat = os.stat(FULL_SH_COMMAND_PATH)
 os.chmod(FULL_SH_COMMAND_PATH, current_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+
+info = {
+    "CONFIG_FOLDER_NAME": CONFIG_FOLDER_NAME,
+    "CONFIG_FOLDER_PATH": CONFIG_FOLDER_PATH,
+    "CONFIG_PATH": CONFIG_PATH,
+    "SH_COMMAND_NAME": SH_COMMAND_NAME,
+    "SHORT_SH_COMMAND_PATH": SHORT_SH_COMMAND_PATH,
+    "FULL_SH_COMMAND_PATH": FULL_SH_COMMAND_PATH,
+    "COMMAND": COMMAND,
+}
 
 
 def _stop_steam():
@@ -65,6 +76,7 @@ def _stop_steam():
     except Exception as e:
         decky.logger.error(f"❌ Error stopping Steam: {e}")
 
+
 def _start_steam():
     """Start Steam."""
     try:
@@ -95,6 +107,7 @@ def _start_steam():
     except Exception as e:
         decky.logger.error(f"❌ Error starting Steam: {e}")
 
+
 def _restart_steam():
     """Restart Steam to apply configuration changes."""
     log("🔄 Restarting Steam...")
@@ -102,6 +115,7 @@ def _restart_steam():
     import time
     time.sleep(3)
     _start_steam()
+
 
 async def kill_process_by_name(script_name):
     """Kills processes using native system commands (No psutil required)."""
@@ -125,8 +139,8 @@ async def kill_process_by_name(script_name):
                 # 4. Optional: check if it actually died, if not, SIGKILL
                 await asyncio.sleep(0.5)
                 try:
-                    os.kill(int(pid), 0) # Check if still exists
-                    os.kill(int(pid), signal.SIGKILL) # Force kill
+                    os.kill(int(pid), 0)  # Check if still exists
+                    os.kill(int(pid), signal.SIGKILL)  # Force kill
                     log(f"Force killed PID: {pid}")
                 except OSError:
                     log(f"PID {pid} terminated successfully.")
@@ -137,7 +151,8 @@ async def kill_process_by_name(script_name):
     except subprocess.CalledProcessError:
         log("No existing processes found.")
 
-async def spawn_detached_process(script_name, args = ''):
+
+async def spawn_detached_process(script_name, args=''):
     cmd = f"python {os.path.join(decky.DECKY_PLUGIN_DIR, script_name)} {args}"
     try:
         env = os.environ.copy()
@@ -151,7 +166,8 @@ async def spawn_detached_process(script_name, args = ''):
     except Exception as e:
         print(f"Failed to spawn: {e}")
 
-async def launch_singleton_process(script_name, args = ''):
+
+async def launch_singleton_process(script_name, args=''):
     """Launches the process only if no other instance is running."""
     try:
         output = subprocess.check_output(["pgrep", "-f", script_name])
@@ -173,8 +189,10 @@ async def launch_singleton_process(script_name, args = ''):
 
     await spawn_detached_process(script_name, args)
 
+
 def log(str):
     decky.logger.info(f"------- DLO: {str}")
+
 
 # debug with: journalctl -u plugin_loader -f
 class Plugin:
@@ -212,6 +230,13 @@ class Plugin:
                 return json.load(f)
         except (json.JSONDecodeError, FileNotFoundError):
             return None
+
+    async def get_original_command(self, appid):
+        print(f"Getting original command for app {appid}")
+        return 'ooo'
+
+    async def get_info(self):
+        return info
 
     async def set_config(self, data):
         return await asyncio.to_thread(self._write_json, CONFIG_PATH, data)

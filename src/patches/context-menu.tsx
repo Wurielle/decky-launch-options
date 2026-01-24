@@ -11,24 +11,27 @@ import {
 } from '@decky/ui'
 import { FC } from 'react'
 import { routes } from '../shared'
+import { ApplyLaunchOptions } from '../components/apply-launch-options'
 
 // Greatest code known to man https://github.com/SteamGridDB/decky-steamgriddb/blob/main/src/patches/contextMenuPatch.tsx
 
 // Always add before "Properties..."
-const spliceArtworkItem = (children: any[], appid: number) => {
+const spliceItem = (children: any[], appid: number) => {
     children.find((x: any) => x?.key === 'properties')
     const propertiesMenuItemIdx = children.findIndex((item) =>
         findInReactTree(item, (x) => x?.onSelected && x.onSelected.toString().includes('AppProperties')),
     )
     children.splice(propertiesMenuItemIdx, 0, (
-        <MenuItem
-            key="decky-launch-options"
-            onSelected={ () => {
-                Navigation.Navigate(routes.appLaunchOptions(appid))
-            } }
-        >
-            { 'Launch options' }
-        </MenuItem>
+        <ApplyLaunchOptions appid={ appid }>
+            <MenuItem
+                key="decky-launch-options"
+                onSelected={ () => {
+                    Navigation.Navigate(routes.appLaunchOptions(appid))
+                } }
+            >
+                { 'Launch options' }
+            </MenuItem>
+        </ApplyLaunchOptions>
     ))
 }
 
@@ -63,7 +66,7 @@ const patchMenuItems = (menuItems: any[], appid: number) => {
             updatedAppid = foundApp.app.appid
         }
     }
-    spliceArtworkItem(menuItems, updatedAppid)
+    spliceItem(menuItems, updatedAppid)
 }
 
 /**
@@ -126,7 +129,7 @@ const contextMenuPatch = (LibraryContextMenu: any) => {
                 return ret
             })
         } else {
-            spliceArtworkItem(component.props.children, appid)
+            spliceItem(component.props.children, appid)
         }
         return component
     })

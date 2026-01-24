@@ -1,7 +1,7 @@
 import set from 'lodash.set'
 import { useEffect, useState } from 'react'
 import { produce, WritableDraft } from 'immer'
-import { Config, LaunchOption } from './shared'
+import { Config, LaunchOption, profileFactory } from './shared'
 import { useGetConfigQuery, useSetConfigMutation } from './query'
 
 export function useConfig() {
@@ -25,6 +25,7 @@ export function useConfig() {
         }
     }, [getConfigQuery.data, getConfigQuery.isFetched])
 
+    const createProfile = (Confi)
     return {
         config,
         loading: getConfigQuery.isLoading,
@@ -49,22 +50,35 @@ export function useConfig() {
             setConfig((draft) => {
                 const launchOption = draft.launchOptions.find((item) => item.id === launchOptionId)
                 if (!launchOption) return
-                if (!draft.profiles[appid]) draft.profiles[appid] = {}
+                if (!draft.profiles[appid]) {
+                    draft.profiles[appid] = profileFactory({
+                        state: {},
+                        originalLaunchOptions: '',
+                    })
+                }
                 const appProfile = draft.profiles[appid]
                 if (launchOption.enableGlobally && value) {
-                    delete appProfile[launchOptionId]
+                    delete appProfile.state[launchOptionId]
                     return
                 }
-                appProfile[launchOptionId] = value
+                appProfile.state[launchOptionId] = value
             })
         },
         getAppLaunchOptionState: (appid: string, launchOptionId: string) => {
             const launchOption = config.launchOptions.find((item) => item.id === launchOptionId)
             const appProfile = config.profiles[appid]
             if (appProfile && launchOptionId in appProfile) {
-                return appProfile[launchOptionId]
+                return appProfile.state[launchOptionId]
             }
             return !!launchOption?.enableGlobally
+        },
+        setAppOriginalCommand: (appid: string, command: string) => {
+            setConfig((draft) => {
+                draft.profiles[appid] = profileFactory({
+                    ...draft.profiles[appid],
+                    originalLaunchOptions: command,
+                })
+            })
         },
     }
 }

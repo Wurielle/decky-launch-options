@@ -22,7 +22,6 @@ export function AppLaunchOptionsPage() {
 
         return false
     })
-    console.log(appid)
     return (
         <div
             style={ {

@@ -3,6 +3,17 @@ export const routes = {
     appLaunchOptions: (appid: number | string = ':appid') => `/launch-options/${ appid }`,
 }
 
+export const profileFactory = (profile: Partial<Profile>) => ({
+    state: {},
+    originalLaunchOptions: '',
+    ...profile,
+})
+
+export type Profile = {
+    state: Record<string, boolean>
+    originalLaunchOptions: string
+}
+
 export type LaunchOption = {
     id: string
     name: string
@@ -12,6 +23,6 @@ export type LaunchOption = {
 }
 
 export type Config = {
-    profiles: Record<string, Record<string, boolean>>
+    profiles: Record<string, Profile>
     launchOptions: LaunchOption[]
 }
