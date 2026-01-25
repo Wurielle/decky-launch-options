@@ -38,7 +38,7 @@ to play games on regardless of your GPU.
 
 ## Installation
 
-* [Download](https://github.com/Wurielle/decky-launch-options/releases) `decky-launch-options.zip` file and import it
+* [Download](https://github.com/Wurielle/decky-launch-options/releases) `decky-launch-options.zip` and import it
   in Decky Loader
 * Or copy the link to `decky-launch-options.zip` and import it in Decky Loader
 
