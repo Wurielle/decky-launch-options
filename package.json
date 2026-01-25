@@ -1,7 +1,7 @@
 {
   "name": "decky-launch-options",
   "version": "0.0.1",
-  "description": "Manage launch options for your games easily.",
+  "description": "Manage launch options for your games with ease.",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
