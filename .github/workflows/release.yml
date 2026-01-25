@@ -41,7 +41,16 @@ jobs:
   deploy:
     needs: [ release ]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      checks: write
 
+      actions: read
+      issues: read
+      packages: write
+      pull-requests: read
+      repository-projects: read
+      statuses: read
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
