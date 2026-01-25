@@ -51,6 +51,18 @@ jobs:
         with:
           node-version: 18
 
+      - name: Set package.json version
+        uses: wurielle/package-version-action@v1
+        with:
+          version: ${{ env.RELEASE_VERSION }}
+          targets: |
+            ./package.json
+
+      - name: Set env variables
+        shell: bash
+        run: |
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
+
       - name: Setup PNPM@9
         uses: pnpm/action-setup@v4
         with:
