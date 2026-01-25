@@ -46,6 +46,23 @@ to play games on regardless of your GPU.
 
 ## How to use
 
+1. Open the plugin tab to manage your launch options
+2. Create a launch option
+    * Choose whether to enable it by default for all games ("Enable globally" field)
+    * Enter a name
+    * In the "On" field, enter the launch option when enabled
+    * If applicable, in the "Off" field, enter the launch option when disabled
+      ![Screenshot of the launch options settings for the plugin](./assets/manage-launch-options.png)
+3. On your game page, click on settings and click on **Launch Options**
+   ![Screenshot of the settings for a game in Steam](./assets/app-page.png)
+4. Enable or disable launch options to your liking
+    * If you already had launch options before, they will be placed in the "Original launch options" field and will be
+      executed normally. It is recommended to remove the original launch options once you configured all your launch
+      options with the plugin.
+    * Locally enabled launch options are opt-in
+    * Globally enabled launch options are opt-out
+      ![Screenshot of the Decky Launch Options plugin on the Steam Deck](./assets/screenshot.png)
+
 ## Development
 
 This project uses [ahoy](https://ahoyapi.dev/) as an IDE-agnostic task runner.
