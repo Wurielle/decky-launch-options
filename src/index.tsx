@@ -6,7 +6,7 @@ import { LaunchOptionsPage } from './teams/launch-options/views'
 import { AppLaunchOptionsPage } from './teams/launch-options/views/[_appid]'
 import { QueryClientProvider } from '@tanstack/react-query'
 import contextMenuPatch, { LibraryContextMenu } from './patches/context-menu'
-import { queryClient } from './query'
+import { getSettingsQueryOptions, queryClient } from './query'
 import { libraryAppPatch } from './patches/library-app'
 
 function Content() {
@@ -45,6 +45,7 @@ export default definePlugin(() => {
     // shamefully stolen from the talented people at SteamGridDB
     const menuPatches = contextMenuPatch(LibraryContextMenu)
     const libraryAppPatchResult = libraryAppPatch()
+    void queryClient.prefetchQuery(getSettingsQueryOptions)
     return {
         name: "Launch Options",
         titleView: <div className={ staticClasses.Title }>Launch Options</div>,
@@ -56,6 +57,13 @@ export default definePlugin(() => {
             })
             menuPatches?.unpatch()
             routerHook.removePatch(...libraryAppPatchResult)
+            const settings = queryClient.getQueryData(getSettingsQueryOptions.queryKey)
+            if (settings) {
+                Object.entries(settings.profiles)
+                    .forEach(([appid, profile]) => {
+                        SteamClient.Apps.SetAppLaunchOptions(Number(appid), profile.originalLaunchOptions)
+                    })
+            }
         },
     }
 })
