@@ -182,7 +182,9 @@ class Plugin:
         await self.cleanup()
 
     async def _uninstall(self):
-        pass
+        import shutil
+        if os.path.exists(SETTINGS_FOLDER_PATH):
+            shutil.rmtree(SETTINGS_FOLDER_PATH)
 
     async def _migration(self):
         pass

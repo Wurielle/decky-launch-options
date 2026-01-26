@@ -23,7 +23,33 @@ jobs:
         with:
           node-version: 'lts/*'
 
-      - name: Release
+      - name: Semantic Release
+        uses: cycjimmy/semantic-release-action@v6
+        id: semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+        with:
+          dry_run: true
+
+      - uses: wurielle/package-version-action@v2
+        with:
+          version: ${{ steps.semantic-release.outputs.new_release_version }}
+          targets: |
+            ./package.json
+
+      - name: Commit version changes
+        if: steps.semantic-release.outputs.new_release_version != ''
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git commit -m "chore(release): update package versions to ${{ steps.semantic-release.outputs.new_release_version }}"
+          git push
+
+      - name: Publish tag
+        if: steps.semantic-release.outputs.new_release_version != ''
+        uses: cycjimmy/semantic-release-action@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          dry_run: false
