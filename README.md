@@ -1,6 +1,10 @@
-# Decky Launch Options
+<h1 align="center">
+   Decky Launch Options
+</h1>
 
-Manage launch options for your games with ease. 🍃
+<p align="center">
+   Manage launch options for your games with ease 🍃
+</p>
 
 ![Screenshot of the Decky Launch Options plugin on the Steam Deck](./assets/screenshot.png)
 
@@ -16,7 +20,8 @@ Manage launch options for your games with ease. 🍃
 This plugin is part one of my desire to make the best HTPC/Handheld experience easier to access for anyone using Big
 Picture.
 
-My HTPC uses a RDNA 3 GPU and frankly it bothers me immensely that AMD won't support FSR4 officialy on my card, or on my
+My HTPC uses a RDNA 3 GPU and frankly it bothers me immensely that AMD won't support FSR4 officially on my card, or on
+my
 Steam Deck.
 Thankfully, thanks to the people working on OptiScaler, it's possible to mod FSR4 in games that support DLSS, XeSS or
 FSR3 and it's a huge quality boost!
