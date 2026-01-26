@@ -1,6 +1,6 @@
 {
   "name": "decky-launch-options",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Manage launch options for your games with ease.",
   "type": "module",
   "scripts": {
