@@ -45,7 +45,6 @@ def get_steam_appid():
 
 
 def detect_launch_option_type(command):
-    """Detect the type of launch option based on its content."""
     if not command or not command.strip():
         return None
 
@@ -69,7 +68,6 @@ def detect_launch_option_type(command):
 
 
 def apply_env_vars(raw_env):
-    """Parse and apply environment variables to os.environ."""
     if not raw_env:
         return
 
@@ -88,7 +86,6 @@ def apply_env_vars(raw_env):
 
 
 def apply_flags(raw_flags, current_args):
-    """Parse and apply flags/arguments to the argument list."""
     if not raw_flags:
         return current_args
 
@@ -100,10 +97,10 @@ def apply_flags(raw_flags, current_args):
         # Fallback to simple split if shlex fails
         flag_parts = raw_flags.split()
 
-    # Flags should be inserted before the executable's own arguments
-    # Find where the actual game arguments start (after the executable)
-    # For now, prepend flags to maintain compatibility
-    return flag_parts + current_args
+    if len(current_args) > 0:
+        return [current_args[0]] + flag_parts + current_args[1:]
+    else:
+        return flag_parts + current_args
 
 
 def apply_command_to_args(raw_command, current_args):
@@ -136,6 +133,9 @@ def get_final_args(settings, appid):
     # Add original launch options if they exist (treat as prefix command)
     final_args = apply_command_to_args(profile_original_launch_options, final_args)
 
+    # Collect all flags to apply at the end
+    collected_flags = []
+
     # Iterate through EVERY possible launch option
     for opt in settings["launchOptions"]:
         opt_id = opt["id"]
@@ -150,9 +150,19 @@ def get_final_args(settings, appid):
         if cmd_type == 'env':
             apply_env_vars(raw_command)
         elif cmd_type == 'flag':
-            final_args = apply_flags(raw_command, final_args)
+            # Collect flags
+            import shlex
+            try:
+                flag_parts = shlex.split(raw_command)
+            except ValueError:
+                flag_parts = raw_command.split()
+            collected_flags.extend(flag_parts)
         else:  # prefix or None
             final_args = apply_command_to_args(raw_command, final_args)
+
+    # Apply all collected flags at the very end
+    if collected_flags:
+        final_args = final_args + collected_flags
 
     return final_args
 
@@ -169,9 +179,14 @@ if __name__ == "__main__":
         with open(LOG_FILE, "w") as f:
             f.write(f"--- {datetime.datetime.now()} Launch Attempt for app: {appid} ---\n")
             f.write(f"Full Command List: {args}\n\n")
-            f.write(f"Executable: {executable_args}\n\n")
 
             for i, arg in enumerate(args):
+                f.write(f"Arg {i}: {arg}\n")
+            f.write("-" * 40 + "\n\n")
+
+            f.write(f"Executable: {executable_args}\n\n")
+
+            for i, arg in enumerate(executable_args):
                 f.write(f"Arg {i}: {arg}\n")
             f.write("-" * 40 + "\n\n")
 
