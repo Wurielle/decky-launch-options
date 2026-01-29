@@ -2,8 +2,7 @@
   "name": "Launch Options",
   "author": "Wurielle",
   "flags": [
-    "debug",
-    "_root"
+    "debug"
   ],
   "api_version": 1,
   "publish": {
