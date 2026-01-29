@@ -70,13 +70,13 @@ to play games on regardless of your GPU.
 
 ## Development
 
-This project uses [ahoy](https://ahoyapi.dev/) as an IDE-agnostic task runner.
+This project uses [just](https://github.com/casey/just) as an IDE-agnostic task runner.
 
 ### Pre-requisites:
 
 * [Docker Engine](https://docs.docker.com/engine/install/)
 * [pnpm](https://pnpm.io/installation#using-npm)
-* [ahoy](https://github.com/ahoy-cli/ahoy)
+* [just](https://github.com/casey/just)
 
 1. **Configure deployment settings**
 
