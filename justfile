@@ -85,3 +85,7 @@ connect:
 logs:
     ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
       "echo '${DECK_PASS}' | journalctl -u plugin_loader -f"
+
+rundebug:
+    ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
+      "echo '${DECK_PASS}' | nano .dlo/debug.log"

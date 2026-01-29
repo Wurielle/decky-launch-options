@@ -8,7 +8,7 @@ from shared import SETTINGS_FOLDER_PATH, SETTINGS_PATH
 
 LOG_FILE = os.path.join(SETTINGS_FOLDER_PATH, 'debug.log')
 
-executable = sys.argv[1]
+executable = sys.argv[1] if len(sys.argv) > 1 else None
 args = sys.argv[1:]
 
 
@@ -44,12 +44,81 @@ def get_steam_appid():
     return None
 
 
+def detect_launch_option_type(command):
+    """Detect the type of launch option based on its content."""
+    if not command or not command.strip():
+        return None
+
+    stripped = command.strip()
+
+    # Flags: starts with - or --
+    if stripped.startswith('-'):
+        return 'flag'
+
+    # Environment variables: contains = and doesn't look like a command
+    # Check if it has = and the part before = doesn't contain / or spaces
+    if '=' in command:
+        first_token = command.split()[0] if ' ' in command else command
+        key_part = first_token.split('=')[0]
+        # If the key part looks like an env var name (no /, no -)
+        if '/' not in key_part and not key_part.startswith('-'):
+            return 'env'
+
+    # Default: prefix command
+    return 'prefix'
+
+
+def apply_env_vars(raw_env):
+    """Parse and apply environment variables to os.environ."""
+    if not raw_env:
+        return
+
+    import shlex
+    try:
+        # Use shlex to properly handle quoted values
+        parts = shlex.split(raw_env)
+    except ValueError:
+        # Fallback to simple split if shlex fails
+        parts = raw_env.split()
+
+    for part in parts:
+        if '=' in part:
+            key, value = part.split('=', 1)
+            os.environ[key] = value
+
+
+def apply_flags(raw_flags, current_args):
+    """Parse and apply flags/arguments to the argument list."""
+    if not raw_flags:
+        return current_args
+
+    import shlex
+    try:
+        # Use shlex to properly handle quoted values and complex arguments
+        flag_parts = shlex.split(raw_flags)
+    except ValueError:
+        # Fallback to simple split if shlex fails
+        flag_parts = raw_flags.split()
+
+    # Flags should be inserted before the executable's own arguments
+    # Find where the actual game arguments start (after the executable)
+    # For now, prepend flags to maintain compatibility
+    return flag_parts + current_args
+
+
 def apply_command_to_args(raw_command, current_args):
     if not raw_command:
         return current_args
 
     full_path_cmd = raw_command.replace("~", os.path.expanduser("~"))
-    parts = full_path_cmd.split()
+
+    import shlex
+    try:
+        # Use shlex to properly handle quoted paths and arguments
+        parts = shlex.split(full_path_cmd)
+    except ValueError:
+        # Fallback to simple split if shlex fails
+        parts = full_path_cmd.split()
 
     if "%command%" in parts:
         idx = parts.index("%command%")
@@ -64,7 +133,7 @@ def get_final_args(settings, appid):
     profile_state = profile.get("state", {})
     profile_original_launch_options = profile.get("originalLaunchOptions", "")
 
-    # Add original launch options if they exist
+    # Add original launch options if they exist (treat as prefix command)
     final_args = apply_command_to_args(profile_original_launch_options, final_args)
 
     # Iterate through EVERY possible launch option
@@ -74,37 +143,47 @@ def get_final_args(settings, appid):
         is_enabled = profile_state.get(opt_id, enable_globally)
 
         raw_command = opt["on"] if is_enabled else opt["off"]
-        final_args = apply_command_to_args(raw_command, final_args)
+
+        # Detect type and apply accordingly
+        cmd_type = detect_launch_option_type(raw_command)
+
+        if cmd_type == 'env':
+            apply_env_vars(raw_command)
+        elif cmd_type == 'flag':
+            final_args = apply_flags(raw_command, final_args)
+        else:  # prefix or None
+            final_args = apply_command_to_args(raw_command, final_args)
 
     return final_args
 
 
-appid = get_steam_appid()
+if __name__ == "__main__":
+    appid = get_steam_appid()
 
-settings = get_settings()
+    settings = get_settings()
 
-executable_args = get_final_args(settings, appid)
-
-
-def write_logs():
-    with open(LOG_FILE, "w") as f:
-        f.write(f"--- {datetime.datetime.now()} Launch Attempt for app: {appid} ---\n")
-        f.write(f"Full Command List: {args}\n\n")
-        f.write(f"Executable: {executable_args}\n\n")
-
-        for i, arg in enumerate(args):
-            f.write(f"Arg {i}: {arg}\n")
-        f.write("-" * 40 + "\n\n")
-
-
-write_logs()
-
-if len(sys.argv) > 1 and settings:
     executable_args = get_final_args(settings, appid)
-    if executable_args:
-        executable = executable_args[0]
-        os.execvpe(executable, executable_args, os.environ)
+
+
+    def write_logs():
+        with open(LOG_FILE, "w") as f:
+            f.write(f"--- {datetime.datetime.now()} Launch Attempt for app: {appid} ---\n")
+            f.write(f"Full Command List: {args}\n\n")
+            f.write(f"Executable: {executable_args}\n\n")
+
+            for i, arg in enumerate(args):
+                f.write(f"Arg {i}: {arg}\n")
+            f.write("-" * 40 + "\n\n")
+
+
+    write_logs()
+
+    if len(sys.argv) > 1 and settings:
+        executable_args = get_final_args(settings, appid)
+        if executable_args:
+            executable = executable_args[0]
+            os.execvpe(executable, executable_args, os.environ)
+        else:
+            os.execvpe(executable, args, os.environ)
     else:
         os.execvpe(executable, args, os.environ)
-else:
-    os.execvpe(executable, args, os.environ)
