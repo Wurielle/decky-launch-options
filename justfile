@@ -78,3 +78,10 @@ env:
 restartdecky:
     ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
       "echo '${DECK_PASS}' | sudo -S systemctl restart plugin_loader"
+
+connect:
+    ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY}
+
+logs:
+    ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
+      "echo '${DECK_PASS}' | journalctl -u plugin_loader -f"
