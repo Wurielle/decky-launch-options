@@ -101,7 +101,7 @@ This project uses [just](https://github.com/casey/just) as an IDE-agnostic task 
 
 ### Available commands
 
-- `ahoy` - List all available commands
+- `just` - List all available commands
 
 ### Debugging
 
