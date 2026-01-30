@@ -44,112 +44,79 @@ def get_steam_appid():
     return None
 
 
-def detect_launch_option_type(command):
-    if not command or not command.strip():
-        return None
-
-    stripped = command.strip()
-
-    # Flags: starts with - or --
-    if stripped.startswith('-'):
-        return 'flag'
-
-    # Environment variables: contains = and doesn't look like a command
-    # Check if it has = and the part before = doesn't contain / or spaces
-    if '=' in command:
-        first_token = command.split()[0] if ' ' in command else command
-        key_part = first_token.split('=')[0]
-        # If the key part looks like an env var name (no /, no -)
-        if '/' not in key_part and not key_part.startswith('-'):
-            return 'env'
-
-    # Default: prefix command
-    return 'prefix'
-
-
-def apply_env_vars(raw_env):
+def parse_launch_option(raw_command):
     """
-    Apply environment variables and return remaining parts (prefixes/commands).
+    Parse a launch option string into its components.
 
     Returns:
-        List of non-env parts (e.g., prefixes like 'mangohud' or paths like '~/lsfg')
+        dict with keys:
+        - 'env_vars': dict of {key: value} environment variables
+        - 'prefix': list of tokens before %command% (excluding env vars)
+        - 'suffix': list of tokens after %command% (game args/flags)
     """
-    if not raw_env:
-        return []
+    if not raw_command or not raw_command.strip():
+        return {'env_vars': {}, 'prefix': [], 'suffix': []}
 
     import shlex
     try:
-        # Use shlex to properly handle quoted values
-        parts = shlex.split(raw_env)
+        parts = shlex.split(raw_command)
     except ValueError:
-        # Fallback to simple split if shlex fails
-        parts = raw_env.split()
+        parts = raw_command.split()
 
-    remaining_parts = []
-    for part in parts:
-        if '=' in part:
-            key, value = part.split('=', 1)
-            os.environ[key] = value
+    # Find %command% position
+    try:
+        command_idx = parts.index('%command%')
+        left_parts = parts[:command_idx]
+        right_parts = parts[command_idx + 1:]
+    except ValueError:
+        # No %command% found, treat everything as prefix
+        left_parts = parts
+        right_parts = []
+
+    # Separate env vars from prefix in left parts
+    env_vars = {}
+    prefix = []
+
+    for part in left_parts:
+        if '=' in part and not part.startswith('-'):
+            # Check if it looks like an env var (key part has no /)
+            key_part = part.split('=', 1)[0]
+            if '/' not in key_part:
+                key, value = part.split('=', 1)
+                env_vars[key] = value
+            else:
+                # Looks like a path with =, treat as prefix
+                prefix.append(part)
         else:
-            # Not an env var - could be a prefix command
-            if part != '%command%':  # Skip the %command% placeholder
-                remaining_parts.append(part)
+            prefix.append(part)
 
-    return remaining_parts
-
-
-def apply_flags(raw_flags, current_args):
-    if not raw_flags:
-        return current_args
-
-    import shlex
-    try:
-        # Use shlex to properly handle quoted values and complex arguments
-        flag_parts = shlex.split(raw_flags)
-    except ValueError:
-        # Fallback to simple split if shlex fails
-        flag_parts = raw_flags.split()
-
-    if len(current_args) > 0:
-        return [current_args[0]] + flag_parts + current_args[1:]
-    else:
-        return flag_parts + current_args
-
-
-def apply_command_to_args(raw_command, current_args):
-    if not raw_command:
-        return current_args
-
-    full_path_cmd = raw_command.replace("~", os.path.expanduser("~"))
-
-    import shlex
-    try:
-        # Use shlex to properly handle quoted paths and arguments
-        parts = shlex.split(full_path_cmd)
-    except ValueError:
-        # Fallback to simple split if shlex fails
-        parts = full_path_cmd.split()
-
-    if "%command%" in parts:
-        idx = parts.index("%command%")
-        return parts[:idx] + current_args + parts[idx + 1:]
-    else:
-        return parts + current_args
+    return {
+        'env_vars': env_vars,
+        'prefix': prefix,
+        'suffix': right_parts
+    }
 
 
 def get_final_args(settings, appid):
-    final_args = sys.argv[1:]
+    base_args = sys.argv[1:]
     profile = settings["profiles"].get(str(appid), {})
     profile_state = profile.get("state", {})
     profile_original_launch_options = profile.get("originalLaunchOptions", "")
 
-    # Add original launch options if they exist (treat as prefix command)
-    final_args = apply_command_to_args(profile_original_launch_options, final_args)
+    # Collections for all launch option components
+    all_env_vars = {}
+    all_prefixes = []
+    all_suffixes = []
 
-    # Collect all flags to apply at the end
-    collected_flags = []
+    # Parse original launch options first
+    if profile_original_launch_options:
+        parsed = parse_launch_option(profile_original_launch_options)
+        all_env_vars.update(parsed['env_vars'])
+        if parsed['prefix']:
+            all_prefixes.append(parsed['prefix'])
+        all_suffixes.extend(parsed['suffix'])
 
-    # Iterate through EVERY possible launch option
+    # Parse each enabled launch option
     for opt in settings["launchOptions"]:
         opt_id = opt["id"]
         enable_globally = opt.get("enableGlobally", False)
@@ -157,30 +124,36 @@ def get_final_args(settings, appid):
 
         raw_command = opt["on"] if is_enabled else opt["off"]
 
-        # Detect type and apply accordingly
-        cmd_type = detect_launch_option_type(raw_command)
+        if raw_command and raw_command.strip():
+            parsed = parse_launch_option(raw_command)
+            all_env_vars.update(parsed['env_vars'])
+            if parsed['prefix']:
+                all_prefixes.append(parsed['prefix'])
+            all_suffixes.extend(parsed['suffix'])
 
-        if cmd_type == 'env':
-            # Apply env vars and handle any remaining prefix commands
-            remaining_parts = apply_env_vars(raw_command)
-            if remaining_parts:
-                # Treat remaining parts as prefix commands
-                prefix_command = ' '.join(remaining_parts)
-                final_args = apply_command_to_args(prefix_command, final_args)
-        elif cmd_type == 'flag':
-            # Collect flags
-            import shlex
-            try:
-                flag_parts = shlex.split(raw_command)
-            except ValueError:
-                flag_parts = raw_command.split()
-            collected_flags.extend(flag_parts)
-        else:  # prefix or None
-            final_args = apply_command_to_args(raw_command, final_args)
+    # Apply all environment variables
+    for key, value in all_env_vars.items():
+        os.environ[key] = value
 
-    # Apply all collected flags at the very end
-    if collected_flags:
-        final_args = final_args + collected_flags
+    # Build final command: prefixes (joined with --) + base_args + suffixes
+    final_args = []
+
+    # Add all prefixes, separated by --
+    for i, prefix in enumerate(all_prefixes):
+        # Expand ~ in paths
+        expanded_prefix = [part.replace("~", os.path.expanduser("~")) for part in prefix]
+        final_args.extend(expanded_prefix)
+        # Add -- separator between prefixes (but not after the last one)
+        # Also skip if the current prefix already ends with --
+        if i < len(all_prefixes) - 1:
+            if not (expanded_prefix and expanded_prefix[-1] == '--'):
+                final_args.append('--')
+
+    # Add base game command
+    final_args.extend(base_args)
+
+    # Add all suffix args at the end
+    final_args.extend(all_suffixes)
 
     return final_args
 
