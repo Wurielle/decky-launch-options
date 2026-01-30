@@ -100,8 +100,8 @@ mangohud %command%
 
 **Game arguments:**
 ```bash
-%command% -novid -console
-# > /path/to/game -novid -console
+%command% -novid -nobackground
+# > /path/to/game -novid -nobackground
 ```
 
 ### Complex Examples
@@ -114,15 +114,15 @@ PROTON_NO_ESYNC=1 MANGOHUD_DLSYM=1 ~/lsfg mangohud %command%
 
 **Prefix with arguments + game arguments:**
 ```bash
-gamescope -w 1280 -h 720 -W 1920 -H 1080 -f -- %command% -novid -console +fps_max 60
-# > gamescope -w 1280 -h 720 -W 1920 -H 1080 -f -- /path/to/game -novid -console +fps_max 60
+gamescope -w 640 -h 400 -W 1280 -H 800 -f -- %command% -novid -nobackground +fps_max 60
+# > gamescope -w 640 -h 400 -W 1280 -H 800 -f -- /path/to/game -novid -nobackground +fps_max 60
 ```
 
 **Combined prefixes with `--`:**
 > The `--` (double dash) is a convention that signals "end of options for this command." It's used to separate different prefix commands and their arguments.
 ```bash
-MANGOHUD=1 gamemoderun -- gamescope -w 1280 -h 720 -W 1920 -H 1080 -f --mangoapp -- %command% -novid -console +fps_max 60
-# > MANGOHUD=1 gamemoderun -- gamescope -w 1280 -h 720 -W 1920 -H 1080 -f --mangoapp -- /path/to/game -novid -console +fps_max 60
+MANGOHUD=1 gamemoderun -- gamescope -w 640 -h 400 -W 1280 -H 800 -f --mangoapp -- %command% -novid -nobackground +fps_max 60
+# > MANGOHUD=1 gamemoderun -- gamescope -w 640 -h 400 -W 1280 -H 800 -f --mangoapp -- /path/to/game -novid -nobackground +fps_max 60
 ```
 
 ### How launch options are handled
@@ -135,12 +135,12 @@ When multiple launch options are enabled, they are combined intelligently:
 
 **Example with two launch options enabled:**
 
-- Option 1: `MANGOHUD=1 gamemoderun gamescope -w 1280 -h 720 -- %command% -novid`
-- Option 2: `PROTON_NO_ESYNC=1 mangohud %command% -console`
+- Option 1: `MANGOHUD=1 gamemoderun gamescope -r 30 -- %command% -novid`
+- Option 2: `PROTON_NO_ESYNC=1 mangohud %command% -nobackground`
 
 **Results in:**
 ```bash
-MANGOHUD=1 PROTON_NO_ESYNC=1 gamemoderun -- gamescope -w 1280 -h 720 -- mangohud -- /path/to/game -novid -console
+MANGOHUD=1 PROTON_NO_ESYNC=1 gamemoderun -- gamescope -r 30 -- mangohud -- /path/to/game -novid -nobackground
 ```
 
 ## Development
