@@ -68,8 +68,14 @@ def detect_launch_option_type(command):
 
 
 def apply_env_vars(raw_env):
+    """
+    Apply environment variables and return remaining parts (prefixes/commands).
+
+    Returns:
+        List of non-env parts (e.g., prefixes like 'mangohud' or paths like '~/lsfg')
+    """
     if not raw_env:
-        return
+        return []
 
     import shlex
     try:
@@ -79,10 +85,17 @@ def apply_env_vars(raw_env):
         # Fallback to simple split if shlex fails
         parts = raw_env.split()
 
+    remaining_parts = []
     for part in parts:
         if '=' in part:
             key, value = part.split('=', 1)
             os.environ[key] = value
+        else:
+            # Not an env var - could be a prefix command
+            if part != '%command%':  # Skip the %command% placeholder
+                remaining_parts.append(part)
+
+    return remaining_parts
 
 
 def apply_flags(raw_flags, current_args):
@@ -148,7 +161,12 @@ def get_final_args(settings, appid):
         cmd_type = detect_launch_option_type(raw_command)
 
         if cmd_type == 'env':
-            apply_env_vars(raw_command)
+            # Apply env vars and handle any remaining prefix commands
+            remaining_parts = apply_env_vars(raw_command)
+            if remaining_parts:
+                # Treat remaining parts as prefix commands
+                prefix_command = ' '.join(remaining_parts)
+                final_args = apply_command_to_args(prefix_command, final_args)
         elif cmd_type == 'flag':
             # Collect flags
             import shlex
