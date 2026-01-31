@@ -89,7 +89,7 @@ Here are recipes for common launch options scenarios.
 **Environment variables:**
 ```bash
 SteamDeck=1 Foo="Bar baz" %command%
-# > SteamDeck=1 Foo="Bar" /path/to/game
+# > SteamDeck=1 Foo="Bar baz" /path/to/game
 ```
 
 **Prefix command:**
