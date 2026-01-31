@@ -26,7 +26,8 @@ function ScrollIntoView(props: Omit<HTMLAttributes<HTMLElement>, 'children'> & {
     const ref = useRef<HTMLDivElement>(null)
     const scrollIntoView = useCallback((event?: any) => {
         const block = (window.SteamUIStore.GetFocusedWindowInstance() as any).VirtualKeyboardManager.KeyboardLocation.includes('top') ? 'start' : 'end'
-        ;(event?.target || ref.current)?.scrollIntoView?.({behavior: 'instant', block})
+        const element = (event?.target || ref.current) as HTMLElement
+        element?.scrollIntoView?.({behavior: 'instant', block})
     }, [])
     return <div ref={ref} {...rootProps}>
         {props.children({ref, scrollIntoView})}
@@ -79,6 +80,7 @@ function CreateLaunchOptionForm() {
                         onKeyUp={scrollIntoView}
                         onInput={scrollIntoView}
                         onSelect={scrollIntoView}
+                        onFocus={scrollIntoView}
                     />
                 )}
             </ScrollIntoView>
@@ -98,6 +100,7 @@ function CreateLaunchOptionForm() {
                         onKeyUp={scrollIntoView}
                         onInput={scrollIntoView}
                         onSelect={scrollIntoView}
+                        onFocus={scrollIntoView}
                     />
                 )}
             </ScrollIntoView>
@@ -117,6 +120,7 @@ function CreateLaunchOptionForm() {
                         onKeyUp={scrollIntoView}
                         onInput={scrollIntoView}
                         onSelect={scrollIntoView}
+                        onFocus={scrollIntoView}
                     />
                 )}
             </ScrollIntoView>
@@ -176,6 +180,7 @@ function UpdateLaunchOptionForm({id}: {
                         onKeyUp={scrollIntoView}
                         onInput={scrollIntoView}
                         onSelect={scrollIntoView}
+                        onFocus={scrollIntoView}
                     />
                 )}
             </ScrollIntoView>
@@ -193,6 +198,7 @@ function UpdateLaunchOptionForm({id}: {
                         onKeyUp={scrollIntoView}
                         onInput={scrollIntoView}
                         onSelect={scrollIntoView}
+                        onFocus={scrollIntoView}
                     />
                 )}
             </ScrollIntoView>
@@ -210,6 +216,7 @@ function UpdateLaunchOptionForm({id}: {
                         onKeyUp={scrollIntoView}
                         onInput={scrollIntoView}
                         onSelect={scrollIntoView}
+                        onFocus={scrollIntoView}
                     />
                 )}
             </ScrollIntoView>
