@@ -68,15 +68,90 @@ to play games on regardless of your GPU.
     * Globally enabled launch options are opt-out
       ![Screenshot of the Decky Launch Options plugin on the Steam Deck](./assets/screenshot.png)
 
+## Understanding launch options
+Decky Launch Options tries to simplify launch options management by offering a degree of leeway in how you can structure your launch options but it's still important to understand how launch options work to avoid mistakes!
+
+### The `%command%` Placeholder
+
+The `%command%` placeholder represents where your game executable will be inserted in the command chain. Everything before `%command%` becomes a **prefix** (executed before the game), and everything after becomes a **suffix** (passed as arguments to the game).
+
+**Structure example:**
+```
+[ENV_VARS] [PREFIX_COMMANDS] %command% [GAME_ARGUMENTS]
+```
+
+### Simple Examples
+
+Here are recipes for common launch options scenarios.
+
+> **Note:** Please provide `%command%` whenever you can to assure proper detection of command parts. This will also help readbility.
+
+**Environment variables:**
+```bash
+SteamDeck=1 Foo="Bar baz" %command%
+# > SteamDeck=1 Foo="Bar baz" /path/to/game
+```
+
+**Prefix command:**
+```bash
+mangohud %command%
+# > mangohud /path/to/game
+```
+
+**Game arguments:**
+```bash
+%command% -novid -nobackground
+# > /path/to/game -novid -nobackground
+```
+
+### Complex Examples
+
+**Environment variables + prefix:**
+```bash
+PROTON_NO_ESYNC=1 MANGOHUD_DLSYM=1 ~/lsfg mangohud %command%
+# > PROTON_NO_ESYNC=1 MANGOHUD_DLSYM=1 /home/deck/lsfg mangohud /path/to/game
+```
+
+**Prefix with arguments + game arguments:**
+```bash
+gamescope -w 640 -h 400 -W 1280 -H 800 -f -- %command% -novid -nobackground +fps_max 60
+# > gamescope -w 640 -h 400 -W 1280 -H 800 -f -- /path/to/game -novid -nobackground +fps_max 60
+```
+
+**Combined prefixes with `--`:**
+> The `--` (double dash) is a convention that signals "end of options for this command." It's used to separate different prefix commands and their arguments.
+```bash
+MANGOHUD=1 gamemoderun -- gamescope -w 640 -h 400 -W 1280 -H 800 -f --mangoapp -- %command% -novid -nobackground +fps_max 60
+# > MANGOHUD=1 gamemoderun -- gamescope -w 640 -h 400 -W 1280 -H 800 -f --mangoapp -- /path/to/game -novid -nobackground +fps_max 60
+```
+
+### How launch options are handled
+
+When multiple launch options are enabled, they are combined intelligently:
+
+1. **All environment variables** are collected and applied
+2. **All prefix commands** are chained together using `--` as a separator
+3. **All game arguments** (suffixes) are concatenated and passed to the game
+
+**Example with two launch options enabled:**
+
+- Option 1: `MANGOHUD=1 gamemoderun gamescope -r 30 -- %command% -novid`
+- Option 2: `PROTON_NO_ESYNC=1 mangohud %command% -nobackground`
+
+**Results in:**
+```bash
+MANGOHUD=1 PROTON_NO_ESYNC=1 gamemoderun -- gamescope -r 30 -- mangohud -- /path/to/game -novid -nobackground
+```
+
 ## Development
 
-This project uses [ahoy](https://ahoyapi.dev/) as an IDE-agnostic task runner.
+This project uses [just](https://github.com/casey/just) as an IDE-agnostic task runner.
 
 ### Pre-requisites:
 
 * [Docker Engine](https://docs.docker.com/engine/install/)
 * [pnpm](https://pnpm.io/installation#using-npm)
-* [ahoy](https://github.com/ahoy-cli/ahoy)
+* [just](https://github.com/casey/just)
 
 1. **Configure deployment settings**
 
@@ -101,7 +176,7 @@ This project uses [ahoy](https://ahoyapi.dev/) as an IDE-agnostic task runner.
 
 ### Available commands
 
-- `ahoy` - List all available commands
+- `just` - List all available commands
 
 ### Debugging
 
