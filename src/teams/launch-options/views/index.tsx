@@ -250,13 +250,14 @@ export function LaunchOptionsPage() {
                         <SteamSpinner width={"100%"} height={"100%"}/>
                     ) : (
                         <SidebarNavigation
+                            key={settings.launchOptions.length}
                             title={'Launch options'}
                             showTitle={true}
                             pages={[
                                 {
                                     icon: <FaPlus/>,
                                     title: 'New launch option',
-                                    content: <CreateLaunchOptionForm/>,
+                                    content: <CreateLaunchOptionForm />,
                                 },
                                 ...settings.launchOptions.map(({id, name}) => ({
                                     icon: <FaTerminal/>,
