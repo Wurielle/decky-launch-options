@@ -69,9 +69,34 @@ def parse_launch_option(raw_command):
         left_parts = parts[:command_idx]
         right_parts = parts[command_idx + 1:]
     except ValueError:
-        # No %command% found, treat everything as prefix
-        left_parts = parts
-        right_parts = []
+        # No %command% found - need to infer what these parts are
+        # Separate env vars first, then check remaining tokens
+        temp_left = []
+        temp_right = []
+
+        for part in parts:
+            # Check if it's an env var
+            if '=' in part and not part.startswith('-'):
+                key_part = part.split('=', 1)[0]
+                if '/' not in key_part:
+                    # It's an env var, goes to left
+                    temp_left.append(part)
+                    continue
+
+            # Not an env var - check if it looks like a game arg
+            if part.startswith('-') or part.startswith('+'):
+                # Everything from here onwards is a game arg
+                temp_right.append(part)
+                # Add remaining parts to right as well
+                idx = parts.index(part)
+                temp_right.extend(parts[idx + 1:])
+                break
+            else:
+                # Looks like a prefix command
+                temp_left.append(part)
+
+        left_parts = temp_left
+        right_parts = temp_right
 
     # Separate env vars from prefix in left parts
     env_vars = {}
