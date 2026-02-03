@@ -1,13 +1,77 @@
-import { ButtonItem, Navigation, PanelSection, PanelSectionRow, staticClasses } from "@decky/ui"
-import { definePlugin, routerHook } from "@decky/api"
-import { FaTerminal } from "react-icons/fa"
-import { routes } from './shared'
-import { LaunchOptionsPage } from './teams/launch-options/views'
-import { AppLaunchOptionsPage } from './teams/launch-options/views/[_appid]'
-import { QueryClientProvider } from '@tanstack/react-query'
-import contextMenuPatch, { LibraryContextMenu } from './patches/context-menu'
-import { getSettingsQueryOptions, queryClient } from './query'
-import { libraryAppPatch } from './patches/library-app'
+import {
+    ButtonItem,
+    DialogBody,
+    DialogButton,
+    DialogButtonPrimary,
+    DialogFooter, DialogHeader, Field,
+    ModalRoot, Navigation, PanelSection, PanelSectionRow, showModal, staticClasses, TextField,
+    ToggleField
+} from "@decky/ui"
+import {definePlugin, routerHook} from "@decky/api"
+import {FaTerminal} from "react-icons/fa"
+import {LaunchOption, launchOptionFactory, routes} from './shared'
+import {LaunchOptionsPage} from './teams/launch-options/views'
+import {AppLaunchOptionsPage} from './teams/launch-options/views/[_appid]'
+import {QueryClientProvider} from '@tanstack/react-query'
+import contextMenuPatch, {LibraryContextMenu} from './patches/context-menu'
+import {getSettingsQueryOptions, queryClient} from './query'
+import {libraryAppPatch} from './patches/library-app'
+import {useImmer} from "use-immer";
+import {useSettings} from "./hooks";
+
+function BatchAddLaunchOptions({data, onSubmit, onCancel}: {
+    data: LaunchOption[],
+    onSubmit: () => void,
+    onCancel: () => void
+}) {
+    const [launchOptions, setLaunchOptions] = useImmer(data.map(launchOptionFactory))
+    const {batchCreateLaunchOptions} = useSettings()
+    return (
+        <ModalRoot onCancel={onCancel}>
+            <DialogHeader>Decky Launch Options</DialogHeader>
+            <DialogBody>
+                <p>An application would like to add the following launch options:</p>
+                {launchOptions.map((launchOption, index) => (
+                    <Field label={launchOption.name} description={
+                        <div style={{padding: '0 0 0 22'}}>
+                            <div style={{marginBottom: 22}}>
+                                <ToggleField
+                                    label={'Enable globally'}
+                                    bottomSeparator={'none'}
+                                    checked={launchOption.enableGlobally}
+                                    onChange={(value) => {
+                                        setLaunchOptions((draft) => {
+                                            draft[index].enableGlobally = value
+                                        })
+                                    }}
+                                />
+                            </div>
+                            <TextField
+                                label={'On'}
+                                disabled={true}
+                                value={launchOption.on}
+                            />
+                            <TextField
+                                label={'Off'}
+                                disabled={true}
+                                value={launchOption.off}
+                            />
+                        </div>
+                    }/>
+                ))}
+            </DialogBody>
+            <DialogFooter>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
+                    <DialogButton onClick={onCancel}>Cancel</DialogButton>
+                    <DialogButtonPrimary onClick={() => {
+                        batchCreateLaunchOptions(launchOptions)
+                        onSubmit()
+                    }}>Confirm</DialogButtonPrimary>
+                </div>
+            </DialogFooter>
+        </ModalRoot>
+    )
+}
 
 function Content() {
     return (
@@ -15,12 +79,59 @@ function Content() {
             <PanelSectionRow>
                 <ButtonItem
                     layout="below"
-                    onClick={ () => {
+                    onClick={() => {
                         Navigation.Navigate(routes.launchOptions())
                         Navigation.CloseSideMenus()
-                    } }
+                    }}
                 >
                     Manage launch options
+                </ButtonItem>
+            </PanelSectionRow>
+            <PanelSectionRow>
+                <ButtonItem
+                    layout="below"
+                    onClick={() => {
+                        const modalResult = showModal(
+                            <QueryClientProvider client={queryClient}>
+                                <BatchAddLaunchOptions
+                                    data={[
+                                        {
+                                            id: 'lossless-scaling-command',
+                                            name: 'Lossless Scaling',
+                                            on: '~/lsfg %command%',
+                                            off: '',
+                                            enableGlobally: false,
+                                        },
+                                        {
+                                            id: 'optiscaler-command',
+                                            name: 'OptiScaler',
+                                            on: '~/fgmod/fgmod %command%',
+                                            off: '~/fgmod/fgmod-uninstaller.sh %command%',
+                                            enableGlobally: false,
+                                        },
+                                        {
+                                            id: 'steam-deck-env',
+                                            name: 'Steam Deck',
+                                            on: 'SteamDeck=1',
+                                            off: 'SteamDeck=0',
+                                            enableGlobally: true,
+                                        },
+                                        {
+                                            id: 'portal-args',
+                                            name: 'Portal args',
+                                            on: '-novid +cl_showfps 3',
+                                            off: '',
+                                            enableGlobally: false,
+                                        },
+                                    ]}
+                                    onSubmit={() => modalResult.Close()}
+                                    onCancel={() => modalResult.Close()}
+                                />
+                            </QueryClientProvider>
+                        )
+                    }}
+                >
+                    Debug
                 </ButtonItem>
             </PanelSectionRow>
         </PanelSection>
@@ -30,14 +141,14 @@ function Content() {
 export default definePlugin(() => {
     routerHook.addRoute(routes.appLaunchOptions(), () => {
         return (
-            <QueryClientProvider client={ queryClient }>
+            <QueryClientProvider client={queryClient}>
                 <AppLaunchOptionsPage/>
             </QueryClientProvider>
         )
     })
     routerHook.addRoute(routes.launchOptions(), () => {
         return (
-            <QueryClientProvider client={ queryClient }>
+            <QueryClientProvider client={queryClient}>
                 <LaunchOptionsPage/>
             </QueryClientProvider>
         )
@@ -48,7 +159,7 @@ export default definePlugin(() => {
     void queryClient.prefetchQuery(getSettingsQueryOptions)
     return {
         name: "Launch Options",
-        titleView: <div className={ staticClasses.Title }>Launch Options</div>,
+        titleView: <div className={staticClasses.Title}>Launch Options</div>,
         content: <Content/>,
         icon: <FaTerminal/>,
         onDismount() {
