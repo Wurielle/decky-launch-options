@@ -8,7 +8,7 @@ import {
     ToggleField
 } from "@decky/ui"
 import {definePlugin, routerHook} from "@decky/api"
-import {FaTerminal} from "react-icons/fa"
+import {FaTerminal, FaChevronDown, FaChevronUp} from "react-icons/fa"
 import {LaunchOption, launchOptionFactory, routes} from './shared'
 import {LaunchOptionsPage} from './teams/launch-options/views'
 import {AppLaunchOptionsPage} from './teams/launch-options/views/[_appid]'
@@ -18,6 +18,7 @@ import {getSettingsQueryOptions, queryClient} from './query'
 import {libraryAppPatch} from './patches/library-app'
 import {useImmer} from "use-immer";
 import {useSettings} from "./hooks";
+import {useState} from "react";
 
 function BatchAddLaunchOptions({data, onSubmit, onCancel}: {
     data: Partial<LaunchOption>[],
@@ -93,6 +94,7 @@ function onBatchCreateLaunchOptions(event: CustomEvent<Partial<LaunchOption>[]>)
 const batchCreateLaunchOptionsEventType = 'dlo-add-launch-options'
 
 function Content() {
+    const [showMore, setShowMore] = useState(false)
     return (
         <PanelSection>
             <PanelSectionRow>
@@ -108,44 +110,48 @@ function Content() {
             </PanelSectionRow>
             <PanelSectionRow>
                 <ButtonItem
+                    icon={showMore ? <FaChevronUp /> : <FaChevronDown/> }
                     layout="below"
                     onClick={() => {
-                        window.dispatchEvent(new CustomEvent(batchCreateLaunchOptionsEventType, {
-                            detail: [
-                                {
-                                    id: 'lossless-scaling-command',
-                                    name: 'Lossless Scaling',
-                                    on: '~/lsfg %command%',
-                                    off: '',
-                                    enableGlobally: false,
-                                },
-                                {
-                                    id: 'optiscaler-command',
-                                    name: 'OptiScaler',
-                                    on: '~/fgmod/fgmod %command%',
-                                    off: '~/fgmod/fgmod-uninstaller.sh %command%',
-                                    enableGlobally: false,
-                                },
-                                {
-                                    id: 'steam-deck-env',
-                                    name: 'Steam Deck',
-                                    on: 'SteamDeck=1',
-                                    off: 'SteamDeck=0',
-                                    enableGlobally: true,
-                                },
-                                {
-                                    id: 'portal-args',
-                                    name: 'Portal args',
-                                    on: '-novid +cl_showfps 3',
-                                    off: '',
-                                    enableGlobally: false,
-                                },
-                            ]
-                        }));
+                        setShowMore((value) => !value)
                     }}
-                >
-                    Debug
-                </ButtonItem>
+                />
+                {
+                    showMore && (
+                        <ButtonItem
+                            layout="below"
+                            onClick={() => {
+                                window.dispatchEvent(new CustomEvent(batchCreateLaunchOptionsEventType, {
+                                    detail: [
+                                        {
+                                            id: 'portal-args',
+                                            name: 'Portal args',
+                                            on: '-novid +cl_showfps 3',
+                                            off: '',
+                                            enableGlobally: false,
+                                        },
+                                        {
+                                            id: 'mangohud-command',
+                                            name: 'MangoHud command',
+                                            on: 'mangohud %command%',
+                                            off: '',
+                                            enableGlobally: false,
+                                        },
+                                        {
+                                            id: 'steam-deck-env',
+                                            name: 'Steam Deck env',
+                                            on: 'SteamDeck=1',
+                                            off: 'SteamDeck=0',
+                                            enableGlobally: true,
+                                        },
+                                    ]
+                                }));
+                            }}
+                        >
+                            Debug
+                        </ButtonItem>
+                    )
+                }
             </PanelSectionRow>
         </PanelSection>
     )
