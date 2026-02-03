@@ -20,7 +20,7 @@ import {useImmer} from "use-immer";
 import {useSettings} from "./hooks";
 
 function BatchAddLaunchOptions({data, onSubmit, onCancel}: {
-    data: LaunchOption[],
+    data: Partial<LaunchOption>[],
     onSubmit: () => void,
     onCancel: () => void
 }) {
@@ -73,6 +73,25 @@ function BatchAddLaunchOptions({data, onSubmit, onCancel}: {
     )
 }
 
+function batchCreateLaunchOptions(launchOptions: Partial<LaunchOption>[]) {
+    const modalResult = showModal(
+        <QueryClientProvider client={queryClient}>
+            <BatchAddLaunchOptions
+                data={launchOptions}
+                onSubmit={() => modalResult.Close()}
+                onCancel={() => modalResult.Close()}
+            />
+        </QueryClientProvider>
+    )
+
+}
+
+function onBatchCreateLaunchOptions(event: CustomEvent<Partial<LaunchOption>[]>) {
+    batchCreateLaunchOptions(event.detail);
+}
+
+const batchCreateLaunchOptionsEventType = 'dlo-add-launch-options'
+
 function Content() {
     return (
         <PanelSection>
@@ -91,44 +110,38 @@ function Content() {
                 <ButtonItem
                     layout="below"
                     onClick={() => {
-                        const modalResult = showModal(
-                            <QueryClientProvider client={queryClient}>
-                                <BatchAddLaunchOptions
-                                    data={[
-                                        {
-                                            id: 'lossless-scaling-command',
-                                            name: 'Lossless Scaling',
-                                            on: '~/lsfg %command%',
-                                            off: '',
-                                            enableGlobally: false,
-                                        },
-                                        {
-                                            id: 'optiscaler-command',
-                                            name: 'OptiScaler',
-                                            on: '~/fgmod/fgmod %command%',
-                                            off: '~/fgmod/fgmod-uninstaller.sh %command%',
-                                            enableGlobally: false,
-                                        },
-                                        {
-                                            id: 'steam-deck-env',
-                                            name: 'Steam Deck',
-                                            on: 'SteamDeck=1',
-                                            off: 'SteamDeck=0',
-                                            enableGlobally: true,
-                                        },
-                                        {
-                                            id: 'portal-args',
-                                            name: 'Portal args',
-                                            on: '-novid +cl_showfps 3',
-                                            off: '',
-                                            enableGlobally: false,
-                                        },
-                                    ]}
-                                    onSubmit={() => modalResult.Close()}
-                                    onCancel={() => modalResult.Close()}
-                                />
-                            </QueryClientProvider>
-                        )
+                        window.dispatchEvent(new CustomEvent(batchCreateLaunchOptionsEventType, {
+                            detail: [
+                                {
+                                    id: 'lossless-scaling-command',
+                                    name: 'Lossless Scaling',
+                                    on: '~/lsfg %command%',
+                                    off: '',
+                                    enableGlobally: false,
+                                },
+                                {
+                                    id: 'optiscaler-command',
+                                    name: 'OptiScaler',
+                                    on: '~/fgmod/fgmod %command%',
+                                    off: '~/fgmod/fgmod-uninstaller.sh %command%',
+                                    enableGlobally: false,
+                                },
+                                {
+                                    id: 'steam-deck-env',
+                                    name: 'Steam Deck',
+                                    on: 'SteamDeck=1',
+                                    off: 'SteamDeck=0',
+                                    enableGlobally: true,
+                                },
+                                {
+                                    id: 'portal-args',
+                                    name: 'Portal args',
+                                    on: '-novid +cl_showfps 3',
+                                    off: '',
+                                    enableGlobally: false,
+                                },
+                            ]
+                        }));
                     }}
                 >
                     Debug
@@ -157,6 +170,8 @@ export default definePlugin(() => {
     const menuPatches = contextMenuPatch(LibraryContextMenu)
     const libraryAppPatchResult = libraryAppPatch()
     void queryClient.prefetchQuery(getSettingsQueryOptions)
+
+    window.addEventListener(batchCreateLaunchOptionsEventType as any, onBatchCreateLaunchOptions);
     return {
         name: "Launch Options",
         titleView: <div className={staticClasses.Title}>Launch Options</div>,
@@ -175,6 +190,7 @@ export default definePlugin(() => {
                         SteamClient.Apps.SetAppLaunchOptions(Number(appid), profile.originalLaunchOptions)
                     })
             }
+            window.removeEventListener(batchCreateLaunchOptionsEventType as any, onBatchCreateLaunchOptions);
         },
     }
 })
