@@ -27,16 +27,18 @@ Thankfully, thanks to the people working on OptiScaler, it's possible to mod FSR
 FSR3 and it's a huge quality boost!
 
 Modding OptiScaler/Lossless Scaling in games on the Steam Deck is usually done by using launch options which is not very
-intuitive for an every day user or someone new to PC Gaming (even for me even though I've been working with PCs for most
+intuitive for an average user or someone new to PC Gaming (or even me even though I've been working with PCs for most
 of my life now).
 
-There's a UX problem when it comes to launch options and I don't blame anyone for it. It's just tedious having to work
-with it on handheld or controller. I just want to toggle features easily or even better have them available for ALL
-games. So that's what I aimed to achieve with this plugin.
+There's a UX problem for the average user when it comes to interacting with launch options and I don't blame anyone for it. It's just tedious having to work
+with them on handheld or controller. 
+
+At the end of the day, an average user simply wants to toggle features for a game easily or even better have them available by default for ALL
+games. That's what I aim to solve with this plugin.
 
 Now, being able to enable/disable features quickly is already a huge step. Ideally, what comes next is a way to enable,
 disable or edit features from an interface similar to AMD's Adrenalin software. I already tried to achieve something
-similar on windows with Auto Lossless Scaling for an easier Lossless Scaling integration. I think it can be done thanks
+similar on Windows with Auto Lossless Scaling for an easier Lossless Scaling integration. I think it can be done thanks
 to the work of the Open Source community. My goal is to streamline the process and give Steam Big Picture the tools to
 offer the best experience
 to play games on regardless of your GPU.
@@ -142,6 +144,50 @@ When multiple launch options are enabled, they are combined intelligently:
 ```bash
 MANGOHUD=1 PROTON_NO_ESYNC=1 gamemoderun -- gamescope -r 30 -- mangohud -- /path/to/game -novid -nobackground
 ```
+
+## Integration with Third-Party plugins
+
+If you're a plugin developer and would like to offer an easy one-click button to add your plugin's launch options via Decky Launch Options, you can do so by dispatching the `dlo-add-launch-options` custom event:
+
+```typescript
+window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
+   detail: [
+      {
+         id: 'portal-args',
+         name: 'Portal args',
+         on: '-novid +cl_showfps 3',
+         off: '',
+         enableGlobally: false,
+      },
+      {
+         id: 'mangohud-command',
+         name: 'MangoHud command',
+         on: 'mangohud %command%',
+         off: '',
+         enableGlobally: false,
+      },
+      {
+         id: 'complex-command-with-args',
+         name: 'Complex command with args',
+         on: 'gamescope -w 640 -h 400 -W 1280 -H 800 -f --mangoapp -- %command%',
+         off: '',
+         enableGlobally: false,
+      },
+      {
+         id: 'steam-deck-env',
+         name: 'Steam Deck env',
+         on: 'SteamDeck=1',
+         off: 'SteamDeck=0',
+         enableGlobally: true,
+      },
+   ]
+}));
+```
+
+This will primpt the user to review and confirm the provided launch options.
+> **Note:** Every field of a launch option is optional but I recommend setting a unique id that doesn't change over time to allow Decky Launch Options to update these launch options if the user decides to override them.
+
+You can check if Decky Launch Options is available with `(window as any).hasDeckyLaunchOptions`.
 
 ## Development
 

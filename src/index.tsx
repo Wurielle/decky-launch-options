@@ -5,7 +5,8 @@ import {
     DialogButtonPrimary,
     DialogFooter, DialogHeader, Field,
     ModalRoot, Navigation, PanelSection, PanelSectionRow, showModal, staticClasses, TextField,
-    ToggleField
+    ToggleField,
+    DialogControlsSection, DialogControlsSectionHeader,
 } from "@decky/ui"
 import {definePlugin, routerHook} from "@decky/api"
 import {FaTerminal, FaChevronDown, FaChevronUp} from "react-icons/fa"
@@ -31,11 +32,23 @@ function BatchAddLaunchOptions({data, onSubmit, onCancel}: {
         <ModalRoot onCancel={onCancel}>
             <DialogHeader>Decky Launch Options</DialogHeader>
             <DialogBody>
-                <p>An application would like to add the following launch options:</p>
+                <p>An application would like to add the following launch options, please review them before
+                    confirming:</p>
                 {launchOptions.map((launchOption, index) => (
-                    <Field label={launchOption.name} description={
-                        <div style={{padding: '0 0 0 22'}}>
-                            <div style={{marginBottom: 22}}>
+                    <DialogControlsSection>
+                        <DialogControlsSectionHeader>{launchOption.name}</DialogControlsSectionHeader>
+                        <Field description={
+                            <div style={{padding: '0 0 0 22'}}>
+                                <TextField
+                                    label={'On'}
+                                    disabled={true}
+                                    value={launchOption.on}
+                                />
+                                <TextField
+                                    label={'Off'}
+                                    disabled={true}
+                                    value={launchOption.off}
+                                />
                                 <ToggleField
                                     label={'Enable globally'}
                                     bottomSeparator={'none'}
@@ -47,27 +60,17 @@ function BatchAddLaunchOptions({data, onSubmit, onCancel}: {
                                     }}
                                 />
                             </div>
-                            <TextField
-                                label={'On'}
-                                disabled={true}
-                                value={launchOption.on}
-                            />
-                            <TextField
-                                label={'Off'}
-                                disabled={true}
-                                value={launchOption.off}
-                            />
-                        </div>
-                    }/>
+                        }/>
+                    </DialogControlsSection>
                 ))}
             </DialogBody>
             <DialogFooter>
                 <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-                    <DialogButton onClick={onCancel}>Cancel</DialogButton>
                     <DialogButtonPrimary onClick={() => {
                         batchCreateLaunchOptions(launchOptions)
                         onSubmit()
                     }}>Confirm</DialogButtonPrimary>
+                    <DialogButton onClick={onCancel}>Cancel</DialogButton>
                 </div>
             </DialogFooter>
         </ModalRoot>
@@ -110,14 +113,15 @@ function Content() {
             </PanelSectionRow>
             <PanelSectionRow>
                 <ButtonItem
-                    icon={showMore ? <FaChevronUp /> : <FaChevronDown/> }
                     layout="below"
                     onClick={() => {
                         setShowMore((value) => !value)
                     }}
-                />
-                {
-                    showMore && (
+                >{showMore ? <FaChevronUp/> : <FaChevronDown/>}</ButtonItem>
+            </PanelSectionRow>
+            {
+                showMore && (
+                    <PanelSectionRow>
                         <ButtonItem
                             layout="below"
                             onClick={() => {
@@ -148,11 +152,11 @@ function Content() {
                                 }));
                             }}
                         >
-                            Debug
+                            Debug launch options
                         </ButtonItem>
-                    )
-                }
-            </PanelSectionRow>
+                    </PanelSectionRow>
+                )
+            }
         </PanelSection>
     )
 }
@@ -178,6 +182,7 @@ export default definePlugin(() => {
     void queryClient.prefetchQuery(getSettingsQueryOptions)
 
     window.addEventListener(batchCreateLaunchOptionsEventType as any, onBatchCreateLaunchOptions);
+    (window as any).hasDeckyLaunchOptions = true
     return {
         name: "Launch Options",
         titleView: <div className={staticClasses.Title}>Launch Options</div>,
@@ -197,6 +202,7 @@ export default definePlugin(() => {
                     })
             }
             window.removeEventListener(batchCreateLaunchOptionsEventType as any, onBatchCreateLaunchOptions);
+            delete (window as any).hasDeckyLaunchOptions
         },
     }
 })
