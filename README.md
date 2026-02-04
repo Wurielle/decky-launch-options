@@ -177,13 +177,14 @@ window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
 }));
 ```
 
-This will primpt the user to review and confirm the provided launch options.
-> **Note:** Every field of a launch option is optional but I recommend setting a unique id that doesn't change over time to allow Decky Launch Options to update these launch options if the user decides to override them.
+This will prompt the user to review and confirm the provided launch options.
 
 You can also check if Decky Launch Options is available with:
 ```typescript
 (window as any).hasDeckyLaunchOptions
 ```
+
+> **Note:** Every field of a launch option is optional but I recommend setting a unique id that doesn't change over time to allow Decky Launch Options to update these launch options if the user decides to override them.
 
 ## Development
 
