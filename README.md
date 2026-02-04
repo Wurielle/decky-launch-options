@@ -167,13 +167,6 @@ window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
          enableGlobally: false,
       },
       {
-         id: 'complex-command-with-args',
-         name: 'Complex command with args',
-         on: 'gamescope -w 640 -h 400 -W 1280 -H 800 -f --mangoapp -- %command%',
-         off: '',
-         enableGlobally: false,
-      },
-      {
          id: 'steam-deck-env',
          name: 'Steam Deck env',
          on: 'SteamDeck=1',
@@ -187,7 +180,10 @@ window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
 This will primpt the user to review and confirm the provided launch options.
 > **Note:** Every field of a launch option is optional but I recommend setting a unique id that doesn't change over time to allow Decky Launch Options to update these launch options if the user decides to override them.
 
-You can check if Decky Launch Options is available with `(window as any).hasDeckyLaunchOptions`.
+You can also check if Decky Launch Options is available with:
+```typescript
+(window as any).hasDeckyLaunchOptions
+```
 
 ## Development
 
