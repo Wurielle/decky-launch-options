@@ -84,7 +84,7 @@ The `%command%` placeholder represents where your game executable will be insert
 
 ### Simple Examples
 
-Here are recipes for common launch options scenarios.
+Here are recipes for common launch option scenarios.
 
 > **Note:** Please provide `%command%` whenever you can to assure proper detection of command parts. This will also help readbility.
 
