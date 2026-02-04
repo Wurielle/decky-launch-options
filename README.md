@@ -91,19 +91,16 @@ Here are recipes for common launch options scenarios.
 **Environment variables:**
 ```bash
 SteamDeck=1 Foo="Bar baz" %command%
-# > SteamDeck=1 Foo="Bar baz" /path/to/game
 ```
 
 **Prefix command:**
 ```bash
 mangohud %command%
-# > mangohud /path/to/game
 ```
 
 **Game arguments:**
 ```bash
 %command% -novid -nobackground
-# > /path/to/game -novid -nobackground
 ```
 
 ### Complex Examples
@@ -111,20 +108,17 @@ mangohud %command%
 **Environment variables + prefix:**
 ```bash
 PROTON_NO_ESYNC=1 MANGOHUD_DLSYM=1 ~/lsfg mangohud %command%
-# > PROTON_NO_ESYNC=1 MANGOHUD_DLSYM=1 /home/deck/lsfg mangohud /path/to/game
 ```
 
 **Prefix with arguments + game arguments:**
 ```bash
 gamescope -w 640 -h 400 -W 1280 -H 800 -f -- %command% -novid -nobackground +fps_max 60
-# > gamescope -w 640 -h 400 -W 1280 -H 800 -f -- /path/to/game -novid -nobackground +fps_max 60
 ```
 
 **Combined prefixes with `--`:**
 > The `--` (double dash) is a convention that signals "end of options for this command." It's used to separate different prefix commands and their arguments.
 ```bash
 MANGOHUD=1 gamemoderun -- gamescope -w 640 -h 400 -W 1280 -H 800 -f --mangoapp -- %command% -novid -nobackground +fps_max 60
-# > MANGOHUD=1 gamemoderun -- gamescope -w 640 -h 400 -W 1280 -H 800 -f --mangoapp -- /path/to/game -novid -nobackground +fps_max 60
 ```
 
 ### How launch options are handled
@@ -184,7 +178,7 @@ You can also check if Decky Launch Options is available with:
 (window as any).hasDeckyLaunchOptions
 ```
 
-> **Note:** Every field of a launch option is optional but I recommend setting a unique id that doesn't change over time to allow Decky Launch Options to update these launch options if the user decides to override them.
+> **Note:** Every field of a launch option is optional but I recommend at least setting a static id for each one to allow Decky Launch Options to override launch options with matching ids in case the user decides to import them again.
 
 ## Development
 
