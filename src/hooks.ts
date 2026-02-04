@@ -33,6 +33,18 @@ export function useSettings() {
                 draft.launchOptions.unshift(launchOption)
             })
         },
+        batchCreateLaunchOptions: (launchOptions: LaunchOption[]) => {
+            setSettings((draft) => {
+                launchOptions.forEach((launchOption) => {
+                    const existingLaunchOptionIndex = draft.launchOptions.findIndex((item) => item.id === launchOption.id)
+                    if (existingLaunchOptionIndex !== -1) {
+                        draft.launchOptions[existingLaunchOptionIndex] = launchOption
+                    } else {
+                        draft.launchOptions.unshift(launchOption)
+                    }
+                })
+            })
+        },
         updateLaunchOption: (launchOption: LaunchOption, path: string, value: any) => {
             setSettings((draft) => {
                 const index = draft.launchOptions.findIndex((item) => item.id === launchOption.id)

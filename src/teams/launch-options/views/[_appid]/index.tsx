@@ -86,7 +86,7 @@ export function AppLaunchOptionsPage() {
                                     <ToggleField
                                         checked={getAppLaunchOptionState(appid, launchOption.id)}
                                         onChange={(value) => setAppLaunchOptionState(appid, launchOption.id, value)}
-                                        description={[launchOption.on && `ON: ${launchOption.on}`, launchOption.off && `OFF: ${launchOption.off}`].filter(Boolean).join(' | ')}
+                                        description={<span style={{ color: 'oklch(55.4% 0.046 257.417)'}}>{[launchOption.on && `ON: ${launchOption.on}`, launchOption.off && `OFF: ${launchOption.off}`].filter(Boolean).join(' | ')}</span>}
                                         label={launchOption.name}/>
                                 </div>
                             ))}
@@ -117,7 +117,7 @@ export function AppLaunchOptionsPage() {
                                     <ToggleField
                                         checked={getAppLaunchOptionState(appid, launchOption.id)}
                                         onChange={(value) => setAppLaunchOptionState(appid, launchOption.id, value)}
-                                        description={[launchOption.on && `ON: ${launchOption.on}`, launchOption.off && `OFF: ${launchOption.off}`].filter(Boolean).join(' | ')}
+                                        description={<span style={{ color: 'oklch(55.4% 0.046 257.417)'}}>{[launchOption.on && `ON: ${launchOption.on}`, launchOption.off && `OFF: ${launchOption.off}`].filter(Boolean).join(' | ')}</span>}
                                         label={launchOption.name}/>
                                 </div>
                             ))}
