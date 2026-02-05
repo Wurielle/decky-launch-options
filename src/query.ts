@@ -1,7 +1,7 @@
-import { callable } from '@decky/api'
-import { Settings } from './shared'
-import { QueryClient, queryOptions, useMutation, useQuery } from '@tanstack/react-query'
-import { useSettings } from './hooks'
+import {callable} from '@decky/api'
+import {Settings} from './shared'
+import {QueryClient, queryOptions, useMutation, useQuery} from '@tanstack/react-query'
+import {useSettings} from './hooks'
 
 export const queryClient = new QueryClient()
 
@@ -52,17 +52,21 @@ export const useSetSettingsMutation = () => useMutation<void, Error, Settings>({
 })
 
 export const useApplyLaunchOptionsMutation = () => {
-    const { setAppOriginalLaunchOptions } = useSettings()
+    const {setAppOriginalLaunchOptions, getAppOriginalLaunchOptions} = useSettings()
     return useMutation<boolean, Error, { appid: number, command: string }>({
         mutationFn(data) {
-            return get_original_command(String(data.appid))
-                .then((originalLaunchOptions) => {
+            return Promise.all([get_original_command(String(data.appid)), has_shell_script()])
+                .then(([originalLaunchOptions, hasShellScript]) => {
                     if (originalLaunchOptions !== null) setAppOriginalLaunchOptions(String(data.appid), originalLaunchOptions)
-                    return has_shell_script()
+                    return hasShellScript
                 })
         },
-        onSuccess(canApply, data) {
-            if (canApply) SteamClient.Apps.SetAppLaunchOptions(data.appid, data.command)
+        onSuccess(hasShellScript, data) {
+            if (hasShellScript) {
+                SteamClient.Apps.SetAppLaunchOptions(data.appid, data.command)
+            } else {
+                SteamClient.Apps.SetAppLaunchOptions(data.appid, getAppOriginalLaunchOptions(String(data.appid)))
+            }
         },
     })
 }
