@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -172,12 +173,21 @@ def get_final_args(settings, appid):
     for i, prefix in enumerate(all_prefixes):
         # Expand ~ in paths
         expanded_prefix = [part.replace("~", os.path.expanduser("~")) for part in prefix]
-        final_args.extend(expanded_prefix)
-        # Add -- separator between prefixes (but not after the last one)
-        # Also skip if the current prefix already ends with --
-        if i < len(all_prefixes) - 1:
-            if not (expanded_prefix and expanded_prefix[-1] == '--'):
-                final_args.append('--')
+
+        # Check if the command/executable exists
+        if expanded_prefix:
+            first_part = expanded_prefix[0]
+            # Check if it's an executable in PATH or an existing file
+            if shutil.which(first_part) or os.path.isfile(first_part):
+                final_args.extend(expanded_prefix)
+                # Add -- separator between prefixes (but not after the last one)
+                # Also skip if the current prefix already ends with --
+                if i < len(all_prefixes) - 1:
+                    if not (expanded_prefix and expanded_prefix[-1] == '--'):
+                        final_args.append('--')
+        # else: skip this prefix silently if command doesn't exist
+        else:
+            final_args.extend(expanded_prefix)
 
     # Add base game command
     final_args.extend(base_args)
