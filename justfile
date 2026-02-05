@@ -80,6 +80,7 @@ restartdecky:
       "echo '${DECK_PASS}' | sudo -S systemctl restart plugin_loader"
 
 addsshkey:
+    ssh-copy-id -p ${DECK_PORT} ${DECK_USER}@${DECK_IP}
     eval "$(ssh-agent -s)"
     ssh-add ~/.ssh/id_rsa
 
