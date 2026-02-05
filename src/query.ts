@@ -22,6 +22,7 @@ export const get_info = callable<[], {
 export const get_settings = callable<[], Settings | null>("get_settings")
 export const set_settings = callable<[Settings], void>("set_settings")
 export const get_original_command = callable<[string], string | null>("get_original_command")
+export const has_shell_script = callable<[], boolean>("has_shell_script")
 
 export const useGetInfoQuery = () => useQuery({
     queryKey: keys.info(),
@@ -52,14 +53,16 @@ export const useSetSettingsMutation = () => useMutation<void, Error, Settings>({
 
 export const useApplyLaunchOptionsMutation = () => {
     const { setAppOriginalLaunchOptions } = useSettings()
-    return useMutation<void, Error, { appid: number, command: string }>({
+    return useMutation<boolean, Error, { appid: number, command: string }>({
         mutationFn(data) {
-            return get_original_command(String(data.appid)).then((launchOptions) => {
-                if (launchOptions !== null) setAppOriginalLaunchOptions(String(data.appid), launchOptions)
-            })
+            return get_original_command(String(data.appid))
+                .then((originalLaunchOptions) => {
+                    if (originalLaunchOptions !== null) setAppOriginalLaunchOptions(String(data.appid), originalLaunchOptions)
+                    return has_shell_script()
+                })
         },
-        onSuccess(_, data) {
-            SteamClient.Apps.SetAppLaunchOptions(data.appid, data.command)
+        onSuccess(canApply, data) {
+            if (canApply) SteamClient.Apps.SetAppLaunchOptions(data.appid, data.command)
         },
     })
 }

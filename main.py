@@ -180,6 +180,9 @@ class Plugin:
 
         return launch_options
 
+    async def has_shell_script(self):
+        return os.path.exists(FULL_SH_COMMAND_PATH)
+
     async def get_info(self):
         return info
 
