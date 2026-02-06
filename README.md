@@ -59,16 +59,21 @@ to play games on regardless of your GPU.
     * Enter a name
     * In the "On" field, enter the launch option when enabled
     * If applicable, in the "Off" field, enter the launch option when disabled
-      ![Screenshot of the launch options settings for the plugin](./assets/manage-launch-options.png)
+
+![Screenshot of the launch options settings for the plugin](./assets/manage-launch-options.png)
+
 3. On your game page, click on settings and click on **Launch Options**
-   ![Screenshot of the settings for a game in Steam](./assets/app-page.png)
+
+![Screenshot of the settings for a game in Steam](./assets/app-page.png)
+
 4. Enable or disable launch options to your liking
     * If you already had launch options before, they will be placed in the "Original launch options" field and will be
       executed normally. It is recommended to remove the original launch options once you configured all your launch
       options with the plugin.
     * Locally enabled launch options are opt-in
     * Globally enabled launch options are opt-out
-      ![Screenshot of the Decky Launch Options plugin on the Steam Deck](./assets/screenshot.png)
+
+![Screenshot of the Decky Launch Options plugin on the Steam Deck](./assets/screenshot.png)
 
 ## Understanding launch options
 Decky Launch Options tries to simplify launch options management by offering a degree of leeway in how you can structure your launch options but it's still important to understand how launch options work to avoid mistakes!
@@ -100,43 +105,30 @@ mangohud %command%
 
 **Game arguments:**
 ```bash
-%command% -novid -nobackground
+%command% -novid +cl_showfps 3
 ```
 
-### Complex Examples
-
-**Environment variables + prefix:**
+**Environment variables + prefixes + game arguments:**
 ```bash
-PROTON_NO_ESYNC=1 MANGOHUD_DLSYM=1 ~/lsfg mangohud %command%
+SteamDeck=1 Foo="Bar baz" ~/lsfg mangohud %command% -novid +cl_showfps 3
 ```
 
-**Prefix with arguments + game arguments:**
-```bash
-gamescope -w 640 -h 400 -W 1280 -H 800 -f -- %command% -novid -nobackground +fps_max 60
-```
+### How Decky Launch Options handle multiple launch options
 
-**Combined prefixes with `--`:**
-> The `--` (double dash) is a convention that signals "end of options for this command." It's used to separate different prefix commands and their arguments.
-```bash
-MANGOHUD=1 gamemoderun -- gamescope -w 640 -h 400 -W 1280 -H 800 -f --mangoapp -- %command% -novid -nobackground +fps_max 60
-```
-
-### How launch options are handled
-
-When multiple launch options are enabled, they are combined intelligently:
+When multiple launch options are enabled, they are combined like so:
 
 1. **All environment variables** are collected and applied
-2. **All prefix commands** are chained together using `--` as a separator
-3. **All game arguments** (suffixes) are concatenated and passed to the game
+2. **All prefix commands** are chained together
+3. **All game arguments** are concatenated and passed to the game
 
-**Example with two launch options enabled:**
+**With two launch options enabled:**
 
-- Option 1: `MANGOHUD=1 gamemoderun gamescope -r 30 -- %command% -novid`
-- Option 2: `PROTON_NO_ESYNC=1 mangohud %command% -nobackground`
+1. `SteamDeck=0 mangohhud %command% -novid`
+2. `~/lsfg %command% +cl_showfps 3`
 
-**Results in:**
+**We get:**
 ```bash
-MANGOHUD=1 PROTON_NO_ESYNC=1 gamemoderun -- gamescope -r 30 -- mangohud -- /path/to/game -novid -nobackground
+SteamDeck=0 ~/lsfg mangohud path/to/game -novid +cl_showfps 3
 ```
 
 ## Integration with Third-Party plugins

@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import shutil
 import sys
 from pathlib import Path
 
@@ -124,6 +125,11 @@ def parse_launch_option(raw_command):
 
 def get_final_args(settings, appid):
     base_args = sys.argv[1:]
+
+    # Safely access settings structure
+    if not settings or "profiles" not in settings or "launchOptions" not in settings:
+        return base_args
+
     profile = settings["profiles"].get(str(appid), {})
     profile_state = profile.get("state", {})
     profile_original_launch_options = profile.get("originalLaunchOptions", "")
@@ -160,19 +166,23 @@ def get_final_args(settings, appid):
     for key, value in all_env_vars.items():
         os.environ[key] = value
 
-    # Build final command: prefixes (joined with --) + base_args + suffixes
+    # Build final command: prefixes + base_args + suffixes
     final_args = []
 
-    # Add all prefixes, separated by --
-    for i, prefix in enumerate(all_prefixes):
+    # Add all prefixes
+    for prefix in all_prefixes:
         # Expand ~ in paths
         expanded_prefix = [part.replace("~", os.path.expanduser("~")) for part in prefix]
-        final_args.extend(expanded_prefix)
-        # Add -- separator between prefixes (but not after the last one)
-        # Also skip if the current prefix already ends with --
-        if i < len(all_prefixes) - 1:
-            if not (expanded_prefix and expanded_prefix[-1] == '--'):
-                final_args.append('--')
+
+        # Check if the command/executable exists
+        if expanded_prefix:
+            first_part = expanded_prefix[0]
+            # Check if it's an executable in PATH or an existing file
+            if shutil.which(first_part) or os.path.isfile(first_part):
+                final_args.extend(expanded_prefix)
+        # else: skip this prefix silently if command doesn't exist
+        else:
+            final_args.extend(expanded_prefix)
 
     # Add base game command
     final_args.extend(base_args)
@@ -184,37 +194,53 @@ def get_final_args(settings, appid):
 
 
 if __name__ == "__main__":
-    appid = get_steam_appid()
+    # Ensure we always have fallback values
+    if not executable:
+        # If no executable provided, just exit
+        sys.exit(1)
 
-    settings = get_settings()
+    try:
+        appid = get_steam_appid()
+        settings = get_settings()
 
-    executable_args = get_final_args(settings, appid)
+        # Try to write logs, but don't let it block execution
+        try:
+            executable_args = get_final_args(settings, appid) if settings else args
 
+            def write_logs():
+                with open(LOG_FILE, "w") as f:
+                    f.write(f"--- {datetime.datetime.now()} Launch Attempt for app: {appid} ---\n")
+                    f.write(f"Full Command List: {args}\n\n")
 
-    def write_logs():
-        with open(LOG_FILE, "w") as f:
-            f.write(f"--- {datetime.datetime.now()} Launch Attempt for app: {appid} ---\n")
-            f.write(f"Full Command List: {args}\n\n")
+                    for i, arg in enumerate(args):
+                        f.write(f"Arg {i}: {arg}\n")
+                    f.write("-" * 40 + "\n\n")
 
-            for i, arg in enumerate(args):
-                f.write(f"Arg {i}: {arg}\n")
-            f.write("-" * 40 + "\n\n")
+                    f.write(f"Executable: {executable_args}\n\n")
 
-            f.write(f"Executable: {executable_args}\n\n")
+                    for i, arg in enumerate(executable_args):
+                        f.write(f"Arg {i}: {arg}\n")
+                    f.write("-" * 40 + "\n\n")
 
-            for i, arg in enumerate(executable_args):
-                f.write(f"Arg {i}: {arg}\n")
-            f.write("-" * 40 + "\n\n")
+            write_logs()
+        except Exception:
+            # Logging failed, but continue execution
+            pass
 
+        # Try to get final args with settings
+        if settings:
+            try:
+                executable_args = get_final_args(settings, appid)
+                if executable_args and len(executable_args) > 0:
+                    executable = executable_args[0]
+                    os.execvpe(executable, executable_args, os.environ)
+            except Exception:
+                # Failed to apply launch options, fall back to original command
+                pass
 
-    write_logs()
+    except Exception:
+        # Any error in settings/appid detection, fall back to original command
+        pass
 
-    if len(sys.argv) > 1 and settings:
-        executable_args = get_final_args(settings, appid)
-        if executable_args:
-            executable = executable_args[0]
-            os.execvpe(executable, executable_args, os.environ)
-        else:
-            os.execvpe(executable, args, os.environ)
-    else:
-        os.execvpe(executable, args, os.environ)
+    # Final fallback: execute original command
+    os.execvpe(executable, args, os.environ)

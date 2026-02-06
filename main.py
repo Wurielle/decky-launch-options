@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import stat
+import shutil
 from pathlib import Path
 
 # The decky plugin module is located at decky-loader/plugin
@@ -40,12 +41,19 @@ class Plugin:
         folder_path = Path(SETTINGS_FOLDER_PATH)
         folder_path.mkdir(parents=True, exist_ok=True)
 
-        with open(FULL_SH_COMMAND_PATH, "w") as file:
-            file.write("#!/bin/bash\n")
-            file.write(f"python \"{PY_LAUNCHER_PATH}\" \"$@\"\n")
+        try:
+            with open(FULL_SH_COMMAND_PATH, "w") as file:
+                file.write("#!/bin/bash\n")
+                file.write(f"if command -v python &> /dev/null && [ -f \"{PY_LAUNCHER_PATH}\" ]; then\n")
+                file.write(f"    python \"{PY_LAUNCHER_PATH}\" \"$@\"\n")
+                file.write("else\n")
+                file.write("    exec \"$@\"\n")
+                file.write("fi\n")
 
-        current_stat = os.stat(FULL_SH_COMMAND_PATH)
-        os.chmod(FULL_SH_COMMAND_PATH, current_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+            current_stat = os.stat(FULL_SH_COMMAND_PATH)
+            os.chmod(FULL_SH_COMMAND_PATH, current_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        except (OSError, IOError) as e:
+            raise RuntimeError(f"Failed to create or configure launcher script: {e}")
 
     async def get_steam_path(self) -> Path:
         steam_paths = [
@@ -65,13 +73,16 @@ class Plugin:
         raise FileNotFoundError("Steam installation not found")
 
     async def get_localconfig_vdf_path(self) -> Path:
-        userdata_path = await self.get_steam_path() / "userdata"
+        userdata_path = (await self.get_steam_path()) / "userdata"
 
         if not userdata_path.exists():
             raise FileNotFoundError(f"Steam userdata directory not found at: {userdata_path}")
 
-        # Find user directories (numeric directories)
-        user_dirs = [d for d in userdata_path.iterdir() if d.is_dir() and d.name.isdigit()]
+        try:
+            # Find user directories (numeric directories)
+            user_dirs = [d for d in userdata_path.iterdir() if d.is_dir() and d.name.isdigit()]
+        except PermissionError as e:
+            raise PermissionError(f"Permission denied accessing userdata directory: {userdata_path}") from e
 
         if not user_dirs:
             raise FileNotFoundError("No Steam user directories found")
@@ -97,11 +108,15 @@ class Plugin:
         pass
 
     def _write_json(self, file_path, data):
-        path = Path(file_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            path = Path(file_path)
+            path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=4)
+            with open(path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, indent=4)
+        except (OSError, IOError, TypeError) as e:
+            log(f"Failed to write JSON to {file_path}: {e}")
+            raise
 
     def _read_json(self, file_path):
         path = Path(file_path)
@@ -119,8 +134,11 @@ class Plugin:
 
         localconfig_path = await self.get_localconfig_vdf_path()
 
-        with open(localconfig_path, 'r', encoding='utf-8', errors='ignore') as f:
-            config_content = f.read()
+        try:
+            with open(localconfig_path, 'r', encoding='utf-8', errors='ignore') as f:
+                config_content = f.read()
+        except (OSError, IOError) as e:
+            raise IOError(f"Failed to read localconfig.vdf at {localconfig_path}: {e}") from e
 
         # Find the specific app section
         app_pattern = rf'"{appid}"\s*\{{'
@@ -162,6 +180,9 @@ class Plugin:
 
         return launch_options
 
+    async def has_shell_script(self):
+        return os.path.exists(FULL_SH_COMMAND_PATH)
+
     async def get_info(self):
         return info
 
@@ -182,9 +203,23 @@ class Plugin:
         await self.cleanup()
 
     async def _uninstall(self):
-        import shutil
         if os.path.exists(SETTINGS_FOLDER_PATH):
-            shutil.rmtree(SETTINGS_FOLDER_PATH)
+            try:
+                shutil.rmtree(SETTINGS_FOLDER_PATH)
+
+                # Recreate run command just in case anything still points to it for some reason
+                folder_path = Path(SETTINGS_FOLDER_PATH)
+                folder_path.mkdir(parents=True, exist_ok=True)
+
+                with open(FULL_SH_COMMAND_PATH, "w") as file:
+                    file.write("#!/bin/bash\n")
+                    file.write("exec \"$@\"\n")
+
+                current_stat = os.stat(FULL_SH_COMMAND_PATH)
+                os.chmod(FULL_SH_COMMAND_PATH, current_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+            except (OSError, IOError, PermissionError) as e:
+                log(f"Failed to remove settings folder during uninstall: {e}")
+                raise
 
     async def _migration(self):
         pass

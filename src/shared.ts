@@ -12,12 +12,12 @@ export const profileFactory = (profile: Partial<Profile> = {}): Profile => ({
 })
 
 export const launchOptionFactory = (launchOption: Partial<LaunchOption> = {}): LaunchOption => ({
-    id: uuid(),
-    name: '',
-    on: '',
-    off: '',
-    enableGlobally: false,
-    ...launchOption,
+    // Note: do not spread as launchOptions can be provided by third-party plugins
+    id: launchOption.id || uuid(),
+    name: launchOption.name || '',
+    on: launchOption.on || '',
+    off: launchOption.off || '',
+    enableGlobally: launchOption.enableGlobally || false,
 })
 
 export type Profile = {
