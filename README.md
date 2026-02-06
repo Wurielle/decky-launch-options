@@ -100,43 +100,30 @@ mangohud %command%
 
 **Game arguments:**
 ```bash
-%command% -novid -nobackground
+%command% -novid +cl_showfps 3
 ```
 
-### Complex Examples
-
-**Environment variables + prefix:**
+**Environment variables + prefixes + game arguments:**
 ```bash
-PROTON_NO_ESYNC=1 MANGOHUD_DLSYM=1 ~/lsfg mangohud %command%
+SteamDeck=1 Foo="Bar baz" ~/lsfg mangohud %command% -novid +cl_showfps 3
 ```
 
-**Prefix with arguments + game arguments:**
-```bash
-gamescope -w 640 -h 400 -W 1280 -H 800 -f -- %command% -novid -nobackground +fps_max 60
-```
+### How Decky Launch Options handle multiple launch options
 
-**Combined prefixes with `--`:**
-> The `--` (double dash) is a convention that signals "end of options for this command." It's used to separate different prefix commands and their arguments.
-```bash
-MANGOHUD=1 gamemoderun -- gamescope -w 640 -h 400 -W 1280 -H 800 -f --mangoapp -- %command% -novid -nobackground +fps_max 60
-```
-
-### How launch options are handled
-
-When multiple launch options are enabled, they are combined intelligently:
+When multiple launch options are enabled, they are combined like so:
 
 1. **All environment variables** are collected and applied
-2. **All prefix commands** are chained together using `--` as a separator
-3. **All game arguments** (suffixes) are concatenated and passed to the game
+2. **All prefix commands** are chained together
+3. **All game arguments** are concatenated and passed to the game
 
-**Example with two launch options enabled:**
+**With two launch options enabled:**
 
-- Option 1: `MANGOHUD=1 gamemoderun gamescope -r 30 -- %command% -novid`
-- Option 2: `PROTON_NO_ESYNC=1 mangohud %command% -nobackground`
+1. `SteamDeck=0 mangohhud %command% -novid`
+2. `~/lsfg %command% +cl_showfps 3`
 
-**Results in:**
+**We get:**
 ```bash
-MANGOHUD=1 PROTON_NO_ESYNC=1 gamemoderun -- gamescope -r 30 -- mangohud -- /path/to/game -novid -nobackground
+SteamDeck=0 ~/lsfg mangohud path/to/game -novid +cl_showfps 3
 ```
 
 ## Integration with Third-Party plugins

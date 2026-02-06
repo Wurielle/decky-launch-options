@@ -166,11 +166,11 @@ def get_final_args(settings, appid):
     for key, value in all_env_vars.items():
         os.environ[key] = value
 
-    # Build final command: prefixes (joined with --) + base_args + suffixes
+    # Build final command: prefixes + base_args + suffixes
     final_args = []
 
-    # Add all prefixes, separated by --
-    for i, prefix in enumerate(all_prefixes):
+    # Add all prefixes
+    for prefix in all_prefixes:
         # Expand ~ in paths
         expanded_prefix = [part.replace("~", os.path.expanduser("~")) for part in prefix]
 
@@ -180,11 +180,6 @@ def get_final_args(settings, appid):
             # Check if it's an executable in PATH or an existing file
             if shutil.which(first_part) or os.path.isfile(first_part):
                 final_args.extend(expanded_prefix)
-                # Add -- separator between prefixes (but not after the last one)
-                # Also skip if the current prefix already ends with --
-                if i < len(all_prefixes) - 1:
-                    if not (expanded_prefix and expanded_prefix[-1] == '--'):
-                        final_args.append('--')
         # else: skip this prefix silently if command doesn't exist
         else:
             final_args.extend(expanded_prefix)
