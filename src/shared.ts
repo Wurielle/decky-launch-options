@@ -1,8 +1,10 @@
 import {v4 as uuid} from 'uuid'
 
+export const batchCreateLaunchOptionsEventType = 'dlo-add-launch-options'
+
 export const routes = {
     launchOptions: () => '/launch-options',
-    appLaunchOptions: (appid: number | string = ':appid') => `/launch-options/${ appid }`,
+    appLaunchOptions: (appid: number | string = ':appid') => `/launch-options/${appid}`,
 }
 
 export const profileFactory = (profile: Partial<Profile> = {}): Profile => ({
@@ -12,12 +14,12 @@ export const profileFactory = (profile: Partial<Profile> = {}): Profile => ({
 })
 
 export const launchOptionFactory = (launchOption: Partial<LaunchOption> = {}): LaunchOption => ({
-    id: uuid(),
-    name: '',
-    on: '',
-    off: '',
-    enableGlobally: false,
-    ...launchOption,
+    // Note: do not spread as launchOptions can be provided by third-party plugins
+    id: launchOption.id || uuid(),
+    name: launchOption.name || '',
+    on: launchOption.on || '',
+    off: launchOption.off || '',
+    enableGlobally: launchOption.enableGlobally || false,
 })
 
 export type Profile = {

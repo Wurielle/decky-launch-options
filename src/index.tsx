@@ -1,196 +1,15 @@
-import {
-    ButtonItem,
-    DialogBody,
-    DialogButton,
-    DialogButtonPrimary,
-    DialogFooter, DialogHeader, Field,
-    ModalRoot, Navigation, PanelSection, PanelSectionRow, showModal, staticClasses, TextField,
-    ToggleField,
-    DialogControlsSection, DialogControlsSectionHeader, Focusable,
-} from "@decky/ui"
+import {staticClasses,} from "@decky/ui"
 import {definePlugin, routerHook} from "@decky/api"
-import {FaTerminal, FaChevronDown, FaChevronUp} from "react-icons/fa"
-import {LaunchOption, launchOptionFactory, routes} from './shared'
+import {FaTerminal} from "react-icons/fa"
+import {batchCreateLaunchOptionsEventType, LaunchOption, routes} from './shared'
 import {LaunchOptionsPage} from './teams/launch-options/views'
 import {AppLaunchOptionsPage} from './teams/launch-options/views/[_appid]'
 import {QueryClientProvider} from '@tanstack/react-query'
 import contextMenuPatch, {LibraryContextMenu} from './patches/context-menu'
 import {getSettingsQueryOptions, queryClient} from './query'
 import {libraryAppPatch} from './patches/library-app'
-import {useImmer} from "use-immer";
-import {useSettings} from "./hooks";
-import {useCallback, useState} from "react";
-
-function BatchAddLaunchOptions({data, onSubmit, onCancel}: {
-    data: Partial<LaunchOption>[],
-    onSubmit: () => void,
-    onCancel: () => void
-}) {
-    const [launchOptions, setLaunchOptions] = useImmer(data.map(launchOptionFactory))
-    const {batchCreateLaunchOptions} = useSettings()
-    const showLaunchOptions = useCallback(() => {
-        const modalResult = showModal(
-            <ModalRoot onCancel={() => {
-                onCancel()
-                modalResult.Close()
-            }}>
-                <DialogBody>
-                    {launchOptions.map((launchOption, index) => (
-                        <DialogControlsSection>
-                            <DialogControlsSectionHeader>{launchOption.name}</DialogControlsSectionHeader>
-                            <Field description={
-                                <div style={{padding: '0 0 0 22'}}>
-                                    <TextField
-                                        label={'On'}
-                                        disabled={true}
-                                        value={launchOption.on}
-                                    />
-                                    <TextField
-                                        label={'Off'}
-                                        disabled={true}
-                                        value={launchOption.off}
-                                    />
-                                    <ToggleField
-                                        label={'Enable globally'}
-                                        bottomSeparator={'none'}
-                                        checked={launchOption.enableGlobally}
-                                        onChange={(value) => {
-                                            setLaunchOptions((draft) => {
-                                                draft[index].enableGlobally = value
-                                            })
-                                        }}
-                                    />
-                                </div>
-                            }/>
-                        </DialogControlsSection>
-                    ))}
-                </DialogBody>
-                <DialogFooter>
-                    <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-                        <DialogButtonPrimary onClick={() => {
-                            batchCreateLaunchOptions(launchOptions)
-                            onSubmit()
-                            modalResult.Close()
-                        }}>Add to Decky Launch Options</DialogButtonPrimary>
-                        <DialogButton onClick={() => {
-                            onCancel()
-                            modalResult.Close()
-                        }}>Cancel</DialogButton>
-                    </div>
-                </DialogFooter>
-            </ModalRoot>
-        )
-    }, [onCancel, launchOptions, onSubmit, batchCreateLaunchOptions])
-    return (
-        <ModalRoot onCancel={onCancel}>
-            <DialogHeader>Decky Launch Options</DialogHeader>
-            <DialogBody>
-                <p>An application would like to add the following launch options:</p>
-                <Focusable style={{ maxHeight: "145px", overflowY: "auto" }}>
-                    <ul>
-                        {launchOptions.map((launchOption, index) => (
-                            <li key={index}>
-                                {launchOption.name}
-                            </li>
-                        ))}
-                    </ul>
-                </Focusable>
-                <p>Please review each of them carefully before accepting.</p>
-            </DialogBody>
-            <DialogFooter>
-                <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-                    <DialogButtonPrimary onClick={() => {
-                        showLaunchOptions()
-                    }}>I understand</DialogButtonPrimary>
-                </div>
-            </DialogFooter>
-        </ModalRoot>
-    )
-}
-
-function batchCreateLaunchOptions(launchOptions: Partial<LaunchOption>[]) {
-    const modalResult = showModal(
-        <QueryClientProvider client={queryClient}>
-            <BatchAddLaunchOptions
-                data={launchOptions}
-                onSubmit={() => modalResult.Close()}
-                onCancel={() => modalResult.Close()}
-            />
-        </QueryClientProvider>
-    )
-
-}
-
-function onBatchCreateLaunchOptions(event: CustomEvent<Partial<LaunchOption>[]>) {
-    batchCreateLaunchOptions(event.detail);
-}
-
-const batchCreateLaunchOptionsEventType = 'dlo-add-launch-options'
-
-function Content() {
-    const [showMore, setShowMore] = useState(false)
-    return (
-        <PanelSection>
-            <PanelSectionRow>
-                <ButtonItem
-                    layout="below"
-                    onClick={() => {
-                        Navigation.Navigate(routes.launchOptions())
-                        Navigation.CloseSideMenus()
-                    }}
-                >
-                    Manage launch options
-                </ButtonItem>
-            </PanelSectionRow>
-            <PanelSectionRow>
-                <ButtonItem
-                    layout="below"
-                    onClick={() => {
-                        setShowMore((value) => !value)
-                    }}
-                >{showMore ? <FaChevronUp/> : <FaChevronDown/>}</ButtonItem>
-            </PanelSectionRow>
-            {
-                showMore && (
-                    <PanelSectionRow>
-                        <ButtonItem
-                            layout="below"
-                            onClick={() => {
-                                window.dispatchEvent(new CustomEvent(batchCreateLaunchOptionsEventType, {
-                                    detail: [
-                                        {
-                                            id: 'portal-args',
-                                            name: 'Portal args',
-                                            on: '-novid +cl_showfps 3',
-                                            off: '',
-                                            enableGlobally: false,
-                                        },
-                                        {
-                                            id: 'mangohud-command',
-                                            name: 'MangoHud command',
-                                            on: 'mangohud %command%',
-                                            off: '',
-                                            enableGlobally: false,
-                                        },
-                                        {
-                                            id: 'steam-deck-env',
-                                            name: 'Steam Deck env',
-                                            on: 'SteamDeck=1',
-                                            off: 'SteamDeck=0',
-                                            enableGlobally: true,
-                                        },
-                                    ]
-                                }));
-                            }}
-                        >
-                            Debug launch options
-                        </ButtonItem>
-                    </PanelSectionRow>
-                )
-            }
-        </PanelSection>
-    )
-}
+import {Content} from "./components/content";
+import {batchCreateLaunchOptions} from "./components/batch-add-launch-options";
 
 export default definePlugin(() => {
     routerHook.addRoute(routes.appLaunchOptions(), () => {
@@ -211,6 +30,10 @@ export default definePlugin(() => {
     const menuPatches = contextMenuPatch(LibraryContextMenu)
     const libraryAppPatchResult = libraryAppPatch()
     void queryClient.prefetchQuery(getSettingsQueryOptions)
+
+    function onBatchCreateLaunchOptions(event: CustomEvent<Partial<LaunchOption>[]>) {
+        batchCreateLaunchOptions(event.detail);
+    }
 
     window.addEventListener(batchCreateLaunchOptionsEventType as any, onBatchCreateLaunchOptions);
     (window as any).hasDeckyLaunchOptions = true
