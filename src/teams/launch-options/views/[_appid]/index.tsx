@@ -119,7 +119,7 @@ export function AppLaunchOptionsPage() {
                     title: 'Locally enabled',
                     content: (
                         readyToShow &&
-                        <div>
+                        <Focusable style={{height: '100%'}}>
                             <PanelSectionRow>
                                 <ButtonItem
                                     layout="below"
@@ -156,7 +156,7 @@ export function AppLaunchOptionsPage() {
                                     </Focusable>
                                 </Focusable>
                             ))}
-                        </div>
+                        </Focusable>
                     ),
                     renderTabAddon: () => <span
                         className={TabCount}>{localLaunchOptions.filter((launchOption) => getAppLaunchOptionState(appid, launchOption.id)).length + (Number(!!getAppOriginalLaunchOptions(appid)))}</span>,
@@ -166,7 +166,7 @@ export function AppLaunchOptionsPage() {
                     title: 'Globally enabled',
                     content: (
                         readyToShow &&
-                        <div>
+                        <Focusable style={{height: '100%'}}>
                             <PanelSectionRow>
                                 <ButtonItem
                                     layout="below"
@@ -197,7 +197,7 @@ export function AppLaunchOptionsPage() {
                                     </Focusable>
                                 </Focusable>
                             ))}
-                        </div>
+                        </Focusable>
                     ),
                     renderTabAddon: () => <span
                         className={TabCount}>{globalLaunchOptions.filter((launchOption) => launchOption.enableGlobally && getAppLaunchOptionState(appid, launchOption.id)).length}</span>,
