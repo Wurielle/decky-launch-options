@@ -140,11 +140,10 @@ export function AppLaunchOptionsPage() {
                                 <Focusable style={{display: 'flex', gap: 10}}>
                                     <Focusable style={{flex: 1}}>
                                         <ToggleField
-                                            style={{minHeight: 66}}
                                             checked={getAppLaunchOptionState(appid, launchOption.id)}
                                             onChange={(value) => setAppLaunchOptionState(appid, launchOption.id, value)}
                                             description={<span
-                                                style={{color: 'oklch(55.4% 0.046 257.417)'}}>{[launchOption.on && `ON: ${launchOption.on}`, launchOption.off && `OFF: ${launchOption.off}`].filter(Boolean).join(' | ')}</span>}
+                                                style={{color: 'oklch(55.4% 0.046 257.417)'}}>{[launchOption.on && `ON: ${launchOption.on}`, launchOption.off && `OFF: ${launchOption.off}`].filter(Boolean).join(' | ') || 'None'}</span>}
                                             label={launchOption.name}/>
                                     </Focusable>
                                     <Focusable style={{flexShrink: 0, padding: '10px 0'}}>
@@ -182,11 +181,10 @@ export function AppLaunchOptionsPage() {
                                 <Focusable style={{display: 'flex', gap: 10}}>
                                     <Focusable style={{flex: 1}}>
                                         <ToggleField
-                                            style={{minHeight: 66}}
                                             checked={getAppLaunchOptionState(appid, launchOption.id)}
                                             onChange={(value) => setAppLaunchOptionState(appid, launchOption.id, value)}
                                             description={<span
-                                                style={{color: 'oklch(55.4% 0.046 257.417)'}}>{[launchOption.on && `ON: ${launchOption.on}`, launchOption.off && `OFF: ${launchOption.off}`].filter(Boolean).join(' | ')}</span>}
+                                                style={{color: 'oklch(55.4% 0.046 257.417)'}}>{[launchOption.on && `ON: ${launchOption.on}`, launchOption.off && `OFF: ${launchOption.off}`].filter(Boolean).join(' | ') || 'None'}</span>}
                                             label={launchOption.name}/>
                                     </Focusable>
                                     <Focusable style={{flexShrink: 0, padding: '10px 0'}}>
