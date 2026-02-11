@@ -104,10 +104,10 @@ export function AppLaunchOptionsPage() {
         setAppOriginalLaunchOptions,
     } = useSettings()
     const localLaunchOptions = useMemo(() => {
-        return settings.launchOptions.filter((item) => !item.enableGlobally)
+        return settings.launchOptions.filter((item) => !item.enableGlobally).sort((a, b) => a.name.localeCompare(b.name))
     }, [settings])
     const globalLaunchOptions = useMemo(() => {
-        return settings.launchOptions.filter((item) => item.enableGlobally)
+        return settings.launchOptions.filter((item) => item.enableGlobally).sort((a, b) => a.name.localeCompare(b.name))
     }, [settings])
     const {TabCount} = findModule((mod) => {
         if (typeof mod !== 'object') return false
