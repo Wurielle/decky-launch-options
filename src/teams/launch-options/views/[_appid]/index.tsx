@@ -109,7 +109,7 @@ export function AppLaunchOptionsPage() {
         <div
             style={{
                 marginTop: "40px",
-                height: "calc(100% - 40px)",
+                height: "calc(100% - 40px - 42px)",
                 overflow: "hidden",
             }}
         >
