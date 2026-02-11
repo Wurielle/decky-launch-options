@@ -53,10 +53,23 @@ interface LaunchOptionItemProps {
 }
 
 function LaunchOptionItem({launchOption, isChecked, onToggle, onEdit}: LaunchOptionItemProps) {
-    const description = [
-        launchOption.on && `ON: ${launchOption.on}`,
-        launchOption.off && `OFF: ${launchOption.off}`
-    ].filter(Boolean).join(' | ') || 'None';
+    const activeColor = 'oklch(80.9% 0.105 251.813)'
+    const description = (
+        <span style={{color: 'oklch(55.4% 0.046 257.417)'}}>
+            {launchOption.on && (
+                <span style={{color: isChecked ? activeColor : undefined}}>
+                    ON: {launchOption.on}
+                </span>
+            )}
+            {launchOption.on && launchOption.off && ' | '}
+            {launchOption.off && (
+                <span style={{color: !isChecked ? activeColor : undefined}}>
+                    OFF: {launchOption.off}
+                </span>
+            )}
+            {!launchOption.on && !launchOption.off && 'None'}
+        </span>
+    );
 
     return (
         <Focusable style={{display: 'flex', gap: 10}}>
@@ -64,7 +77,7 @@ function LaunchOptionItem({launchOption, isChecked, onToggle, onEdit}: LaunchOpt
                 <ToggleField
                     checked={isChecked}
                     onChange={onToggle}
-                    description={<span style={{color: 'oklch(55.4% 0.046 257.417)'}}>{description}</span>}
+                    description={description}
                     label={launchOption.name}
                 />
             </Focusable>
