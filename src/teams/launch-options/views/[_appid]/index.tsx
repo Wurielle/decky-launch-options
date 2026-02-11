@@ -22,6 +22,63 @@ import {PluginProvider} from "../../../../components/plugin-provider";
 import {QueryClientProvider} from "@tanstack/react-query";
 import {queryClient} from "../../../../query";
 import {CreateLaunchOptionForm} from "../../../../components/create-launch-option-form";
+import {LaunchOption} from "../../../../shared";
+
+interface ModalWrapperProps {
+    title: string;
+    children: React.ReactNode;
+    onClose: () => void;
+}
+
+function ModalWrapper({title, children, onClose}: ModalWrapperProps) {
+    return (
+        <ModalRoot onCancel={onClose}>
+            <DialogHeader>{title}</DialogHeader>
+            <DialogBody>
+                <QueryClientProvider client={queryClient}>
+                    <PluginProvider>
+                        {children}
+                    </PluginProvider>
+                </QueryClientProvider>
+            </DialogBody>
+        </ModalRoot>
+    );
+}
+
+interface LaunchOptionItemProps {
+    launchOption: LaunchOption;
+    isChecked: boolean;
+    onToggle: (value: boolean) => void;
+    onEdit: () => void;
+}
+
+function LaunchOptionItem({launchOption, isChecked, onToggle, onEdit}: LaunchOptionItemProps) {
+    const description = [
+        launchOption.on && `ON: ${launchOption.on}`,
+        launchOption.off && `OFF: ${launchOption.off}`
+    ].filter(Boolean).join(' | ') || 'None';
+
+    return (
+        <Focusable style={{display: 'flex', gap: 10}}>
+            <Focusable style={{flex: 1}}>
+                <ToggleField
+                    checked={isChecked}
+                    onChange={onToggle}
+                    description={<span style={{color: 'oklch(55.4% 0.046 257.417)'}}>{description}</span>}
+                    label={launchOption.name}
+                />
+            </Focusable>
+            <Focusable style={{flexShrink: 0, padding: '10px 0'}}>
+                <DialogButton
+                    style={{minWidth: 46, height: 46, padding: 0}}
+                    onClick={onEdit}
+                >
+                    <FaPen/>
+                </DialogButton>
+            </Focusable>
+        </Focusable>
+    );
+}
 
 export function AppLaunchOptionsPage() {
     const {appid} = useParams<{ appid: string }>()
@@ -62,47 +119,23 @@ export function AppLaunchOptionsPage() {
 
     const showCreateLaunchOptionFormModal = useCallback(() => {
         const modalResult = showModal(
-            (
-                <ModalRoot onCancel={() => modalResult.Close()}>
-                    <DialogHeader>
-                        Add launch option
-                    </DialogHeader>
-                    <DialogBody>
-                        <QueryClientProvider client={queryClient}>
-                            <PluginProvider>
-                                <CreateLaunchOptionForm
-                                    defaultValue={{
-                                        enableGlobally: tab === 'global'
-                                    }}
-                                    onSubmit={() => modalResult.Close()}
-                                />
-                            </PluginProvider>
-                        </QueryClientProvider>
-                    </DialogBody>
-                </ModalRoot>
-            ),
+            <ModalWrapper title="Add launch option" onClose={() => modalResult.Close()}>
+                <CreateLaunchOptionForm
+                    defaultValue={{enableGlobally: tab === 'global'}}
+                    onSubmit={() => modalResult.Close()}
+                />
+            </ModalWrapper>
         );
     }, [tab])
 
     const showUpdateLaunchOptionFormModal = useCallback((id: string) => {
         const modalResult = showModal(
-            (
-                <ModalRoot onCancel={() => modalResult.Close()}>
-                    <DialogHeader>
-                        Edit launch option
-                    </DialogHeader>
-                    <DialogBody>
-                        <QueryClientProvider client={queryClient}>
-                            <PluginProvider>
-                                <UpdateLaunchOptionForm
-                                    id={id}
-                                    onDelete={() => modalResult.Close()}
-                                />
-                            </PluginProvider>
-                        </QueryClientProvider>
-                    </DialogBody>
-                </ModalRoot>
-            ),
+            <ModalWrapper title="Edit launch option" onClose={() => modalResult.Close()}>
+                <UpdateLaunchOptionForm
+                    id={id}
+                    onDelete={() => modalResult.Close()}
+                />
+            </ModalWrapper>
         );
     }, [])
     return (
@@ -137,24 +170,13 @@ export function AppLaunchOptionsPage() {
                                     style={{width: 400}}/>
                             </Field>
                             {localLaunchOptions.map((launchOption) => (
-                                <Focusable style={{display: 'flex', gap: 10}}>
-                                    <Focusable style={{flex: 1}}>
-                                        <ToggleField
-                                            checked={getAppLaunchOptionState(appid, launchOption.id)}
-                                            onChange={(value) => setAppLaunchOptionState(appid, launchOption.id, value)}
-                                            description={<span
-                                                style={{color: 'oklch(55.4% 0.046 257.417)'}}>{[launchOption.on && `ON: ${launchOption.on}`, launchOption.off && `OFF: ${launchOption.off}`].filter(Boolean).join(' | ') || 'None'}</span>}
-                                            label={launchOption.name}/>
-                                    </Focusable>
-                                    <Focusable style={{flexShrink: 0, padding: '10px 0'}}>
-                                        <DialogButton
-                                            style={{minWidth: 46, height: 46, padding: 0}}
-                                            onClick={() => showUpdateLaunchOptionFormModal(launchOption.id)}
-                                        >
-                                            <FaPen/>
-                                        </DialogButton>
-                                    </Focusable>
-                                </Focusable>
+                                <LaunchOptionItem
+                                    key={launchOption.id}
+                                    launchOption={launchOption}
+                                    isChecked={getAppLaunchOptionState(appid, launchOption.id)}
+                                    onToggle={(value) => setAppLaunchOptionState(appid, launchOption.id, value)}
+                                    onEdit={() => showUpdateLaunchOptionFormModal(launchOption.id)}
+                                />
                             ))}
                         </Focusable>
                     ),
@@ -178,24 +200,13 @@ export function AppLaunchOptionsPage() {
                                 </ButtonItem>
                             </PanelSectionRow>
                             {globalLaunchOptions.map((launchOption) => (
-                                <Focusable style={{display: 'flex', gap: 10}}>
-                                    <Focusable style={{flex: 1}}>
-                                        <ToggleField
-                                            checked={getAppLaunchOptionState(appid, launchOption.id)}
-                                            onChange={(value) => setAppLaunchOptionState(appid, launchOption.id, value)}
-                                            description={<span
-                                                style={{color: 'oklch(55.4% 0.046 257.417)'}}>{[launchOption.on && `ON: ${launchOption.on}`, launchOption.off && `OFF: ${launchOption.off}`].filter(Boolean).join(' | ') || 'None'}</span>}
-                                            label={launchOption.name}/>
-                                    </Focusable>
-                                    <Focusable style={{flexShrink: 0, padding: '10px 0'}}>
-                                        <DialogButton
-                                            style={{minWidth: 46, height: 46, padding: 0}}
-                                            onClick={() => showUpdateLaunchOptionFormModal(launchOption.id)}
-                                        >
-                                            <FaPen/>
-                                        </DialogButton>
-                                    </Focusable>
-                                </Focusable>
+                                <LaunchOptionItem
+                                    key={launchOption.id}
+                                    launchOption={launchOption}
+                                    isChecked={getAppLaunchOptionState(appid, launchOption.id)}
+                                    onToggle={(value) => setAppLaunchOptionState(appid, launchOption.id, value)}
+                                    onEdit={() => showUpdateLaunchOptionFormModal(launchOption.id)}
+                                />
                             ))}
                         </Focusable>
                     ),
