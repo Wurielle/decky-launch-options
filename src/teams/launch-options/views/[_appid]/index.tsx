@@ -23,6 +23,8 @@ import {QueryClientProvider} from "@tanstack/react-query";
 import {queryClient} from "../../../../query";
 import {CreateLaunchOptionForm} from "../../../../components/create-launch-option-form";
 import {LaunchOption} from "../../../../shared";
+import {settingsStore} from "../../../../stores";
+import {useStore} from "@tanstack/react-store";
 
 interface HierarchicalLaunchOption {
     launchOption: LaunchOption;
@@ -164,30 +166,32 @@ function LaunchOptionItem({
 export function AppLaunchOptionsPage() {
     const {appid} = useParams<{ appid: string }>()
     const [tab, setTab] = useState<'local' | 'global'>('local')
-    const [enableHierarchy] = useState(false)
+    const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy)
     const {
         settings,
         getAppLaunchOptionState,
         setAppLaunchOptionState,
         getAppOriginalLaunchOptions,
         setAppOriginalLaunchOptions,
+        getAppActiveLocalLaunchOptions,
+        getAppActiveGlobalLaunchOptions,
     } = useSettings()
     const localLaunchOptions = useMemo(() => {
         const filtered = settings.launchOptions.filter((item) => !item.enableGlobally).sort((a, b) => a.name.localeCompare(b.name))
-        return enableHierarchy ? buildHierarchy(filtered) : filtered.map(item => ({
+        return useHierarchy ? buildHierarchy(filtered) : filtered.map(item => ({
             launchOption: item,
             displayName: item.name,
             indentLevel: 0
         }))
-    }, [settings, enableHierarchy])
+    }, [settings, useHierarchy])
     const globalLaunchOptions = useMemo(() => {
         const filtered = settings.launchOptions.filter((item) => item.enableGlobally).sort((a, b) => a.name.localeCompare(b.name))
-        return enableHierarchy ? buildHierarchy(filtered) : filtered.map(item => ({
+        return useHierarchy ? buildHierarchy(filtered) : filtered.map(item => ({
             launchOption: item,
             displayName: item.name,
             indentLevel: 0
         }))
-    }, [settings, enableHierarchy])
+    }, [settings, useHierarchy])
     const {TabCount} = findModule((mod) => {
         if (typeof mod !== 'object') return false
 
@@ -230,6 +234,7 @@ export function AppLaunchOptionsPage() {
             </ModalWrapper>
         );
     }, [])
+
     return (
         <div
             style={{
@@ -275,7 +280,7 @@ export function AppLaunchOptionsPage() {
                         </Focusable>
                     ),
                     renderTabAddon: () => <span
-                        className={TabCount}>{localLaunchOptions.filter((item) => getAppLaunchOptionState(appid, item.launchOption.id)).length + (Number(!!getAppOriginalLaunchOptions(appid)))}</span>,
+                        className={TabCount}>{getAppActiveLocalLaunchOptions(appid).length + (Number(!!getAppOriginalLaunchOptions(appid)))}</span>,
                 },
                 {
                     id: 'global',
@@ -307,7 +312,7 @@ export function AppLaunchOptionsPage() {
                         </Focusable>
                     ),
                     renderTabAddon: () => <span
-                        className={TabCount}>{globalLaunchOptions.filter((item) => item.launchOption.enableGlobally && getAppLaunchOptionState(appid, item.launchOption.id)).length}</span>,
+                        className={TabCount}>{getAppActiveGlobalLaunchOptions(appid).length}</span>,
                 },
             ]}/>
         </div>
