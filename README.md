@@ -67,6 +67,51 @@ collection that you can share with others, I recommend checking out
 the [Decky Launch Options Recipes](https://github.com/Wurielle/decky-launch-options-recipes)
 plugin.
 
+
+## Integration with Third-Party plugins
+
+If you're a plugin developer and would like to offer an easy one-click button to add your plugin's launch options via
+Decky Launch Options, you can do so by dispatching the `dlo-add-launch-options` custom event:
+
+```typescript
+window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
+    detail: [
+        {
+            id: 'portal-args',
+            name: 'Portal args',
+            on: '-novid +cl_showfps 3',
+            off: '',
+            enableGlobally: false,
+        },
+        {
+            id: 'mangohud-command',
+            name: 'MangoHud command',
+            on: 'mangohud %command%',
+            off: '',
+            enableGlobally: false,
+        },
+        {
+            id: 'steam-deck-env',
+            name: 'Steam Deck env',
+            on: 'SteamDeck=1',
+            off: 'SteamDeck=0',
+            enableGlobally: true,
+        },
+    ]
+}));
+```
+
+This will prompt the user to review and confirm the provided launch options.
+
+You can also check if Decky Launch Options is available with:
+
+```typescript
+(window as any).hasDeckyLaunchOptions
+```
+
+> **Note:** Every field of a launch option is optional but I recommend at least setting a static id for each one to
+> allow Decky Launch Options to override launch options with matching ids in case the user decides to import them again.
+
 ## Understanding launch options
 
 Decky Launch Options tries to simplify launch options management by offering a degree of leeway in how you can structure
@@ -133,50 +178,6 @@ When multiple launch options are enabled, they are combined like so:
 ```bash
 SteamDeck=0 ~/lsfg mangohud path/to/game -novid +cl_showfps 3
 ```
-
-## Integration with Third-Party plugins
-
-If you're a plugin developer and would like to offer an easy one-click button to add your plugin's launch options via
-Decky Launch Options, you can do so by dispatching the `dlo-add-launch-options` custom event:
-
-```typescript
-window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
-    detail: [
-        {
-            id: 'portal-args',
-            name: 'Portal args',
-            on: '-novid +cl_showfps 3',
-            off: '',
-            enableGlobally: false,
-        },
-        {
-            id: 'mangohud-command',
-            name: 'MangoHud command',
-            on: 'mangohud %command%',
-            off: '',
-            enableGlobally: false,
-        },
-        {
-            id: 'steam-deck-env',
-            name: 'Steam Deck env',
-            on: 'SteamDeck=1',
-            off: 'SteamDeck=0',
-            enableGlobally: true,
-        },
-    ]
-}));
-```
-
-This will prompt the user to review and confirm the provided launch options.
-
-You can also check if Decky Launch Options is available with:
-
-```typescript
-(window as any).hasDeckyLaunchOptions
-```
-
-> **Note:** Every field of a launch option is optional but I recommend at least setting a static id for each one to
-> allow Decky Launch Options to override launch options with matching ids in case the user decides to import them again.
 
 ## Philosophy
 
