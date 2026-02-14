@@ -10,6 +10,7 @@ import {getSettingsQueryOptions, queryClient} from './query'
 import {libraryAppPatch} from './patches/library-app'
 import {Content} from "./components/content";
 import {batchCreateLaunchOptions} from "./components/batch-add-launch-options";
+import {settingsLocalStorageKey} from "./stores";
 
 export default definePlugin(() => {
     routerHook.addRoute(routes.appLaunchOptions(), () => {
@@ -56,6 +57,7 @@ export default definePlugin(() => {
                     })
             }
             window.removeEventListener(batchCreateLaunchOptionsEventType as any, onBatchCreateLaunchOptions);
+            localStorage.removeItem(settingsLocalStorageKey)
             delete (window as any).hasDeckyLaunchOptions
         },
     }

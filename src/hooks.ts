@@ -1,4 +1,4 @@
-import set from 'lodash.set'
+import {set} from 'es-toolkit/compat'
 import {useEffect, useState} from 'react'
 import {produce, WritableDraft} from 'immer'
 import {LaunchOption, profileFactory, Settings} from './shared'

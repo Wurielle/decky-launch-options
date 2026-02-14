@@ -23,6 +23,8 @@ import {QueryClientProvider} from "@tanstack/react-query";
 import {queryClient} from "../../../../query";
 import {CreateLaunchOptionForm} from "../../../../components/create-launch-option-form";
 import {LaunchOption} from "../../../../shared";
+import {settingsStore} from "../../../../stores";
+import {useStore} from "@tanstack/react-store";
 
 interface HierarchicalLaunchOption {
     launchOption: LaunchOption;
@@ -164,7 +166,7 @@ function LaunchOptionItem({
 export function AppLaunchOptionsPage() {
     const {appid} = useParams<{ appid: string }>()
     const [tab, setTab] = useState<'local' | 'global'>('local')
-    const [enableHierarchy] = useState(false)
+    const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy)
     const {
         settings,
         getAppLaunchOptionState,
@@ -176,20 +178,20 @@ export function AppLaunchOptionsPage() {
     } = useSettings()
     const localLaunchOptions = useMemo(() => {
         const filtered = settings.launchOptions.filter((item) => !item.enableGlobally).sort((a, b) => a.name.localeCompare(b.name))
-        return enableHierarchy ? buildHierarchy(filtered) : filtered.map(item => ({
+        return useHierarchy ? buildHierarchy(filtered) : filtered.map(item => ({
             launchOption: item,
             displayName: item.name,
             indentLevel: 0
         }))
-    }, [settings, enableHierarchy])
+    }, [settings, useHierarchy])
     const globalLaunchOptions = useMemo(() => {
         const filtered = settings.launchOptions.filter((item) => item.enableGlobally).sort((a, b) => a.name.localeCompare(b.name))
-        return enableHierarchy ? buildHierarchy(filtered) : filtered.map(item => ({
+        return useHierarchy ? buildHierarchy(filtered) : filtered.map(item => ({
             launchOption: item,
             displayName: item.name,
             indentLevel: 0
         }))
-    }, [settings, enableHierarchy])
+    }, [settings, useHierarchy])
     const {TabCount} = findModule((mod) => {
         if (typeof mod !== 'object') return false
 

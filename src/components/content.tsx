@@ -1,10 +1,13 @@
 import {batchCreateLaunchOptionsEventType, routes} from "../shared";
-import {ButtonItem, Navigation, PanelSection, PanelSectionRow} from "@decky/ui";
+import {ButtonItem, Field, Navigation, PanelSection, PanelSectionRow, ToggleField} from "@decky/ui";
 import {FaChevronDown, FaChevronUp} from "react-icons/fa";
 import {useState} from "react";
+import {useStore} from "@tanstack/react-store";
+import {settingsStore} from "../stores";
 
 export function Content() {
     const [showMore, setShowMore] = useState(false)
+    const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy)
     return (
         <PanelSection>
             <PanelSectionRow>
@@ -17,6 +20,22 @@ export function Content() {
                 >
                     Manage launch options
                 </ButtonItem>
+            </PanelSectionRow>
+            <PanelSectionRow>
+                <Field label={
+                    <ToggleField
+                        highlightOnFocus={false}
+                        checked={useHierarchy}
+                        onChange={(value) => {
+                            settingsStore.setState((state) => {
+                                state.useHierarchy = value
+                            })
+                        }}
+                        description={'Display launch options with a similar starting name in a tree structure'}
+                        label={'Enable hierarchy display'}
+                        bottomSeparator={'none'}
+                    />
+                }/>
             </PanelSectionRow>
             <PanelSectionRow>
                 <ButtonItem
