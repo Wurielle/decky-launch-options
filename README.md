@@ -20,8 +20,8 @@
 - [Installation](#installation)
 - [How to use](#how-to-use)
 - [Recipes](#recipes)
-- [Understanding launch options](#understanding-launch-options)
 - [Integration with Third-Party plugins](#integration-with-third-party-plugins)
+- [Understanding launch options](#understanding-launch-options)
 - [Philosophy](#philosophy)
 - [Development](#development)
 
