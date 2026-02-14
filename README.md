@@ -19,9 +19,9 @@
 
 - [Installation](#installation)
 - [How to use](#how-to-use)
+- [Recipes](#recipes)
 - [Understanding launch options](#understanding-launch-options)
 - [Integration with Third-Party plugins](#integration-with-third-party-plugins)
-- [Recipes](#recipes)
 - [Philosophy](#philosophy)
 - [Development](#development)
 
@@ -56,6 +56,16 @@
     * Globally enabled launch options are opt-out
 
 ![Screenshot of the Decky Launch Options plugin on the Steam Deck](./assets/screenshot.png)
+
+## Recipes
+
+Decky Launch Options does not come with a pre-defined set of launch options.
+
+If you wish to import a pre-defined set of
+launch options to quickstart your use of this plugin or create your own
+collection that you can share with others, I recommend checking out
+the [Decky Launch Options Recipes](https://github.com/Wurielle/decky-launch-options-recipes)
+plugin.
 
 ## Understanding launch options
 
@@ -167,16 +177,6 @@ You can also check if Decky Launch Options is available with:
 
 > **Note:** Every field of a launch option is optional but I recommend at least setting a static id for each one to
 > allow Decky Launch Options to override launch options with matching ids in case the user decides to import them again.
-
-## Recipes
-
-Decky Launch Options does not come with a pre-defined set of launch options.
-
-If you wish to import a pre-defined set of
-launch options to quickstart your use of this plugin or create your own
-collection that you can share with others, I recommend checking out
-the [Decky Launch Options Recipes](https://github.com/Wurielle/decky-launch-options-recipes)
-plugin.
 
 ## Philosophy
 
