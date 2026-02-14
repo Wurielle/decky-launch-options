@@ -171,6 +171,8 @@ export function AppLaunchOptionsPage() {
         setAppLaunchOptionState,
         getAppOriginalLaunchOptions,
         setAppOriginalLaunchOptions,
+        getAppActiveLocalLaunchOptions,
+        getAppActiveGlobalLaunchOptions,
     } = useSettings()
     const localLaunchOptions = useMemo(() => {
         const filtered = settings.launchOptions.filter((item) => !item.enableGlobally).sort((a, b) => a.name.localeCompare(b.name))
@@ -230,6 +232,7 @@ export function AppLaunchOptionsPage() {
             </ModalWrapper>
         );
     }, [])
+
     return (
         <div
             style={{
@@ -275,7 +278,7 @@ export function AppLaunchOptionsPage() {
                         </Focusable>
                     ),
                     renderTabAddon: () => <span
-                        className={TabCount}>{localLaunchOptions.filter((item) => getAppLaunchOptionState(appid, item.launchOption.id)).length + (Number(!!getAppOriginalLaunchOptions(appid)))}</span>,
+                        className={TabCount}>{getAppActiveLocalLaunchOptions(appid).length + (Number(!!getAppOriginalLaunchOptions(appid)))}</span>,
                 },
                 {
                     id: 'global',
@@ -307,7 +310,7 @@ export function AppLaunchOptionsPage() {
                         </Focusable>
                     ),
                     renderTabAddon: () => <span
-                        className={TabCount}>{globalLaunchOptions.filter((item) => item.launchOption.enableGlobally && getAppLaunchOptionState(appid, item.launchOption.id)).length}</span>,
+                        className={TabCount}>{getAppActiveGlobalLaunchOptions(appid).length}</span>,
                 },
             ]}/>
         </div>
