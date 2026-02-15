@@ -31,7 +31,7 @@ export function CreateLaunchOptionForm(props: {
                 {({scrollIntoView}) => (
                     <TextField
                         label={'Name'}
-                        {...({placeholder: 'E.g.: Steam Deck env'})}
+                        {...({placeholder: 'E.g.: My favorite launch options'})}
                         style={{width: '100%'}}
                         value={data.name}
                         onChange={(e) => {
