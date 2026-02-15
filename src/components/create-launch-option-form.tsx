@@ -31,6 +31,7 @@ export function CreateLaunchOptionForm(props: {
                 {({scrollIntoView}) => (
                     <TextField
                         label={'Name'}
+                        {...({placeholder: 'E.g.: My favorite launch options'})}
                         style={{width: '100%'}}
                         value={data.name}
                         onChange={(e) => {
@@ -50,7 +51,8 @@ export function CreateLaunchOptionForm(props: {
             <ScrollIntoView>
                 {({scrollIntoView}) => (
                     <TextField
-                        label={'On'}
+                        label={'On command'}
+                        {...({placeholder: 'E.g.: SteamDeck=1 ~/script/install %command% -novid'})}
                         style={{width: '100%'}}
                         value={data.on}
                         onChange={(e) => {
@@ -70,7 +72,8 @@ export function CreateLaunchOptionForm(props: {
             <ScrollIntoView>
                 {({scrollIntoView}) => (
                     <TextField
-                        label={'Off'}
+                        label={'Off command'}
+                        {...({placeholder: 'E.g.: SteamDeck=0 ~/script/uninstall %command% -novid'})}
                         style={{width: '100%'}}
                         value={data.off}
                         onChange={(e) => {

@@ -1,5 +1,5 @@
 import {batchCreateLaunchOptionsEventType, routes} from "../shared";
-import {ButtonItem, Field, Navigation, PanelSection, PanelSectionRow, ToggleField} from "@decky/ui";
+import {ButtonItem, Navigation, PanelSection, PanelSectionRow, ToggleField} from "@decky/ui";
 import {FaChevronDown, FaChevronUp} from "react-icons/fa";
 import {useState} from "react";
 import {useStore} from "@tanstack/react-store";
@@ -22,20 +22,27 @@ export function Content() {
                 </ButtonItem>
             </PanelSectionRow>
             <PanelSectionRow>
-                <Field label={
-                    <ToggleField
-                        highlightOnFocus={false}
-                        checked={useHierarchy}
-                        onChange={(value) => {
-                            settingsStore.setState((state) => {
-                                state.useHierarchy = value
-                            })
-                        }}
-                        description={'Display launch options with a similar starting name in a tree structure'}
-                        label={'Enable hierarchy display'}
-                        bottomSeparator={'none'}
-                    />
-                }/>
+                <ToggleField
+                    checked={useHierarchy}
+                    onChange={(value) => {
+                        settingsStore.setState((state) => {
+                            state.useHierarchy = value
+                        })
+                    }}
+                    description={'Display launch options with a similar starting name in a tree structure'}
+                    label={'Enable hierarchy display'}
+                    bottomSeparator={'none'}
+                />
+            </PanelSectionRow>
+            <PanelSectionRow>
+                <ButtonItem
+                    layout="below"
+                    onClick={() => {
+                        window.open(process.env.HOMEPAGE, "_blank")
+                    }}
+                >
+                    README.md
+                </ButtonItem>
             </PanelSectionRow>
             <PanelSectionRow>
                 <ButtonItem
