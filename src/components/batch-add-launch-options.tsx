@@ -41,12 +41,12 @@ export function BatchAddLaunchOptions({data, onSubmit, onCancel}: {
                             <Field description={
                                 <div style={{padding: '0 0 0 22'}}>
                                     <TextField
-                                        label={'On'}
+                                        label={'On command'}
                                         disabled={true}
                                         value={launchOption.on}
                                     />
                                     <TextField
-                                        label={'Off'}
+                                        label={'Off command'}
                                         disabled={true}
                                         value={launchOption.off}
                                     />
