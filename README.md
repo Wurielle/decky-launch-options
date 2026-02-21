@@ -62,6 +62,8 @@ On your game page, click on settings and click on **Launch options**.
 
 ![Screenshot of the settings for a game in Steam](./assets/app-page.png)
 
+![Screenshot of the Decky Launch Options plugin on the Steam Deck](./assets/screenshot.png)
+
 You can enable or disable launch options to your liking.
 Each launch option is a **switch**. When you turn it on for a game, the **On command** is used.
 When you turn it off, the **Off command** is used instead.
@@ -72,8 +74,6 @@ When you turn it off, the **Off command** is used instead.
 * If you already had launch options before, they will be placed in the "Original launch options" field and will be
   executed normally. It is recommended to remove the original launch options once you have configured all your launch
   options with the plugin.
-
-![Screenshot of the Decky Launch Options plugin on the Steam Deck](./assets/screenshot.png)
 
 ## Recipes
 
