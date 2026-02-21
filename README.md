@@ -58,7 +58,7 @@ Open the plugin tab to manage your launch options and create a new launch option
 
 ### 2. Toggle launch options per game
 
-On your game page, click on settings and click on **Launch Options**.
+On your game page, click on settings and click on **Launch options**.
 
 ![Screenshot of the settings for a game in Steam](./assets/app-page.png)
 
