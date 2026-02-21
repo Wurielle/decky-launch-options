@@ -35,7 +35,7 @@ jobs:
           makeLatest: true
           allowUpdates: true
           body: |
-            ## Installation
+            ## 🔗 Artifact link
 
             ```
             https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/decky-launch-options.zip
