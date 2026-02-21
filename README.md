@@ -35,25 +35,43 @@
 
 ## How to use
 
-1. Open the plugin tab to manage your launch options
-2. Create a launch option
-    * Choose whether to enable it by default for all games ("Enable globally" field)
-    * Enter a name
-    * In the "On" field, enter the launch option when enabled
-    * If applicable, in the "Off" field, enter the launch option when disabled
+### 1. Create a launch option
+
+Open the plugin tab to manage your launch options and create a new launch option.
+
+* **Name** — A label to identify the launch option (e.g. "MangoHud", "Steam Deck mode")
+* **Enable globally** — When enabled, this launch option will be enabled by default for all games
+* **On command** — The launch option script that is applied when the toggle is **switched on**
+* **Off command** — The launch option script that is applied when the toggle is **switched off**
 
 ![Screenshot of the launch options settings for the plugin](./assets/manage-launch-options.png)
 
-3. On your game page, click on settings and click on **Launch Options**
+
+> **Example:** For a "Steam Deck mode" launch option, you could set:
+> * **On command:** `SteamDeck=1 %command%` — forces Steam Deck compatibility
+> * **Off command:** `SteamDeck=0 %command%` — explicitly disables it
+>
+> If you only need something applied when enabled (e.g. MangoHud), you can leave the **Off command** empty or vice
+> versa:
+> * **On command:** `mangohud %command%`
+> * **Off command:** *(empty)*
+
+### 2. Toggle launch options per game
+
+On your game page, click on settings and click on **Launch Options**.
 
 ![Screenshot of the settings for a game in Steam](./assets/app-page.png)
 
-4. Enable or disable launch options to your liking
-    * If you already had launch options before, they will be placed in the "Original launch options" field and will be
-      executed normally. It is recommended to remove the original launch options once you configured all your launch
-      options with the plugin.
-    * Locally enabled launch options are opt-in
-    * Globally enabled launch options are opt-out
+You can enable or disable launch options to your liking.
+Each launch option is a **switch**. When you turn it on for a game, the **On command** is used.
+When you turn it off, the **Off command** is used instead.
+
+* **Locally enabled** launch options are opt-in — they are off by default and you can enable them if you need them
+* **Globally enabled** launch options are opt-out — they are on by default and you can disable them if you don't need
+  them
+* If you already had launch options before, they will be placed in the "Original launch options" field and will be
+  executed normally. It is recommended to remove the original launch options once you have configured all your launch
+  options with the plugin.
 
 ![Screenshot of the Decky Launch Options plugin on the Steam Deck](./assets/screenshot.png)
 
@@ -66,7 +84,6 @@ launch options to quickstart your use of this plugin or create your own
 collection that you can share with others, I recommend checking out
 the [Decky Launch Options Recipes](https://github.com/Wurielle/decky-launch-options-recipes)
 plugin.
-
 
 ## Integration with Third-Party plugins
 
