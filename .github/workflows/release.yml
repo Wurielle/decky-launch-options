@@ -34,7 +34,12 @@ jobs:
         with:
           makeLatest: true
           allowUpdates: true
-          body: ${{ steps.github_release.outputs.changelog }}
+          body: |
+            ## Installation
+
+            `https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/deck-launch-options.zip`
+
+            ${{ steps.github_release.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
   #          prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'beta') || contains(github.ref, 'alpha')}}
 
