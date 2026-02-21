@@ -37,7 +37,9 @@ jobs:
           body: |
             ## Installation
 
-            `https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/deck-launch-options.zip`
+            ```
+            https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/decky-launch-options.zip
+            ```
 
             ${{ steps.github_release.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -88,7 +90,7 @@ jobs:
           curl -L -o $(pwd)/cli/decky "https://github.com/SteamDeckHomebrew/cli/releases/latest/download/decky-linux-x86_64"
           chmod +x $(pwd)/cli/decky
           $(pwd)/cli/decky plugin build $(pwd)
-          mv "out/Launch Options.zip" "out/deck-launch-options.zip"
+          mv "out/Launch Options.zip" "out/decky-launch-options.zip"
 
       - name: Upload artifacts to Release
         uses: alexellis/upload-assets@0.4.1
