@@ -39,13 +39,12 @@
 
 Open the plugin tab to manage your launch options and create a new launch option.
 
+![Screenshot of the launch options settings for the plugin](./assets/manage-launch-options.png)
+
 * **Name** — A label to identify the launch option (e.g. "MangoHud", "Steam Deck mode")
 * **Enable globally** — When enabled, this launch option will be enabled by default for all games
 * **On command** — The launch option script that is applied when the toggle is **switched on**
 * **Off command** — The launch option script that is applied when the toggle is **switched off**
-
-![Screenshot of the launch options settings for the plugin](./assets/manage-launch-options.png)
-
 
 > **Example:** For a "Steam Deck mode" launch option, you could set:
 > * **On command:** `SteamDeck=1 %command%` — forces Steam Deck compatibility
