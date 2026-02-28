@@ -275,6 +275,17 @@ if __name__ == "__main__":
         }
     )
 
+    # Test 22: Wine with complex WINEDLLOVERRIDES, tilde prefix, and suffix args
+    test_case(
+        "Wine WINEDLLOVERRIDES with semicolons, tilde prefix, and suffix",
+        'ENABLE_VKBASALT=1 WINEDLLOVERRIDES="ScriptHook=n,b;dinput8=n,b;AdvancedHook=n,b" ~/lsfg %command% -norestrictions -nomemrestrict -availablevidmem 6144 -width 1280 -height 800 -refreshrate 60',
+        {
+            'env_vars': {'ENABLE_VKBASALT': '1', 'WINEDLLOVERRIDES': 'ScriptHook=n,b;dinput8=n,b;AdvancedHook=n,b'},
+            'prefix': ['~/lsfg'],
+            'suffix': ['-norestrictions', '-nomemrestrict', '-availablevidmem', '6144', '-width', '1280', '-height', '800', '-refreshrate', '60']
+        }
+    )
+
     print("\n" + "="*60)
     print("All tests completed!")
     print("="*60)
