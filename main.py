@@ -1,8 +1,8 @@
 import asyncio
 import json
 import os
-import stat
 import shutil
+import stat
 from pathlib import Path
 
 # The decky plugin module is located at decky-loader/plugin
@@ -128,57 +128,6 @@ class Plugin:
                 return json.load(f)
         except (json.JSONDecodeError, FileNotFoundError):
             return None
-
-    async def get_original_command(self, appid):
-        import re
-
-        localconfig_path = await self.get_localconfig_vdf_path()
-
-        try:
-            with open(localconfig_path, 'r', encoding='utf-8', errors='ignore') as f:
-                config_content = f.read()
-        except (OSError, IOError) as e:
-            raise IOError(f"Failed to read localconfig.vdf at {localconfig_path}: {e}") from e
-
-        # Find the specific app section
-        app_pattern = rf'"{appid}"\s*\{{'
-        app_match = re.search(app_pattern, config_content)
-
-        if not app_match:
-            raise FileNotFoundError(f"App {appid} not found in localconfig.vdf")
-
-        # Find the app section boundaries
-        brace_start = app_match.end() - 1
-        brace_count = 1
-        brace_end = -1
-
-        for i in range(brace_start + 1, len(config_content)):
-            if config_content[i] == '{':
-                brace_count += 1
-            elif config_content[i] == '}':
-                brace_count -= 1
-                if brace_count == 0:
-                    brace_end = i
-                    break
-
-        if brace_end == -1:
-            return None
-
-        app_section = config_content[brace_start:brace_end]
-
-        # Check for LaunchOptions
-        launch_options_match = re.search(r'"LaunchOptions"\s+"([^"]*)"', app_section)
-
-        if not launch_options_match:
-            return None
-
-        launch_options = launch_options_match.group(1)
-
-        # If LaunchOptions equals COMMAND, return None, otherwise return the launch options
-        if launch_options == COMMAND:
-            return None
-
-        return launch_options
 
     async def has_shell_script(self):
         return os.path.exists(FULL_SH_COMMAND_PATH)
