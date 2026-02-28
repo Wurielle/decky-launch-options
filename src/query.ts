@@ -60,12 +60,12 @@ export const useApplyLaunchOptionsMutation = () => {
                     const { unregister } = SteamClient.Apps.RegisterForAppDetails(
                         data.appid,
                         (details: AppDetails) => {
-                            console.log(details)
                             const currentLaunchOptions = details.strLaunchOptions
-                            if (!currentLaunchOptions.includes(data.command)) {
-                                resolve(currentLaunchOptions)
-                            } else {
+                            const isNonSteamApp = 'strShortcutExe' in details
+                            if (isNonSteamApp || currentLaunchOptions.includes(data.command)) {
                                 resolve(null)
+                            } else {
+                                resolve(currentLaunchOptions)
                             }
                             unregister()
                         },
