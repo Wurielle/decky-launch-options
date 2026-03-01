@@ -1,7 +1,8 @@
-import {callable} from '@decky/api'
-import {Settings} from './shared'
-import {QueryClient, queryOptions, useMutation, useQuery} from '@tanstack/react-query'
-import {useSettings} from './hooks'
+import { callable } from '@decky/api'
+import { Settings } from './shared'
+import { QueryClient, queryOptions, useMutation, useQuery } from '@tanstack/react-query'
+import { useSettings } from './hooks'
+import { AppDetails } from '@decky/ui/dist/globals/steam-client/App'
 
 export const queryClient = new QueryClient()
 
@@ -21,7 +22,6 @@ export const get_info = callable<[], {
 }>("get_info")
 export const get_settings = callable<[], Settings | null>("get_settings")
 export const set_settings = callable<[Settings], void>("set_settings")
-export const get_original_command = callable<[string], string | null>("get_original_command")
 export const has_shell_script = callable<[], boolean>("has_shell_script")
 
 export const useGetInfoQuery = () => useQuery({
@@ -52,18 +52,49 @@ export const useSetSettingsMutation = () => useMutation<void, Error, Settings>({
 })
 
 export const useApplyLaunchOptionsMutation = () => {
-    const {setAppOriginalLaunchOptions, getAppOriginalLaunchOptions} = useSettings()
-    return useMutation<boolean, Error, { appid: number, command: string }>({
+    const { setAppOriginalLaunchOptions, getAppOriginalLaunchOptions } = useSettings()
+    type Context = {
+        currentLaunchOptions: string
+        originalLaunchOptions: string | null
+        hasShellScript: boolean
+    }
+    return useMutation<Context, Error, { appid: number, command: string }>({
         mutationFn(data) {
-            return Promise.all([get_original_command(String(data.appid)), has_shell_script()])
-                .then(([originalLaunchOptions, hasShellScript]) => {
-                    if (originalLaunchOptions !== null) setAppOriginalLaunchOptions(String(data.appid), originalLaunchOptions)
-                    return hasShellScript
+            return Promise.all([
+                new Promise<Pick<Context, 'currentLaunchOptions' | 'originalLaunchOptions'>>((resolve) => {
+                    const { unregister } = SteamClient.Apps.RegisterForAppDetails(
+                        data.appid,
+                        (details: AppDetails) => {
+                            const currentLaunchOptions = details.strLaunchOptions
+                            const isNonSteamApp = 'strShortcutExe' in details
+                            if (isNonSteamApp || currentLaunchOptions.includes(data.command)) {
+                                resolve({
+                                    currentLaunchOptions: currentLaunchOptions,
+                                    originalLaunchOptions: null,
+                                })
+                            } else {
+                                resolve({
+                                    currentLaunchOptions: data.command,
+                                    originalLaunchOptions: currentLaunchOptions,
+                                })
+                            }
+                            unregister()
+                        },
+                    )
+                }),
+                has_shell_script(),
+            ])
+                .then(([partialContext, hasShellScript]) => {
+                    if (partialContext.originalLaunchOptions !== null) setAppOriginalLaunchOptions(String(data.appid), partialContext.originalLaunchOptions)
+                    return {
+                        ...partialContext,
+                        hasShellScript,
+                    }
                 })
         },
-        onSuccess(hasShellScript, data) {
+        onSuccess({ hasShellScript, currentLaunchOptions }, data) {
             if (hasShellScript) {
-                SteamClient.Apps.SetAppLaunchOptions(data.appid, data.command)
+                SteamClient.Apps.SetAppLaunchOptions(data.appid, currentLaunchOptions)
             } else {
                 SteamClient.Apps.SetAppLaunchOptions(data.appid, getAppOriginalLaunchOptions(String(data.appid)))
             }
