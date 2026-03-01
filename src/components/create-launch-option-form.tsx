@@ -30,6 +30,27 @@ export function CreateLaunchOptionForm(props: {
             <ScrollIntoView>
                 {({scrollIntoView}) => (
                     <TextField
+                        label={'Group'}
+                        {...({placeholder: 'E.g.: Performance'})}
+                        style={{width: '100%'}}
+                        value={data.group}
+                        onChange={(e) => {
+                            scrollIntoView(e)
+                            setData((draft) => {
+                                draft.group = e.target.value
+                            })
+                        }}
+                        onKeyDown={scrollIntoView}
+                        onKeyUp={scrollIntoView}
+                        onInput={scrollIntoView}
+                        onSelect={scrollIntoView}
+                        onFocus={scrollIntoView}
+                    />
+                )}
+            </ScrollIntoView>
+            <ScrollIntoView>
+                {({scrollIntoView}) => (
+                    <TextField
                         label={'Name'}
                         {...({placeholder: 'E.g.: My favorite launch options'})}
                         style={{width: '100%'}}

@@ -20,6 +20,7 @@ export const launchOptionFactory = (launchOption: Partial<LaunchOption> = {}): L
     on: launchOption.on || '',
     off: launchOption.off || '',
     enableGlobally: launchOption.enableGlobally || false,
+    group: launchOption.group || '',
 })
 
 export type Profile = {
@@ -33,6 +34,7 @@ export type LaunchOption = {
     on: string
     off: string
     enableGlobally: boolean
+    group: string
 }
 
 export type Settings = {
