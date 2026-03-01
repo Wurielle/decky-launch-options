@@ -53,19 +53,30 @@ export const useSetSettingsMutation = () => useMutation<void, Error, Settings>({
 
 export const useApplyLaunchOptionsMutation = () => {
     const { setAppOriginalLaunchOptions, getAppOriginalLaunchOptions } = useSettings()
-    return useMutation<boolean, Error, { appid: number, command: string }>({
+    type Context = {
+        currentLaunchOptions: string
+        originalLaunchOptions: string | null
+        hasShellScript: boolean
+    }
+    return useMutation<Context, Error, { appid: number, command: string }>({
         mutationFn(data) {
             return Promise.all([
-                new Promise<string | null>((resolve) => {
+                new Promise<Pick<Context, 'currentLaunchOptions' | 'originalLaunchOptions'>>((resolve) => {
                     const { unregister } = SteamClient.Apps.RegisterForAppDetails(
                         data.appid,
                         (details: AppDetails) => {
                             const currentLaunchOptions = details.strLaunchOptions
                             const isNonSteamApp = 'strShortcutExe' in details
                             if (isNonSteamApp || currentLaunchOptions.includes(data.command)) {
-                                resolve(null)
+                                resolve({
+                                    currentLaunchOptions: currentLaunchOptions,
+                                    originalLaunchOptions: null,
+                                })
                             } else {
-                                resolve(currentLaunchOptions)
+                                resolve({
+                                    currentLaunchOptions: data.command,
+                                    originalLaunchOptions: currentLaunchOptions,
+                                })
                             }
                             unregister()
                         },
@@ -73,14 +84,17 @@ export const useApplyLaunchOptionsMutation = () => {
                 }),
                 has_shell_script(),
             ])
-                .then(([originalLaunchOptions, hasShellScript]) => {
-                    if (originalLaunchOptions !== null) setAppOriginalLaunchOptions(String(data.appid), originalLaunchOptions)
-                    return hasShellScript
+                .then(([partialContext, hasShellScript]) => {
+                    if (partialContext.originalLaunchOptions !== null) setAppOriginalLaunchOptions(String(data.appid), partialContext.originalLaunchOptions)
+                    return {
+                        ...partialContext,
+                        hasShellScript,
+                    }
                 })
         },
-        onSuccess(hasShellScript, data) {
+        onSuccess({ hasShellScript, currentLaunchOptions }, data) {
             if (hasShellScript) {
-                SteamClient.Apps.SetAppLaunchOptions(data.appid, data.command)
+                SteamClient.Apps.SetAppLaunchOptions(data.appid, currentLaunchOptions)
             } else {
                 SteamClient.Apps.SetAppLaunchOptions(data.appid, getAppOriginalLaunchOptions(String(data.appid)))
             }
