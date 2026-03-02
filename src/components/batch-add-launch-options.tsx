@@ -1,6 +1,7 @@
 import {LaunchOption, launchOptionFactory} from "../shared";
 import {useImmer} from "use-immer";
 import {useSettings} from "../hooks";
+import {sortBy} from "es-toolkit";
 import {useCallback} from "react";
 import {
     DialogBody,
@@ -26,7 +27,7 @@ export function BatchAddLaunchOptions({data, onSubmit, onCancel}: {
     onSubmit: () => void,
     onCancel: () => void
 }) {
-    const [launchOptions, setLaunchOptions] = useImmer(data.map(launchOptionFactory))
+    const [launchOptions, setLaunchOptions] = useImmer(sortBy(data.map(launchOptionFactory), ['name']))
     const {batchCreateLaunchOptions} = useSettings()
     const showLaunchOptions = useCallback(() => {
         const modalResult = showModal(
