@@ -1,9 +1,9 @@
-import {batchCreateLaunchOptionsEventType, routes} from "../shared";
-import {ButtonItem, Navigation, PanelSection, PanelSectionRow, ToggleField} from "@decky/ui";
-import {FaChevronDown, FaChevronUp} from "react-icons/fa";
-import {useState} from "react";
-import {useStore} from "@tanstack/react-store";
-import {settingsStore} from "../stores";
+import { batchCreateLaunchOptionsEventType, routes } from "../shared"
+import { ButtonItem, Navigation, PanelSection, PanelSectionRow, ToggleField } from "@decky/ui"
+import { FaChevronDown, FaChevronUp } from "react-icons/fa"
+import { useState } from "react"
+import { useStore } from "@tanstack/react-store"
+import { settingsStore } from "../stores"
 
 export function Content() {
     const [showMore, setShowMore] = useState(false)
@@ -13,33 +13,33 @@ export function Content() {
             <PanelSectionRow>
                 <ButtonItem
                     layout="below"
-                    onClick={() => {
+                    onClick={ () => {
                         Navigation.Navigate(routes.launchOptions())
                         Navigation.CloseSideMenus()
-                    }}
+                    } }
                 >
                     Manage launch options
                 </ButtonItem>
             </PanelSectionRow>
             <PanelSectionRow>
                 <ToggleField
-                    checked={useHierarchy}
-                    onChange={(value) => {
+                    checked={ useHierarchy }
+                    onChange={ (value) => {
                         settingsStore.setState((state) => {
                             state.useHierarchy = value
                         })
-                    }}
-                    description={'Display launch options with a similar starting name in a tree structure'}
-                    label={'Enable hierarchy display'}
-                    bottomSeparator={'none'}
+                    } }
+                    description={ 'Display launch options with a similar starting name in a tree structure' }
+                    label={ 'Enable hierarchy display' }
+                    bottomSeparator={ 'none' }
                 />
             </PanelSectionRow>
             <PanelSectionRow>
                 <ButtonItem
                     layout="below"
-                    onClick={() => {
+                    onClick={ () => {
                         window.open(process.env.HOMEPAGE, "_blank")
-                    }}
+                    } }
                 >
                     README.md
                 </ButtonItem>
@@ -47,17 +47,17 @@ export function Content() {
             <PanelSectionRow>
                 <ButtonItem
                     layout="below"
-                    onClick={() => {
+                    onClick={ () => {
                         setShowMore((value) => !value)
-                    }}
-                >{showMore ? <FaChevronUp/> : <FaChevronDown/>}</ButtonItem>
+                    } }
+                >{ showMore ? <FaChevronUp/> : <FaChevronDown/> }</ButtonItem>
             </PanelSectionRow>
             {
                 showMore && (
                     <PanelSectionRow>
                         <ButtonItem
                             layout="below"
-                            onClick={() => {
+                            onClick={ () => {
                                 window.dispatchEvent(new CustomEvent(batchCreateLaunchOptionsEventType, {
                                     detail: [
                                         {
@@ -76,14 +76,15 @@ export function Content() {
                                         },
                                         {
                                             id: 'steam-deck-env',
+                                            group: 'Steam Utils',
                                             name: 'Steam Deck env',
                                             on: 'SteamDeck=1',
                                             off: 'SteamDeck=0',
                                             enableGlobally: true,
                                         },
-                                    ]
-                                }));
-                            }}
+                                    ],
+                                }))
+                            } }
                         >
                             Debug launch options
                         </ButtonItem>
