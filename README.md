@@ -108,6 +108,7 @@ window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
         },
         {
             id: 'steam-deck-env',
+            group: 'Steam Utils',
             name: 'Steam Deck env',
             on: 'SteamDeck=1',
             off: 'SteamDeck=0',
