@@ -90,6 +90,44 @@ export function LaunchOptionFields({ data, onChange }: LaunchOptionFieldsProps) 
                     />
                 ) }
             </ScrollIntoView>
+            <ScrollIntoView>
+                { ({ scrollIntoView }) => (
+                    <TextField
+                        label={ 'Value ID (optional)' }
+                        { ...({ placeholder: 'E.g.: proton-version' }) }
+                        style={ { width: '100%' } }
+                        value={ data.valueId }
+                        onChange={ (e) => {
+                            scrollIntoView(e)
+                            onChange('valueId', e.target.value)
+                        } }
+                        onKeyDown={ scrollIntoView }
+                        onKeyUp={ scrollIntoView }
+                        onInput={ scrollIntoView }
+                        onSelect={ scrollIntoView }
+                        onFocus={ scrollIntoView }
+                    />
+                ) }
+            </ScrollIntoView>
+            <ScrollIntoView>
+                { ({ scrollIntoView }) => (
+                    <TextField
+                        label={ 'Value Name (optional)' }
+                        { ...({ placeholder: 'E.g.: Version 7' }) }
+                        style={ { width: '100%' } }
+                        value={ data.valueName }
+                        onChange={ (e) => {
+                            scrollIntoView(e)
+                            onChange('valueName', e.target.value)
+                        } }
+                        onKeyDown={ scrollIntoView }
+                        onKeyUp={ scrollIntoView }
+                        onInput={ scrollIntoView }
+                        onSelect={ scrollIntoView }
+                        onFocus={ scrollIntoView }
+                    />
+                ) }
+            </ScrollIntoView>
         </>
     )
 }

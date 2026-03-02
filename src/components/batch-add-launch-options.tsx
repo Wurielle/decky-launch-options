@@ -61,6 +61,20 @@ export function BatchAddLaunchOptions({data, onSubmit, onCancel}: {
                                             })
                                         }}
                                     />
+                                    { launchOption.valueId && (
+                                        <TextField
+                                            label={'Value ID'}
+                                            disabled={true}
+                                            value={launchOption.valueId}
+                                        />
+                                    ) }
+                                    { launchOption.valueName && (
+                                        <TextField
+                                            label={'Value Name'}
+                                            disabled={true}
+                                            value={launchOption.valueName}
+                                        />
+                                    ) }
                                 </div>
                             }/>
                         </DialogControlsSection>

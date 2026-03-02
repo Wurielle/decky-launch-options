@@ -80,6 +80,28 @@ export function useSettings() {
             }
             return !!launchOption?.enableGlobally
         },
+        setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string | null) => {
+            setSettings((draft) => {
+                const siblings = draft.launchOptions.filter((item) => item.valueId === valueId)
+                if (siblings.length === 0) return
+                if (!draft.profiles[appid]) {
+                    draft.profiles[appid] = profileFactory()
+                }
+                const appProfile = draft.profiles[appid]
+                // Remove all siblings from state (fall back to enableGlobally defaults)
+                for (const sibling of siblings) {
+                    delete appProfile.state[sibling.id]
+                }
+                // If a specific option was selected, set it to true
+                // (unless it's enableGlobally, in which case deleting from state already defaults to true)
+                if (selectedLaunchOptionId !== null) {
+                    const selected = siblings.find((item) => item.id === selectedLaunchOptionId)
+                    if (selected && !selected.enableGlobally) {
+                        appProfile.state[selectedLaunchOptionId] = true
+                    }
+                }
+            })
+        },
         getAppActiveLocalLaunchOptions: (appid: string) => {
             const appProfile = settings.profiles[appid];
             return settings.launchOptions.filter((item) => {
