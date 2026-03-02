@@ -17,27 +17,8 @@ export function LaunchOptionFields({ data, onChange }: LaunchOptionFieldsProps) 
             <ScrollIntoView>
                 { ({ scrollIntoView }) => (
                     <TextField
-                        label={ 'Group' }
-                        { ...({ placeholder: 'E.g.: Performance' }) }
-                        style={ { width: '100%' } }
-                        value={ data.group }
-                        onChange={ (e) => {
-                            scrollIntoView(e)
-                            onChange('group', e.target.value)
-                        } }
-                        onKeyDown={ scrollIntoView }
-                        onKeyUp={ scrollIntoView }
-                        onInput={ scrollIntoView }
-                        onSelect={ scrollIntoView }
-                        onFocus={ scrollIntoView }
-                    />
-                ) }
-            </ScrollIntoView>
-            <ScrollIntoView>
-                { ({ scrollIntoView }) => (
-                    <TextField
                         label={ 'Name' }
-                        { ...({ placeholder: 'E.g.: My favorite launch options' }) }
+                        { ...({ placeholder: 'E.g.: Steam Deck Mode' }) }
                         style={ { width: '100%' } }
                         value={ data.name }
                         onChange={ (e) => {
@@ -81,6 +62,25 @@ export function LaunchOptionFields({ data, onChange }: LaunchOptionFieldsProps) 
                         onChange={ (e) => {
                             scrollIntoView(e)
                             onChange('off', e.target.value)
+                        } }
+                        onKeyDown={ scrollIntoView }
+                        onKeyUp={ scrollIntoView }
+                        onInput={ scrollIntoView }
+                        onSelect={ scrollIntoView }
+                        onFocus={ scrollIntoView }
+                    />
+                ) }
+            </ScrollIntoView>
+            <ScrollIntoView>
+                { ({ scrollIntoView }) => (
+                    <TextField
+                        label={ 'Group (optional)' }
+                        { ...({ placeholder: 'E.g.: Favorites' }) }
+                        style={ { width: '100%' } }
+                        value={ data.group }
+                        onChange={ (e) => {
+                            scrollIntoView(e)
+                            onChange('group', e.target.value)
                         } }
                         onKeyDown={ scrollIntoView }
                         onKeyUp={ scrollIntoView }
