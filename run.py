@@ -8,6 +8,7 @@ from pathlib import Path
 from shared import SETTINGS_FOLDER_PATH, SETTINGS_PATH
 
 LOG_FILE = os.path.join(SETTINGS_FOLDER_PATH, 'debug.log')
+PREV_LOG_FILE = os.path.join(SETTINGS_FOLDER_PATH, 'debug.prev.log')
 
 executable = sys.argv[1] if len(sys.argv) > 1 else None
 args = sys.argv[1:]
@@ -261,24 +262,39 @@ if __name__ == "__main__":
         # Try to write logs, but don't let it block execution
         try:
             def write_logs():
-                with open(LOG_FILE, "w") as f:
-                    f.write(f"--- {datetime.datetime.now()} Launch Attempt for app: {appid} ---\n")
-                    f.write(f"Full Command List: {args}\n\n")
+                log_path = Path(LOG_FILE)
+                log_path.parent.mkdir(parents=True, exist_ok=True)
 
+                # Rotate current log to previous log so both are easy to compare.
+                if log_path.exists():
+                    shutil.copyfile(LOG_FILE, PREV_LOG_FILE)
+
+                with open(LOG_FILE, "w", encoding="utf-8") as f:
+                    f.write("=== CURRENT LAUNCH ===\n")
+                    f.write(f"Timestamp: {datetime.datetime.now().isoformat()}\n")
+                    f.write(f"AppID: {appid}\n")
+                    f.write(f"Previous log: {PREV_LOG_FILE}\n")
+                    f.write("\n")
+
+                    f.write("[Original Args]\n")
                     for i, arg in enumerate(args):
-                        f.write(f"Arg {i}: {arg}\n")
-                    f.write("-" * 40 + "\n\n")
+                        f.write(f"{i:02d}: {arg}\n")
+                    f.write("\n")
 
-                    f.write(f"Executable: {executable_args}\n\n")
-
+                    f.write("[Final Executable Args]\n")
                     for i, arg in enumerate(executable_args):
-                        f.write(f"Arg {i}: {arg}\n")
-                    f.write("-" * 40 + "\n\n")
+                        f.write(f"{i:02d}: {arg}\n")
+                    f.write("\n")
 
-                    f.write("Applied Environment Variables:\n")
-                    for key in sorted(applied_env_vars.keys()):
-                        f.write(f"{key}={applied_env_vars[key]}\n")
-                    f.write("-" * 40 + "\n\n")
+                    f.write("[Applied Environment Variables]\n")
+                    if applied_env_vars:
+                        for key in sorted(applied_env_vars.keys()):
+                            f.write(f"{key}={applied_env_vars[key]}\n")
+                    else:
+                        f.write("(none)\n")
+                    f.write("\n")
+
+                    f.write("=== END CURRENT LAUNCH ===\n")
 
             write_logs()
         except Exception:
