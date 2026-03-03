@@ -123,12 +123,12 @@ def parse_launch_option(raw_command):
     }
 
 
-def get_final_args(settings, appid):
+def get_final_args_details(settings, appid):
     base_args = sys.argv[1:]
 
     # Safely access settings structure
     if not settings or "profiles" not in settings or "launchOptions" not in settings:
-        return base_args
+        return base_args, {}
 
     profile = settings["profiles"].get(str(appid), {})
     profile_state = profile.get("state", {})
@@ -230,6 +230,11 @@ def get_final_args(settings, appid):
     # Add all suffix args at the end
     final_args.extend(all_suffixes)
 
+    return final_args, all_env_vars
+
+
+def get_final_args(settings, appid):
+    final_args, _ = get_final_args_details(settings, appid)
     return final_args
 
 
@@ -243,10 +248,18 @@ if __name__ == "__main__":
         appid = get_steam_appid()
         settings = get_settings()
 
+        executable_args = args
+        applied_env_vars = {}
+        if settings:
+            try:
+                executable_args, applied_env_vars = get_final_args_details(settings, appid)
+            except Exception:
+                # Failed to apply launch options, fall back to original command
+                executable_args = args
+                applied_env_vars = {}
+
         # Try to write logs, but don't let it block execution
         try:
-            executable_args = get_final_args(settings, appid) if settings else args
-
             def write_logs():
                 with open(LOG_FILE, "w") as f:
                     f.write(f"--- {datetime.datetime.now()} Launch Attempt for app: {appid} ---\n")
@@ -262,9 +275,9 @@ if __name__ == "__main__":
                         f.write(f"Arg {i}: {arg}\n")
                     f.write("-" * 40 + "\n\n")
 
-                    f.write("Environment Variables:\n")
-                    for key in sorted(os.environ.keys()):
-                        f.write(f"{key}={os.environ[key]}\n")
+                    f.write("Applied Environment Variables:\n")
+                    for key in sorted(applied_env_vars.keys()):
+                        f.write(f"{key}={applied_env_vars[key]}\n")
                     f.write("-" * 40 + "\n\n")
 
             write_logs()
@@ -272,16 +285,10 @@ if __name__ == "__main__":
             # Logging failed, but continue execution
             pass
 
-        # Try to get final args with settings
-        if settings:
-            try:
-                executable_args = get_final_args(settings, appid)
-                if executable_args and len(executable_args) > 0:
-                    executable = executable_args[0]
-                    os.execvpe(executable, executable_args, os.environ)
-            except Exception:
-                # Failed to apply launch options, fall back to original command
-                pass
+        # Try to execute with computed args
+        if executable_args and len(executable_args) > 0:
+            executable = executable_args[0]
+            os.execvpe(executable, executable_args, os.environ)
 
     except Exception:
         # Any error in settings/appid detection, fall back to original command

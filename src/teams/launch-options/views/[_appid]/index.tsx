@@ -194,7 +194,7 @@ function ValueIdSelectItem({
     const selectedId = selectedOption?.id ?? null
 
     const rgOptions = [
-        { data: null, label: 'Disabled' },
+        { data: null, label: 'None' },
         ...launchOptions.map((lo) => ({
             data: lo.id,
             label: lo.valueName || lo.on || lo.name,
@@ -208,7 +208,7 @@ function ValueIdSelectItem({
                     ON: { selectedOption.on }
                 </span>
             ) : (
-                'Disabled'
+                'None'
             ) }
         </span>
     )
