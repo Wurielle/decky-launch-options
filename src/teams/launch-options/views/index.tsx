@@ -35,6 +35,8 @@ export function LaunchOptionsPage() {
                                     content: <UpdateLaunchOptionForm
                                         key={id || ''}
                                         id={id}
+                                        commonOnly={false}
+                                        syncCommonFields={false}
                                     />,
                                 })),
                             ]}

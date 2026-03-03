@@ -45,14 +45,14 @@ export function useSettings() {
                 })
             })
         },
-        updateLaunchOption: (launchOption: LaunchOption, path: string, value: any) => {
+        updateLaunchOption: (launchOption: LaunchOption, path: string, value: any, syncCommonFields = true) => {
             const commonFields = ['name', 'group', 'valueId', 'enableGlobally']
             setSettings((draft) => {
                 const index = draft.launchOptions.findIndex((item) => item.id === launchOption.id)
                 if (index === -1) return
                 set(draft, ['launchOptions', index, path], value)
                 // Propagate common field changes to all siblings sharing the same valueId
-                if (launchOption.valueId && commonFields.includes(path)) {
+                if (syncCommonFields && launchOption.valueId && commonFields.includes(path)) {
                     for (let i = 0; i < draft.launchOptions.length; i++) {
                         if (i !== index && draft.launchOptions[i].valueId === launchOption.valueId) {
                             set(draft, ['launchOptions', i, path], value)

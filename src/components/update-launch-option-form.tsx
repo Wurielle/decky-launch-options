@@ -3,9 +3,11 @@ import {ConfirmModal, DialogButton, showModal} from "@decky/ui";
 import {useMemo} from "react";
 import {LaunchOptionFields} from "./launch-option-fields";
 
-export function UpdateLaunchOptionForm({id, onDelete}: {
+export function UpdateLaunchOptionForm({id, onDelete, commonOnly = true, syncCommonFields = true}: {
     id: string,
     onDelete?: () => void
+    commonOnly?: boolean
+    syncCommonFields?: boolean
 }) {
     const {updateLaunchOption, deleteLaunchOption, settings} = usePlugin().settings
 
@@ -35,8 +37,8 @@ export function UpdateLaunchOptionForm({id, onDelete}: {
         <div>
             <LaunchOptionFields
                 data={data}
-                onChange={(field, value) => updateLaunchOption(data, field, value)}
-                commonOnly
+                onChange={(field, value) => updateLaunchOption(data, field, value, syncCommonFields)}
+                commonOnly={commonOnly}
             />
             <div style={{display: 'flex', gap: '10px'}}>
                 <DialogButton style={{flex: 1}}
