@@ -152,13 +152,42 @@ export function useSettings() {
                 // use this option as the initial group default.
                 if (path === 'enableGlobally' && value === true && launchOption.valueId) {
                     if (!draft.valueIdDefaults) draft.valueIdDefaults = {}
-                    if (!draft.valueIdDefaultDisabled?.[launchOption.valueId] && !draft.valueIdDefaults[launchOption.valueId]) {
-                        draft.valueIdDefaults[launchOption.valueId] = launchOption.id
+                    if (!draft.valueIdDefaultDisabled) draft.valueIdDefaultDisabled = {}
+
+                    const siblings = draft.launchOptions.filter((item) => item.valueId === launchOption.valueId)
+                    const hasDefault = !!draft.valueIdDefaults[launchOption.valueId]
+                    const isDefaultDisabled = !!draft.valueIdDefaultDisabled[launchOption.valueId]
+
+                    if (!hasDefault && !isDefaultDisabled) {
+                        const siblingIds = new Set(siblings.map((item) => item.id))
+
+                        let explicitTrueId: string | null = null
+                        let hasAnyExplicitState = false
+
+                        for (const profile of Object.values(draft.profiles)) {
+                            for (const id of siblingIds) {
+                                if (id in profile.state) {
+                                    hasAnyExplicitState = true
+                                    if (profile.state[id] === true) {
+                                        explicitTrueId = id
+                                        break
+                                    }
+                                }
+                            }
+                            if (explicitTrueId) break
+                        }
+
+                        if (explicitTrueId) {
+                            draft.valueIdDefaults[launchOption.valueId] = explicitTrueId
+                        } else if (hasAnyExplicitState) {
+                            draft.valueIdDefaultDisabled[launchOption.valueId] = true
+                        } else {
+                            draft.valueIdDefaults[launchOption.valueId] = launchOption.id
+                        }
                     }
 
                     // When promoting a valueId group to global, clear per-app overrides so
                     // the global default applies consistently across all apps.
-                    const siblings = draft.launchOptions.filter((item) => item.valueId === launchOption.valueId)
                     Object.values(draft.profiles).forEach((profile) => {
                         for (const sibling of siblings) {
                             delete profile.state[sibling.id]
