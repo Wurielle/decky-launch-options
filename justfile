@@ -94,3 +94,7 @@ logs:
 rundebug:
     ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
       "echo '${DECK_PASS}' | nano .dlo/debug.log"
+
+taildebug:
+    ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
+      "tail -f .dlo/debug.log"

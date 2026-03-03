@@ -262,6 +262,11 @@ if __name__ == "__main__":
                         f.write(f"Arg {i}: {arg}\n")
                     f.write("-" * 40 + "\n\n")
 
+                    f.write("Environment Variables:\n")
+                    for key in sorted(os.environ.keys()):
+                        f.write(f"{key}={os.environ[key]}\n")
+                    f.write("-" * 40 + "\n\n")
+
             write_logs()
         except Exception:
             # Logging failed, but continue execution

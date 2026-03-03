@@ -155,6 +155,15 @@ export function useSettings() {
                     if (!draft.valueIdDefaultDisabled?.[launchOption.valueId] && !draft.valueIdDefaults[launchOption.valueId]) {
                         draft.valueIdDefaults[launchOption.valueId] = launchOption.id
                     }
+
+                    // When promoting a valueId group to global, clear per-app overrides so
+                    // the global default applies consistently across all apps.
+                    const siblings = draft.launchOptions.filter((item) => item.valueId === launchOption.valueId)
+                    Object.values(draft.profiles).forEach((profile) => {
+                        for (const sibling of siblings) {
+                            delete profile.state[sibling.id]
+                        }
+                    })
                 }
 
                 ensureValueIdDefaults(draft)
