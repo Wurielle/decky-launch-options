@@ -67,6 +67,24 @@ export function useSettings() {
                 if (index !== -1) draft.launchOptions.splice(index, 1)
             })
         },
+        deleteLaunchOptionsByValueId: (valueId: string) => {
+            setSettings((draft) => {
+                const idsToDelete = new Set(
+                    draft.launchOptions
+                        .filter((item) => item.valueId === valueId)
+                        .map((item) => item.id),
+                )
+                if (idsToDelete.size === 0) return
+                draft.launchOptions = draft.launchOptions.filter((item) => !idsToDelete.has(item.id))
+                Object.values(draft.profiles).forEach((profile) => {
+                    Object.keys(profile.state).forEach((id) => {
+                        if (idsToDelete.has(id)) {
+                            delete profile.state[id]
+                        }
+                    })
+                })
+            })
+        },
         setAppLaunchOptionState: (appid: string, launchOptionId: string, value: boolean) => {
             setSettings((draft) => {
                 const launchOption = draft.launchOptions.find((item) => item.id === launchOptionId)

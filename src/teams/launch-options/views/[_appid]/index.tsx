@@ -432,6 +432,7 @@ export function AppLaunchOptionsPage() {
                 <UpdateLaunchOptionForm
                     id={ id }
                     onDelete={ () => modalResult.Close() }
+                    deleteByValueId
                 />
             </ModalWrapper>,
         )
