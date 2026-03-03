@@ -269,20 +269,12 @@ export function useSettings() {
                     const selected = siblings.find((item) => item.id === selectedLaunchOptionId)
                     if (selected) {
                         appProfile.state[selectedLaunchOptionId] = true
-                        if (setAsDefault && selected.enableGlobally) {
-                            draft.valueIdDefaults[valueId] = selected.id
-                        }
                     }
                     return
                 }
 
                 // Marker: explicit group disabled
                 appProfile.state[siblings[0].id] = false
-                if (setAsDefault) {
-                    delete draft.valueIdDefaults[valueId]
-                    delete draft.valueIdDefaultDisabled[valueId]
-                    ensureValueIdDefaults(draft)
-                }
             })
         },
         getAppActiveLocalLaunchOptions: (appid: string) => {
