@@ -1,6 +1,8 @@
-import { TextField, ToggleField } from "@decky/ui"
+import { DialogButton, TextField, ToggleField } from "@decky/ui"
 import { LaunchOption } from "../shared"
 import { ScrollIntoView } from "./scroll-into-view"
+import { useState } from "react"
+import { FaChevronDown, FaChevronUp } from "react-icons/fa"
 
 interface LaunchOptionFieldsProps {
     data: LaunchOption;
@@ -10,6 +12,7 @@ interface LaunchOptionFieldsProps {
 }
 
 export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionFieldsProps) {
+    const [showAdvanced, setShowAdvanced] = useState(false)
     const hasValueId = !!data.valueId
     const hidePerValue = commonOnly && hasValueId
 
@@ -80,49 +83,64 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
                     ) }
                 </ScrollIntoView>
             ) }
-            <ScrollIntoView>
-                { ({ scrollIntoView }) => (
-                    <TextField
-                        label={ 'Group (optional)' }
-                        { ...({ placeholder: 'E.g.: Favorites' }) }
-                        style={ { width: '100%' } }
-                        value={ data.group }
-                        onChange={ (e) => {
-                            scrollIntoView(e)
-                            onChange('group', e.target.value)
-                        } }
-                        onKeyDown={ scrollIntoView }
-                        onKeyUp={ scrollIntoView }
-                        onInput={ scrollIntoView }
-                        onSelect={ scrollIntoView }
-                        onFocus={ scrollIntoView }
-                    />
-                ) }
-            </ScrollIntoView>
-            <ScrollIntoView>
-                { ({ scrollIntoView }) => (
-                    <TextField
-                        label={ 'Value ID (optional)' }
-                        { ...({ placeholder: 'E.g.: proton-version' }) }
-                        style={ { width: '100%' } }
-                        value={ data.valueId }
-                        onChange={ (e) => {
-                            scrollIntoView(e)
-                            onChange('valueId', e.target.value)
-                        } }
-                        onKeyDown={ scrollIntoView }
-                        onKeyUp={ scrollIntoView }
-                        onInput={ scrollIntoView }
-                        onSelect={ scrollIntoView }
-                        onFocus={ scrollIntoView }
-                    />
-                ) }
-            </ScrollIntoView>
-            { !hidePerValue && (
+            <div style={ {
+                marginBottom: 22,
+            } }>
+                <DialogButton
+                    onClick={ () => {
+                        setShowAdvanced((value) => !value)
+                    } }
+                >
+                    Advanced { showAdvanced ? <FaChevronUp/> : <FaChevronDown/> }
+                </DialogButton>
+            </div>
+            { showAdvanced && (
                 <ScrollIntoView>
                     { ({ scrollIntoView }) => (
                         <TextField
-                            label={ 'Value Name (optional)' }
+                            label={ 'Group' }
+                            { ...({ placeholder: 'E.g.: Favorites' }) }
+                            style={ { width: '100%' } }
+                            value={ data.group }
+                            onChange={ (e) => {
+                                scrollIntoView(e)
+                                onChange('group', e.target.value)
+                            } }
+                            onKeyDown={ scrollIntoView }
+                            onKeyUp={ scrollIntoView }
+                            onInput={ scrollIntoView }
+                            onSelect={ scrollIntoView }
+                            onFocus={ scrollIntoView }
+                        />
+                    ) }
+                </ScrollIntoView>
+            ) }
+            { showAdvanced && (
+                <ScrollIntoView>
+                    { ({ scrollIntoView }) => (
+                        <TextField
+                            label={ 'Value ID' }
+                            { ...({ placeholder: 'E.g.: proton-version' }) }
+                            style={ { width: '100%' } }
+                            value={ data.valueId }
+                            onChange={ (e) => {
+                                scrollIntoView(e)
+                                onChange('valueId', e.target.value)
+                            } }
+                            onKeyDown={ scrollIntoView }
+                            onKeyUp={ scrollIntoView }
+                            onInput={ scrollIntoView }
+                            onSelect={ scrollIntoView }
+                            onFocus={ scrollIntoView }
+                        />
+                    ) }
+                </ScrollIntoView>
+            ) }
+            { showAdvanced && !hidePerValue && (
+                <ScrollIntoView>
+                    { ({ scrollIntoView }) => (
+                        <TextField
+                            label={ 'Value Name' }
                             { ...({ placeholder: 'E.g.: Version 7' }) }
                             style={ { width: '100%' } }
                             value={ data.valueName }
