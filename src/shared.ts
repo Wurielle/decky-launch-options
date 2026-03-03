@@ -44,4 +44,5 @@ export type LaunchOption = {
 export type Settings = {
     profiles: Record<string, Profile>
     launchOptions: LaunchOption[]
+    valueIdDefaults: Record<string, string>
 }

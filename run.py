@@ -155,6 +155,7 @@ def get_final_args(settings, appid):
             value_id_groups.setdefault(value_id, []).append(opt)
 
     selected_by_value_id = {}
+    value_id_defaults = settings.get("valueIdDefaults", {})
     for value_id, siblings in value_id_groups.items():
         explicit_true = next((opt["id"] for opt in siblings if profile_state.get(opt["id"]) is True), None)
         if explicit_true is not None:
@@ -164,6 +165,12 @@ def get_final_args(settings, appid):
         has_explicit_state = any(opt["id"] in profile_state for opt in siblings)
         if has_explicit_state:
             selected_by_value_id[value_id] = None
+            continue
+
+        configured_default = value_id_defaults.get(value_id)
+        default_opt = next((opt["id"] for opt in siblings if opt["id"] == configured_default and opt.get("enableGlobally", False)), None)
+        if default_opt is not None:
+            selected_by_value_id[value_id] = default_opt
             continue
 
         default_global = next((opt["id"] for opt in siblings if opt.get("enableGlobally", False)), None)

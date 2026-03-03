@@ -172,7 +172,8 @@ interface ValueIdSelectItemProps {
     indentLevel: number;
     appid: string;
     getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean;
-    setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string | null) => void;
+    setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string | null, setAsDefault?: boolean) => void;
+    setValueAsDefault: boolean;
     onEdit: (id: string) => void;
 }
 
@@ -184,6 +185,7 @@ function ValueIdSelectItem({
                                appid,
                                getAppLaunchOptionState,
                                setAppValueIdState,
+                               setValueAsDefault,
                                onEdit,
                            }: ValueIdSelectItemProps) {
     const activeColor = 'oklch(80.9% 0.105 251.813)'
@@ -221,7 +223,7 @@ function ValueIdSelectItem({
                     rgOptions={ rgOptions }
                     selectedOption={ selectedId }
                     onChange={ (option: SingleDropdownOption) => {
-                        setAppValueIdState(appid, valueId, option.data)
+                        setAppValueIdState(appid, valueId, option.data, setValueAsDefault)
                     } }
                 />
             </Focusable>
@@ -242,7 +244,8 @@ interface RenderItemsParams {
     appid: string;
     getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean;
     setAppLaunchOptionState: (appid: string, launchOptionId: string, value: boolean) => void;
-    setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string | null) => void;
+    setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string | null, setAsDefault?: boolean) => void;
+    setValueAsDefault: boolean;
     onEdit: (id: string) => void;
 }
 
@@ -252,6 +255,7 @@ function renderLaunchOptionItems({
                                      getAppLaunchOptionState,
                                      setAppLaunchOptionState,
                                      setAppValueIdState,
+                                     setValueAsDefault,
                                      onEdit,
                                  }: RenderItemsParams) {
     const result: React.ReactNode[] = []
@@ -280,6 +284,7 @@ function renderLaunchOptionItems({
                     appid={ appid }
                     getAppLaunchOptionState={ getAppLaunchOptionState }
                     setAppValueIdState={ setAppValueIdState }
+                    setValueAsDefault={ setValueAsDefault }
                     onEdit={ onEdit }
                 />
             )
@@ -474,6 +479,7 @@ export function AppLaunchOptionsPage() {
                                         getAppLaunchOptionState,
                                         setAppLaunchOptionState,
                                         setAppValueIdState,
+                                        setValueAsDefault: true,
                                         onEdit: showUpdateLaunchOptionFormModal,
                                     }) }
                                 </div>
@@ -489,6 +495,7 @@ export function AppLaunchOptionsPage() {
                                         getAppLaunchOptionState,
                                         setAppLaunchOptionState,
                                         setAppValueIdState,
+                                        setValueAsDefault: false,
                                         onEdit: showUpdateLaunchOptionFormModal,
                                     }) }
                                 </div>
@@ -533,6 +540,7 @@ export function AppLaunchOptionsPage() {
                                 getAppLaunchOptionState,
                                 setAppLaunchOptionState,
                                 setAppValueIdState,
+                                setValueAsDefault: false,
                                 onEdit: showUpdateLaunchOptionFormModal,
                             }) }
                         </Focusable>
@@ -569,6 +577,7 @@ export function AppLaunchOptionsPage() {
                                 getAppLaunchOptionState,
                                 setAppLaunchOptionState,
                                 setAppValueIdState,
+                                setValueAsDefault: true,
                                 onEdit: showUpdateLaunchOptionFormModal,
                             }) }
                         </Focusable>
