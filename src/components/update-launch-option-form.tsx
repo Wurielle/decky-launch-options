@@ -36,6 +36,7 @@ export function UpdateLaunchOptionForm({id, onDelete}: {
             <LaunchOptionFields
                 data={data}
                 onChange={(field, value) => updateLaunchOption(data, field, value)}
+                commonOnly
             />
             <div style={{display: 'flex', gap: '10px'}}>
                 <DialogButton style={{flex: 1}}
