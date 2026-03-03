@@ -9,6 +9,7 @@ export function useSettings() {
         profiles: {},
         launchOptions: [],
         valueIdDefaults: {},
+        valueIdDefaultDisabled: {},
     })
 
     const getSettingsQuery = useGetSettingsQuery()
@@ -25,12 +26,14 @@ export function useSettings() {
             _setSettings({
                 ...getSettingsQuery.data,
                 valueIdDefaults: getSettingsQuery.data.valueIdDefaults || {},
+                valueIdDefaultDisabled: getSettingsQuery.data.valueIdDefaultDisabled || {},
             })
         }
     }, [getSettingsQuery.data, getSettingsQuery.isFetched])
 
     const ensureValueIdDefaults = (draft: WritableDraft<Settings>) => {
         if (!draft.valueIdDefaults) draft.valueIdDefaults = {}
+        if (!draft.valueIdDefaultDisabled) draft.valueIdDefaultDisabled = {}
 
         const groups = new Map<string, LaunchOption[]>()
         draft.launchOptions.forEach((item) => {
@@ -45,8 +48,16 @@ export function useSettings() {
                 delete draft.valueIdDefaults[valueId]
             }
         })
+        Object.keys(draft.valueIdDefaultDisabled).forEach((valueId) => {
+            if (!groups.has(valueId)) {
+                delete draft.valueIdDefaultDisabled[valueId]
+            }
+        })
 
         groups.forEach((siblings, valueId) => {
+            if (draft.valueIdDefaultDisabled[valueId]) {
+                return
+            }
             const currentDefaultId = draft.valueIdDefaults[valueId]
             const isCurrentDefaultValid = siblings.some((item) => item.id === currentDefaultId && item.enableGlobally)
             if (isCurrentDefaultValid) return
@@ -73,6 +84,8 @@ export function useSettings() {
         // Any explicit state on this group without a true means user selected Disabled.
         const hasExplicitState = siblings.some((item) => appProfile?.state && item.id in appProfile.state)
         if (hasExplicitState) return null
+
+        if (settings.valueIdDefaultDisabled?.[valueId]) return null
 
         // Otherwise, pick the first globally-enabled option in the group as default.
         const defaultId = settings.valueIdDefaults?.[valueId]
@@ -139,7 +152,7 @@ export function useSettings() {
                 // use this option as the initial group default.
                 if (path === 'enableGlobally' && value === true && launchOption.valueId) {
                     if (!draft.valueIdDefaults) draft.valueIdDefaults = {}
-                    if (!draft.valueIdDefaults[launchOption.valueId]) {
+                    if (!draft.valueIdDefaultDisabled?.[launchOption.valueId] && !draft.valueIdDefaults[launchOption.valueId]) {
                         draft.valueIdDefaults[launchOption.valueId] = launchOption.id
                     }
                 }
@@ -216,17 +229,21 @@ export function useSettings() {
                 const siblings = draft.launchOptions.filter((item) => item.valueId === valueId)
                 if (siblings.length === 0) return
                 if (!draft.valueIdDefaults) draft.valueIdDefaults = {}
+                if (!draft.valueIdDefaultDisabled) draft.valueIdDefaultDisabled = {}
 
                 if (setAsDefault) {
                     if (selectedLaunchOptionId !== null) {
                         const selected = siblings.find((item) => item.id === selectedLaunchOptionId)
                         if (selected?.enableGlobally) {
                             draft.valueIdDefaults[valueId] = selected.id
+                            delete draft.valueIdDefaultDisabled[valueId]
                         } else {
                             delete draft.valueIdDefaults[valueId]
+                            delete draft.valueIdDefaultDisabled[valueId]
                         }
                     } else {
                         delete draft.valueIdDefaults[valueId]
+                        draft.valueIdDefaultDisabled[valueId] = true
                     }
 
                     // Global default change should affect all games.
@@ -263,6 +280,7 @@ export function useSettings() {
                 appProfile.state[siblings[0].id] = false
                 if (setAsDefault) {
                     delete draft.valueIdDefaults[valueId]
+                    delete draft.valueIdDefaultDisabled[valueId]
                     ensureValueIdDefaults(draft)
                 }
             })

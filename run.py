@@ -156,6 +156,7 @@ def get_final_args(settings, appid):
 
     selected_by_value_id = {}
     value_id_defaults = settings.get("valueIdDefaults", {})
+    value_id_default_disabled = settings.get("valueIdDefaultDisabled", {})
     for value_id, siblings in value_id_groups.items():
         explicit_true = next((opt["id"] for opt in siblings if profile_state.get(opt["id"]) is True), None)
         if explicit_true is not None:
@@ -164,6 +165,10 @@ def get_final_args(settings, appid):
 
         has_explicit_state = any(opt["id"] in profile_state for opt in siblings)
         if has_explicit_state:
+            selected_by_value_id[value_id] = None
+            continue
+
+        if value_id_default_disabled.get(value_id, False):
             selected_by_value_id[value_id] = None
             continue
 
