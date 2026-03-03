@@ -147,13 +147,41 @@ def get_final_args(settings, appid):
             all_prefixes.append(parsed['prefix'])
         all_suffixes.extend(parsed['suffix'])
 
+    # Resolve selected option per valueId group.
+    value_id_groups = {}
+    for opt in settings["launchOptions"]:
+        value_id = opt.get("valueId", "")
+        if value_id:
+            value_id_groups.setdefault(value_id, []).append(opt)
+
+    selected_by_value_id = {}
+    for value_id, siblings in value_id_groups.items():
+        explicit_true = next((opt["id"] for opt in siblings if profile_state.get(opt["id"]) is True), None)
+        if explicit_true is not None:
+            selected_by_value_id[value_id] = explicit_true
+            continue
+
+        has_explicit_state = any(opt["id"] in profile_state for opt in siblings)
+        if has_explicit_state:
+            selected_by_value_id[value_id] = None
+            continue
+
+        default_global = next((opt["id"] for opt in siblings if opt.get("enableGlobally", False)), None)
+        selected_by_value_id[value_id] = default_global
+
     # Parse each enabled launch option
     for opt in settings["launchOptions"]:
         opt_id = opt["id"]
+        value_id = opt.get("valueId", "")
         enable_globally = opt.get("enableGlobally", False)
-        is_enabled = profile_state.get(opt_id, enable_globally)
-
-        raw_command = opt["on"] if is_enabled else opt["off"]
+        if value_id:
+            is_enabled = selected_by_value_id.get(value_id) == opt_id
+            # For valueId groups, only the selected option contributes commands.
+            # Sibling options do not contribute off commands.
+            raw_command = opt["on"] if is_enabled else ""
+        else:
+            is_enabled = profile_state.get(opt_id, enable_globally)
+            raw_command = opt["on"] if is_enabled else opt["off"]
 
         if raw_command and raw_command.strip():
             parsed = parse_launch_option(raw_command)

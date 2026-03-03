@@ -25,6 +25,40 @@ export function useSettings() {
         }
     }, [getSettingsQuery.data, getSettingsQuery.isFetched])
 
+    const getSelectedValueIdLaunchOptionId = (appid: string, valueId: string): string | null => {
+        const siblings = settings.launchOptions.filter((item) => item.valueId === valueId)
+        if (siblings.length === 0) return null
+
+        const appProfile = settings.profiles[appid]
+
+        // Explicit user choice wins.
+        const explicitlyEnabled = siblings.find((item) => appProfile?.state?.[item.id] === true)
+        if (explicitlyEnabled) return explicitlyEnabled.id
+
+        // Any explicit state on this group without a true means user selected Disabled.
+        const hasExplicitState = siblings.some((item) => appProfile?.state && item.id in appProfile.state)
+        if (hasExplicitState) return null
+
+        // Otherwise, pick the first globally-enabled option in the group as default.
+        const globallyEnabled = siblings.find((item) => item.enableGlobally)
+        return globallyEnabled?.id || null
+    }
+
+    const getLaunchOptionState = (appid: string, launchOptionId: string): boolean => {
+        const launchOption = settings.launchOptions.find((item) => item.id === launchOptionId)
+        if (!launchOption) return false
+
+        if (launchOption.valueId) {
+            return getSelectedValueIdLaunchOptionId(appid, launchOption.valueId) === launchOptionId
+        }
+
+        const appProfile = settings.profiles[appid]
+        if (appProfile && launchOptionId in appProfile.state) {
+            return appProfile.state[launchOptionId]
+        }
+        return !!launchOption.enableGlobally
+    }
+
     return {
         settings,
         loading: getSettingsQuery.isLoading,
@@ -89,6 +123,26 @@ export function useSettings() {
             setSettings((draft) => {
                 const launchOption = draft.launchOptions.find((item) => item.id === launchOptionId)
                 if (!launchOption) return
+
+                if (launchOption.valueId) {
+                    const siblings = draft.launchOptions.filter((item) => item.valueId === launchOption.valueId)
+                    if (siblings.length === 0) return
+                    if (!draft.profiles[appid]) {
+                        draft.profiles[appid] = profileFactory()
+                    }
+                    const appProfile = draft.profiles[appid]
+                    for (const sibling of siblings) {
+                        delete appProfile.state[sibling.id]
+                    }
+                    if (value) {
+                        appProfile.state[launchOptionId] = true
+                    } else {
+                        // Marker: explicit group disabled
+                        appProfile.state[siblings[0].id] = false
+                    }
+                    return
+                }
+
                 if (!draft.profiles[appid]) {
                     draft.profiles[appid] = profileFactory()
                 }
@@ -101,12 +155,7 @@ export function useSettings() {
             })
         },
         getAppLaunchOptionState: (appid: string, launchOptionId: string) => {
-            const launchOption = settings.launchOptions.find((item) => item.id === launchOptionId)
-            const appProfile = settings.profiles[appid]
-            if (appProfile && launchOptionId in appProfile.state) {
-                return appProfile.state[launchOptionId]
-            }
-            return !!launchOption?.enableGlobally
+            return getLaunchOptionState(appid, launchOptionId)
         },
         setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string | null) => {
             setSettings((draft) => {
@@ -120,20 +169,27 @@ export function useSettings() {
                 for (const sibling of siblings) {
                     delete appProfile.state[sibling.id]
                 }
-                // If a specific option was selected, set it to true
-                // (unless it's enableGlobally, in which case deleting from state already defaults to true)
+
+                // If a specific option was selected, set it explicitly.
                 if (selectedLaunchOptionId !== null) {
                     const selected = siblings.find((item) => item.id === selectedLaunchOptionId)
-                    if (selected && !selected.enableGlobally) {
+                    if (selected) {
                         appProfile.state[selectedLaunchOptionId] = true
                     }
+                    return
                 }
+
+                // Marker: explicit group disabled
+                appProfile.state[siblings[0].id] = false
             })
         },
         getAppActiveLocalLaunchOptions: (appid: string) => {
             const appProfile = settings.profiles[appid];
             return settings.launchOptions.filter((item) => {
                 if (item.enableGlobally) return false;
+                if (item.valueId) {
+                    return getLaunchOptionState(appid, item.id) && !!item.on;
+                }
                 const state = appProfile?.state?.[item.id];
                 const isActive = state !== undefined ? state : false;
                 return isActive ? !!item.on : !!item.off;
@@ -143,6 +199,9 @@ export function useSettings() {
             const appProfile = settings.profiles[appid];
             return settings.launchOptions.filter((item) => {
                 if (!item.enableGlobally) return false;
+                if (item.valueId) {
+                    return getLaunchOptionState(appid, item.id) && !!item.on;
+                }
                 const state = appProfile?.state?.[item.id];
                 const isActive = state !== undefined ? state : true;
                 return isActive ? !!item.on : !!item.off;
