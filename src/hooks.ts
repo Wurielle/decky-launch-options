@@ -145,6 +145,7 @@ export function useSettings() {
             setSettings((draft) => {
                 const index = draft.launchOptions.findIndex((item) => item.id === launchOption.id)
                 if (index === -1) return
+                const oldValueId = launchOption.valueId
                 set(draft, ['launchOptions', index, path], value)
                 // Propagate common field changes to all siblings sharing the same valueId
                 if (syncCommonFields && launchOption.valueId && commonFields.includes(path)) {
@@ -171,6 +172,30 @@ export function useSettings() {
                             delete profile.state[sibling.id]
                         }
                     })
+                }
+
+                // If valueId changes, reset both old and new groups to disabled to avoid
+                // stale implicit/fallback selections during group reassignment.
+                if (path === 'valueId' && oldValueId !== value) {
+                    if (!draft.valueIdDefaults) draft.valueIdDefaults = {}
+                    if (!draft.valueIdDefaultDisabled) draft.valueIdDefaultDisabled = {}
+
+                    const resetValueIdGroup = (groupValueId: string) => {
+                        if (!groupValueId) return
+                        const siblings = draft.launchOptions.filter((item) => item.valueId === groupValueId)
+                        delete draft.valueIdDefaults[groupValueId]
+                        draft.valueIdDefaultDisabled[groupValueId] = true
+                        Object.values(draft.profiles).forEach((profile) => {
+                            for (const sibling of siblings) {
+                                delete profile.state[sibling.id]
+                            }
+                        })
+                    }
+
+                    resetValueIdGroup(oldValueId)
+                    if (typeof value === 'string') {
+                        resetValueIdGroup(value)
+                    }
                 }
 
                 ensureValueIdDefaults(draft)
