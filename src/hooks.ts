@@ -1,8 +1,8 @@
-import {set} from 'es-toolkit/compat'
-import {useEffect, useState} from 'react'
-import {produce, WritableDraft} from 'immer'
-import {LaunchOption, profileFactory, Settings} from './shared'
-import {useGetSettingsQuery, useSetSettingsMutation} from './query'
+import { set } from 'es-toolkit/compat'
+import { useEffect, useState } from 'react'
+import { produce, WritableDraft } from 'immer'
+import { LaunchOption, profileFactory, Settings } from './shared'
+import { useGetSettingsQuery, useSetSettingsMutation } from './query'
 
 export function useSettings() {
     const [settings, _setSettings] = useState<Settings>({
@@ -294,28 +294,28 @@ export function useSettings() {
             })
         },
         getAppActiveLocalLaunchOptions: (appid: string) => {
-            const appProfile = settings.profiles[appid];
+            const appProfile = settings.profiles[appid]
             return settings.launchOptions.filter((item) => {
-                if (item.enableGlobally) return false;
+                if (item.enableGlobally) return false
                 if (item.valueId) {
-                    return getLaunchOptionState(appid, item.id) && !!item.on;
+                    return getLaunchOptionState(appid, item.id) && !!item.on
                 }
-                const state = appProfile?.state?.[item.id];
-                const isActive = state !== undefined ? state : false;
-                return isActive ? !!item.on : !!item.off;
-            });
+                const state = appProfile?.state?.[item.id]
+                const isActive = state !== undefined ? state : false
+                return isActive ? !!item.on : !!item.off
+            })
         },
         getAppActiveGlobalLaunchOptions: (appid: string) => {
-            const appProfile = settings.profiles[appid];
+            const appProfile = settings.profiles[appid]
             return settings.launchOptions.filter((item) => {
-                if (!item.enableGlobally) return false;
+                if (!item.enableGlobally) return false
                 if (item.valueId) {
-                    return getLaunchOptionState(appid, item.id) && !!item.on;
+                    return getLaunchOptionState(appid, item.id) && !!item.on
                 }
-                const state = appProfile?.state?.[item.id];
-                const isActive = state !== undefined ? state : true;
-                return isActive ? !!item.on : !!item.off;
-            });
+                const state = appProfile?.state?.[item.id]
+                const isActive = state !== undefined ? state : true
+                return isActive ? !!item.on : !!item.off
+            })
         },
         getAppOriginalLaunchOptions: (appid: string) => settings.profiles[appid]?.originalLaunchOptions || '',
         setAppOriginalLaunchOptions: (appid: string, command: string) => {
