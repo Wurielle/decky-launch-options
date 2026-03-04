@@ -69,12 +69,9 @@ export function useSettings() {
             const isCurrentDefaultValid = siblings.some((item) => item.id === currentDefaultId && item.enableGlobally)
             if (isCurrentDefaultValid) return
 
-            const fallbackGlobal = siblings.find((item) => item.enableGlobally)
-            if (fallbackGlobal) {
-                draft.valueIdDefaults[valueId] = fallbackGlobal.id
-            } else {
-                delete draft.valueIdDefaults[valueId]
-            }
+            // No implicit fallback selection. If no valid default is configured,
+            // leave the group with no selected value.
+            delete draft.valueIdDefaults[valueId]
         })
     }
 
@@ -94,13 +91,13 @@ export function useSettings() {
 
         if (settings.valueIdDefaultDisabled?.[valueId]) return null
 
-        // Otherwise, pick the first globally-enabled option in the group as default.
+        // Otherwise, use configured global default if present.
         const defaultId = settings.valueIdDefaults?.[valueId]
         const defaultOption = siblings.find((item) => item.id === defaultId && item.enableGlobally)
         if (defaultOption) return defaultOption.id
 
-        const globallyEnabled = siblings.find((item) => item.enableGlobally)
-        return globallyEnabled?.id || null
+        // No implicit fallback selection.
+        return null
     }
 
     const getLaunchOptionState = (appid: string, launchOptionId: string): boolean => {
