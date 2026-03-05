@@ -191,11 +191,13 @@ function ValueIdSelectItem({
     const activeColor = 'oklch(80.9% 0.105 251.813)'
 
     const selectedOption = launchOptions.find((lo) => getAppLaunchOptionState(appid, lo.id))
-    const selectedId = selectedOption?.id ?? null
+    const selectedId = selectedOption?.unsetDefault ? null : (selectedOption?.id ?? null)
 
     const rgOptions = [
         { data: null, label: 'None' },
-        ...launchOptions.map((lo) => ({
+        ...launchOptions
+            .filter((lo) => !lo.unsetDefault)
+            .map((lo) => ({
             data: lo.id,
             label: lo.valueName || lo.on || lo.name,
         })),
@@ -203,7 +205,7 @@ function ValueIdSelectItem({
 
     const description = (
         <span style={ { color: 'oklch(55.4% 0.046 257.417)' } }>
-            { selectedOption ? (
+            { selectedOption && !selectedOption.unsetDefault ? (
                 <span style={ { color: activeColor } }>
                     ON: { selectedOption.on }
                 </span>
@@ -312,7 +314,8 @@ function renderLaunchOptionItems({
  */
 function countActiveLaunchOptions(
     launchOptions: LaunchOption[],
-    appProfile: { state: Record<string, boolean> } | undefined,
+    appid: string,
+    getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean,
     filter?: (item: LaunchOption) => boolean,
 ): number {
     const filtered = filter ? launchOptions.filter(filter) : launchOptions
@@ -320,8 +323,7 @@ function countActiveLaunchOptions(
     let count = 0
 
     for (const item of filtered) {
-        const state = appProfile?.state?.[item.id]
-        const isActive = state !== undefined ? state : !!item.enableGlobally
+        const isActive = getAppLaunchOptionState(appid, item.id)
         const hasCommand = isActive ? !!item.on : !!item.off
 
         if (!hasCommand) continue
@@ -349,6 +351,23 @@ export function AppLaunchOptionsPage() {
         getAppOriginalLaunchOptions,
         setAppOriginalLaunchOptions,
     } = useSettings()
+    const globalValueIds = useMemo(() => {
+        const valueIds = new Set<string>()
+        settings.launchOptions.forEach((item) => {
+            if (item.valueId && item.enableGlobally) {
+                valueIds.add(item.valueId)
+            }
+        })
+        return valueIds
+    }, [settings.launchOptions])
+
+    const isLaunchOptionGlobal = useCallback((item: LaunchOption) => {
+        if (item.valueId) {
+            return globalValueIds.has(item.valueId)
+        }
+        return item.enableGlobally
+    }, [globalValueIds])
+
     const groups = useMemo(() => {
         const groupSet = new Set<string>()
         settings.launchOptions.forEach((item) => {
@@ -362,8 +381,8 @@ export function AppLaunchOptionsPage() {
             const inGroup = settings.launchOptions
                 .filter((item) => item.group === group)
                 .sort((a, b) => a.name.localeCompare(b.name))
-            const localFiltered = inGroup.filter((item) => !item.enableGlobally)
-            const globalFiltered = inGroup.filter((item) => item.enableGlobally)
+            const localFiltered = inGroup.filter((item) => !isLaunchOptionGlobal(item))
+            const globalFiltered = inGroup.filter((item) => isLaunchOptionGlobal(item))
             map[group] = {
                 local: useHierarchy ? buildHierarchy(localFiltered) : localFiltered.map(item => ({
                     launchOption: item,
@@ -378,23 +397,27 @@ export function AppLaunchOptionsPage() {
             }
         }
         return map
-    }, [settings, groups, useHierarchy])
+    }, [settings, groups, useHierarchy, isLaunchOptionGlobal])
     const localLaunchOptions = useMemo(() => {
-        const filtered = settings.launchOptions.filter((item) => !item.enableGlobally && !item.group).sort((a, b) => a.name.localeCompare(b.name))
+        const filtered = settings.launchOptions
+            .filter((item) => !isLaunchOptionGlobal(item) && !item.group)
+            .sort((a, b) => a.name.localeCompare(b.name))
         return useHierarchy ? buildHierarchy(filtered) : filtered.map(item => ({
             launchOption: item,
             displayName: item.name,
             indentLevel: 0,
         }))
-    }, [settings, useHierarchy])
+    }, [settings, useHierarchy, isLaunchOptionGlobal])
     const globalLaunchOptions = useMemo(() => {
-        const filtered = settings.launchOptions.filter((item) => item.enableGlobally && !item.group).sort((a, b) => a.name.localeCompare(b.name))
+        const filtered = settings.launchOptions
+            .filter((item) => isLaunchOptionGlobal(item) && !item.group)
+            .sort((a, b) => a.name.localeCompare(b.name))
         return useHierarchy ? buildHierarchy(filtered) : filtered.map(item => ({
             launchOption: item,
             displayName: item.name,
             indentLevel: 0,
         }))
-    }, [settings, useHierarchy])
+    }, [settings, useHierarchy, isLaunchOptionGlobal])
     const { TabCount } = findModule((mod) => {
         if (typeof mod !== 'object') return false
 
@@ -441,7 +464,7 @@ export function AppLaunchOptionsPage() {
                 />
             </ModalWrapper>,
         )
-    }, [])
+    }, [appid])
 
     return (
         <div
@@ -503,10 +526,10 @@ export function AppLaunchOptionsPage() {
                         </Focusable>
                     ),
                     renderTabAddon: () => {
-                        const appProfile = settings.profiles[appid]
                         const count = countActiveLaunchOptions(
                             settings.launchOptions,
-                            appProfile,
+                            appid,
+                            getAppLaunchOptionState,
                             (item) => item.group === group,
                         )
                         return <span className={ TabCount }>{ count }</span>
@@ -546,11 +569,11 @@ export function AppLaunchOptionsPage() {
                         </Focusable>
                     ),
                     renderTabAddon: () => {
-                        const appProfile = settings.profiles[appid]
                         const count = countActiveLaunchOptions(
                             settings.launchOptions,
-                            appProfile,
-                            (item) => !item.enableGlobally && !item.group,
+                            appid,
+                            getAppLaunchOptionState,
+                            (item) => !isLaunchOptionGlobal(item) && !item.group,
                         )
                         return <span className={ TabCount }>{ count + (Number(!!getAppOriginalLaunchOptions(appid))) }</span>
                     },
@@ -583,11 +606,11 @@ export function AppLaunchOptionsPage() {
                         </Focusable>
                     ),
                     renderTabAddon: () => {
-                        const appProfile = settings.profiles[appid]
                         const count = countActiveLaunchOptions(
                             settings.launchOptions,
-                            appProfile,
-                            (item) => item.enableGlobally && !item.group,
+                            appid,
+                            getAppLaunchOptionState,
+                            (item) => isLaunchOptionGlobal(item) && !item.group,
                         )
                         return <span className={ TabCount }>{ count }</span>
                     },

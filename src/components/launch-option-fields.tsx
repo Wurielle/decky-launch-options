@@ -157,6 +157,17 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
                     ) }
                 </ScrollIntoView>
             ) }
+            { showAdvanced && !hidePerValue && (
+                <div style={ { marginBottom: 22 } }>
+                    <ToggleField
+                        label={ 'Unset default (None)' }
+                        checked={ data.unsetDefault }
+                        disabled={ !data.valueId }
+                        description={ !data.valueId ? 'Set Value ID to enable an explicit None option.' : undefined }
+                        onChange={ (value) => onChange('unsetDefault', value) }
+                    />
+                </div>
+            ) }
         </>
     )
 }

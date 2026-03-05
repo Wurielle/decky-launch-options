@@ -100,8 +100,8 @@ taildebug:
       "tail -f .dlo/debug.log"
 
 tailsettings:
-    ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
-      "tail -n +1 -f .dlo/settings.json"
+    ssh -t ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
+      "watch -d -n 1 cat .dlo/settings.json"
 
 showdebug:
     ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \

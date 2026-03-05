@@ -83,6 +83,16 @@ export function Content() {
                                             enableGlobally: true,
                                         },
                                         {
+                                            id: 'proton-ver-none',
+                                            name: 'Proton Version',
+                                            on: '',
+                                            off: '',
+                                            enableGlobally: false,
+                                            valueId: 'proton-version',
+                                            valueName: 'None',
+                                            unsetDefault: true,
+                                        },
+                                        {
                                             id: 'proton-ver-7',
                                             name: 'Proton Version',
                                             on: 'PROTON_VERSION=7',

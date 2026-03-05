@@ -38,7 +38,7 @@ export function BatchAddLaunchOptions({ data, onSubmit, onCancel }: {
                 <DialogBody>
                     { launchOptions.map((launchOption, index) => (
                         <DialogControlsSection>
-                            <DialogControlsSectionHeader>{ launchOption.name }</DialogControlsSectionHeader>
+                            <DialogControlsSectionHeader>{ launchOption.name }{ launchOption.valueName ? ` (${launchOption.valueName})` : '' }</DialogControlsSectionHeader>
                             <Field description={
                                 <div style={ { padding: '0 0 0 22' } }>
                                     <TextField
@@ -91,7 +91,7 @@ export function BatchAddLaunchOptions({ data, onSubmit, onCancel }: {
                     <ul>
                         { launchOptions.map((launchOption, index) => (
                             <li key={ index }>
-                                { launchOption.name }
+                                { launchOption.name }{ launchOption.valueName ? ` (${launchOption.valueName})` : '' }
                             </li>
                         )) }
                     </ul>

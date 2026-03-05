@@ -1,15 +1,13 @@
 import { set } from 'es-toolkit/compat'
 import { useEffect, useState } from 'react'
 import { produce, WritableDraft } from 'immer'
-import { LaunchOption, profileFactory, Settings } from './shared'
+import { LaunchOption, launchOptionFactory, profileFactory, Settings } from './shared'
 import { useGetSettingsQuery, useSetSettingsMutation } from './query'
 
 export function useSettings() {
     const [settings, _setSettings] = useState<Settings>({
         profiles: {},
         launchOptions: [],
-        valueIdDefaults: {},
-        valueIdDefaultDisabled: {},
     })
 
     const getSettingsQuery = useGetSettingsQuery()
@@ -24,54 +22,52 @@ export function useSettings() {
     useEffect(() => {
         if (getSettingsQuery.isFetched && getSettingsQuery.data) {
             _setSettings({
-                ...getSettingsQuery.data,
-                valueIdDefaults: getSettingsQuery.data.valueIdDefaults || {},
-                valueIdDefaultDisabled: getSettingsQuery.data.valueIdDefaultDisabled || {},
+                profiles: getSettingsQuery.data.profiles || {},
+                launchOptions: (getSettingsQuery.data.launchOptions || []).map((item) => ({
+                    ...item,
+                    valueId: item.valueId || '',
+                    valueName: item.valueName || '',
+                    unsetDefault: !!item.unsetDefault,
+                })),
             })
         }
     }, [getSettingsQuery.data, getSettingsQuery.isFetched])
 
-    const ensureValueIdDefaults = (draft: WritableDraft<Settings>) => {
-        if (!draft.valueIdDefaults) draft.valueIdDefaults = {}
-        if (!draft.valueIdDefaultDisabled) draft.valueIdDefaultDisabled = {}
+    /**
+     * Clear per-app profile state for the given launch option IDs across all profiles.
+     * This ensures that when a launch option (or valueId group) is promoted to global,
+     * no stale per-app state overrides the global default.
+     */
+    const clearProfileState = (draft: WritableDraft<Settings>, ids: string[]) => {
+        for (const profile of Object.values(draft.profiles)) {
+            for (const id of ids) {
+                delete profile.state[id]
+            }
+        }
+    }
 
+    const normalizeUnsetDefaultOptions = (draft: WritableDraft<Settings>) => {
         const groups = new Map<string, LaunchOption[]>()
         draft.launchOptions.forEach((item) => {
-            if (!item.valueId) return
+            if (!item.valueId) {
+                item.unsetDefault = false
+                return
+            }
             const siblings = groups.get(item.valueId) || []
             siblings.push(item)
             groups.set(item.valueId, siblings)
         })
 
-        Object.keys(draft.valueIdDefaults).forEach((valueId) => {
-            if (!groups.has(valueId)) {
-                delete draft.valueIdDefaults[valueId]
-            }
-        })
-        Object.keys(draft.valueIdDefaultDisabled).forEach((valueId) => {
-            if (!groups.has(valueId)) {
-                delete draft.valueIdDefaultDisabled[valueId]
-            }
-        })
-
-        groups.forEach((siblings, valueId) => {
-            const hasGlobalSibling = siblings.some((item) => item.enableGlobally)
-            if (!hasGlobalSibling) {
-                delete draft.valueIdDefaults[valueId]
-                delete draft.valueIdDefaultDisabled[valueId]
-                return
-            }
-
-            if (draft.valueIdDefaultDisabled[valueId]) {
-                return
-            }
-            const currentDefaultId = draft.valueIdDefaults[valueId]
-            const isCurrentDefaultValid = siblings.some((item) => item.id === currentDefaultId && item.enableGlobally)
-            if (isCurrentDefaultValid) return
-
-            // No implicit fallback selection. If no valid default is configured,
-            // leave the group with no selected value.
-            delete draft.valueIdDefaults[valueId]
+        groups.forEach((siblings) => {
+            let hasUnsetDefault = false
+            siblings.forEach((item) => {
+                if (!item.unsetDefault) return
+                if (hasUnsetDefault) {
+                    item.unsetDefault = false
+                    return
+                }
+                hasUnsetDefault = true
+            })
         })
     }
 
@@ -89,15 +85,9 @@ export function useSettings() {
         const hasExplicitState = siblings.some((item) => appProfile?.state && item.id in appProfile.state)
         if (hasExplicitState) return null
 
-        if (settings.valueIdDefaultDisabled?.[valueId]) return null
-
-        // Otherwise, use configured global default if present.
-        const defaultId = settings.valueIdDefaults?.[valueId]
-        const defaultOption = siblings.find((item) => item.id === defaultId && item.enableGlobally)
-        if (defaultOption) return defaultOption.id
-
-        // No implicit fallback selection.
-        return null
+        // Global fallback for valueId groups: the globally-enabled option, if any.
+        const globallyEnabled = siblings.find((item) => item.enableGlobally)
+        return globallyEnabled?.id || null
     }
 
     const getLaunchOptionState = (appid: string, launchOptionId: string): boolean => {
@@ -120,30 +110,37 @@ export function useSettings() {
         loading: getSettingsQuery.isLoading,
         createLaunchOption: (launchOption: LaunchOption) => {
             setSettings((draft) => {
-                draft.launchOptions.unshift(launchOption)
-                ensureValueIdDefaults(draft)
+                const nextLaunchOption = launchOptionFactory(launchOption)
+                draft.launchOptions.unshift(nextLaunchOption)
+                normalizeUnsetDefaultOptions(draft)
             })
         },
         batchCreateLaunchOptions: (launchOptions: LaunchOption[]) => {
             setSettings((draft) => {
                 launchOptions.forEach((launchOption) => {
-                    const existingLaunchOptionIndex = draft.launchOptions.findIndex((item) => item.id === launchOption.id)
+                    const nextLaunchOption = launchOptionFactory(launchOption)
+                    const existingLaunchOptionIndex = draft.launchOptions.findIndex((item) => item.id === nextLaunchOption.id)
                     if (existingLaunchOptionIndex !== -1) {
-                        draft.launchOptions[existingLaunchOptionIndex] = launchOption
+                        draft.launchOptions[existingLaunchOptionIndex] = nextLaunchOption
                     } else {
-                        draft.launchOptions.unshift(launchOption)
+                        draft.launchOptions.unshift(nextLaunchOption)
                     }
                 })
-                ensureValueIdDefaults(draft)
+                normalizeUnsetDefaultOptions(draft)
             })
         },
-        updateLaunchOption: (launchOption: LaunchOption, path: string, value: any, syncCommonFields = true) => {
-            const commonFields = ['name', 'group', 'valueId', 'enableGlobally']
+        updateLaunchOption: (
+            launchOption: LaunchOption,
+            path: string,
+            value: any,
+            syncCommonFields = true,
+        ) => {
+            const commonFields = ['name', 'group', 'valueId']
             setSettings((draft) => {
                 const index = draft.launchOptions.findIndex((item) => item.id === launchOption.id)
                 if (index === -1) return
-                const oldValueId = launchOption.valueId
                 set(draft, ['launchOptions', index, path], value)
+
                 // Propagate common field changes to all siblings sharing the same valueId
                 if (syncCommonFields && launchOption.valueId && commonFields.includes(path)) {
                     for (let i = 0; i < draft.launchOptions.length; i++) {
@@ -153,56 +150,56 @@ export function useSettings() {
                     }
                 }
 
-                // For valueId groups, switching local/global resets selection to Disabled
-                // to avoid cross-scope transition issues.
-                if (path === 'enableGlobally' && launchOption.valueId) {
-                    if (!draft.valueIdDefaults) draft.valueIdDefaults = {}
-                    if (!draft.valueIdDefaultDisabled) draft.valueIdDefaultDisabled = {}
-
-                    const siblings = draft.launchOptions.filter((item) => item.valueId === launchOption.valueId)
-                    delete draft.valueIdDefaults[launchOption.valueId]
-                    draft.valueIdDefaultDisabled[launchOption.valueId] = true
-
-                    // Clear per-app overrides for this valueId group.
-                    Object.values(draft.profiles).forEach((profile) => {
-                        for (const sibling of siblings) {
-                            delete profile.state[sibling.id]
-                        }
-                    })
-                }
-
-                // If valueId changes, reset both old and new groups to disabled to avoid
-                // stale implicit/fallback selections during group reassignment.
-                if (path === 'valueId' && oldValueId !== value) {
-                    if (!draft.valueIdDefaults) draft.valueIdDefaults = {}
-                    if (!draft.valueIdDefaultDisabled) draft.valueIdDefaultDisabled = {}
-
-                    const resetValueIdGroup = (groupValueId: string) => {
-                        if (!groupValueId) return
-                        const siblings = draft.launchOptions.filter((item) => item.valueId === groupValueId)
-                        delete draft.valueIdDefaults[groupValueId]
-                        draft.valueIdDefaultDisabled[groupValueId] = true
-                        Object.values(draft.profiles).forEach((profile) => {
-                            for (const sibling of siblings) {
-                                delete profile.state[sibling.id]
+                if (path === 'unsetDefault') {
+                    const updatedLaunchOption = draft.launchOptions[index]
+                    if (!updatedLaunchOption.valueId || !value) {
+                        updatedLaunchOption.unsetDefault = false
+                    } else {
+                        draft.launchOptions.forEach((item) => {
+                            if (item.valueId === updatedLaunchOption.valueId) {
+                                item.unsetDefault = item.id === updatedLaunchOption.id
                             }
                         })
                     }
-
-                    resetValueIdGroup(oldValueId)
-                    if (typeof value === 'string') {
-                        resetValueIdGroup(value)
-                    }
                 }
 
-                ensureValueIdDefaults(draft)
+                // For valueId groups, global state is represented by exactly one sibling
+                // having enableGlobally=true, or none (None).
+                if (path === 'enableGlobally' && launchOption.valueId) {
+                    const siblings = draft.launchOptions.filter((item) => item.valueId === launchOption.valueId)
+                    const siblingIds = siblings.map((item) => item.id)
+
+                    if (value) {
+                        // Always prefer unsetDefault (None) as the global default for a clean slate.
+                        // Fall back to the edited option only if no unsetDefault exists.
+                        const unsetDefault = siblings.find((item) => item.unsetDefault)
+                        const selectedId = unsetDefault?.id ?? launchOption.id
+
+                        siblings.forEach((item) => {
+                            item.enableGlobally = item.id === selectedId
+                        })
+                    } else {
+                        siblings.forEach((item) => {
+                            item.enableGlobally = false
+                        })
+                    }
+
+                    clearProfileState(draft, siblingIds)
+                }
+
+                // For non-valueId options, clear per-app state whenever enableGlobally changes
+                if (path === 'enableGlobally' && !launchOption.valueId) {
+                    clearProfileState(draft, [launchOption.id])
+                }
+
+                normalizeUnsetDefaultOptions(draft)
             })
         },
         deleteLaunchOption: (id: LaunchOption['id']) => {
             setSettings((draft) => {
                 const index = draft.launchOptions.findIndex((item) => item.id === id)
                 if (index !== -1) draft.launchOptions.splice(index, 1)
-                ensureValueIdDefaults(draft)
+                normalizeUnsetDefaultOptions(draft)
             })
         },
         deleteLaunchOptionsByValueId: (valueId: string) => {
@@ -221,7 +218,7 @@ export function useSettings() {
                         }
                     })
                 })
-                ensureValueIdDefaults(draft)
+                normalizeUnsetDefaultOptions(draft)
             })
         },
         setAppLaunchOptionState: (appid: string, launchOptionId: string, value: boolean) => {
@@ -231,6 +228,7 @@ export function useSettings() {
 
                 if (launchOption.valueId) {
                     const siblings = draft.launchOptions.filter((item) => item.valueId === launchOption.valueId)
+                    const unsetDefaultOption = siblings.find((item) => item.unsetDefault)
                     if (siblings.length === 0) return
                     if (!draft.profiles[appid]) {
                         draft.profiles[appid] = profileFactory()
@@ -242,8 +240,12 @@ export function useSettings() {
                     if (value) {
                         appProfile.state[launchOptionId] = true
                     } else {
-                        // Marker: explicit group disabled
-                        appProfile.state[siblings[0].id] = false
+                        if (unsetDefaultOption) {
+                            appProfile.state[unsetDefaultOption.id] = true
+                        } else {
+                            // Marker: explicit group disabled
+                            appProfile.state[siblings[0].id] = false
+                        }
                     }
                     return
                 }
@@ -265,31 +267,17 @@ export function useSettings() {
         setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string | null, setAsDefault = false) => {
             setSettings((draft) => {
                 const siblings = draft.launchOptions.filter((item) => item.valueId === valueId)
+                const unsetDefaultOption = siblings.find((item) => item.unsetDefault)
+                const effectiveSelectedLaunchOptionId = selectedLaunchOptionId ?? unsetDefaultOption?.id ?? null
                 if (siblings.length === 0) return
-                if (!draft.valueIdDefaults) draft.valueIdDefaults = {}
-                if (!draft.valueIdDefaultDisabled) draft.valueIdDefaultDisabled = {}
 
                 if (setAsDefault) {
-                    if (selectedLaunchOptionId !== null) {
-                        const selected = siblings.find((item) => item.id === selectedLaunchOptionId)
-                        if (selected?.enableGlobally) {
-                            draft.valueIdDefaults[valueId] = selected.id
-                            delete draft.valueIdDefaultDisabled[valueId]
-                        } else {
-                            delete draft.valueIdDefaults[valueId]
-                            delete draft.valueIdDefaultDisabled[valueId]
-                        }
-                    } else {
-                        delete draft.valueIdDefaults[valueId]
-                        draft.valueIdDefaultDisabled[valueId] = true
-                    }
-
-                    // Global default change should affect all games.
-                    Object.values(draft.profiles).forEach((profile) => {
-                        for (const sibling of siblings) {
-                            delete profile.state[sibling.id]
-                        }
+                    siblings.forEach((item) => {
+                        item.enableGlobally = effectiveSelectedLaunchOptionId !== null && item.id === effectiveSelectedLaunchOptionId
                     })
+                    // Clear per-app state across all profiles so the global default takes effect
+                    // (explicit app state has higher priority than enableGlobally)
+                    clearProfileState(draft, siblings.map((item) => item.id))
                     return
                 }
 
@@ -303,10 +291,10 @@ export function useSettings() {
                 }
 
                 // If a specific option was selected, set it explicitly.
-                if (selectedLaunchOptionId !== null) {
-                    const selected = siblings.find((item) => item.id === selectedLaunchOptionId)
+                if (effectiveSelectedLaunchOptionId !== null) {
+                    const selected = siblings.find((item) => item.id === effectiveSelectedLaunchOptionId)
                     if (selected) {
-                        appProfile.state[selectedLaunchOptionId] = true
+                        appProfile.state[effectiveSelectedLaunchOptionId] = true
                     }
                     return
                 }
