@@ -99,6 +99,10 @@ taildebug:
     ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
       "tail -f .dlo/debug.log"
 
+tailsettings:
+    ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
+      "tail -n +1 -f .dlo/settings.json"
+
 showdebug:
     ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
       "printf '=== CURRENT (debug.log) ===\n'; cat .dlo/debug.log 2>/dev/null || true; printf '\n=== PREVIOUS (debug.prev.log) ===\n'; cat .dlo/debug.prev.log 2>/dev/null || true"
