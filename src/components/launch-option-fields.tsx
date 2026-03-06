@@ -1,4 +1,4 @@
-import { DialogButton, TextField, ToggleField } from "@decky/ui"
+import { ConfirmModal, DialogButton, showModal, TextField, ToggleField } from "@decky/ui"
 import { LaunchOption } from "../shared"
 import { ScrollIntoView } from "./scroll-into-view"
 import { useState } from "react"
@@ -20,7 +20,21 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
         <>
             <div style={ { marginBottom: 22 } }>
                 <ToggleField label={ 'Enable globally' } checked={ data.enableGlobally }
-                             onChange={ (value) => onChange('enableGlobally', value) }/>
+                             onChange={ (value) => {
+                                 if (value) {
+                                     showModal(
+                                         <ConfirmModal
+                                             strTitle="Enable globally"
+                                             strDescription="This will clear all per-app selections for this launch option. Do you want to continue?"
+                                             strOKButtonText="Confirm"
+                                             strCancelButtonText="Cancel"
+                                             onOK={ () => onChange('enableGlobally', true) }
+                                         />,
+                                     )
+                                 } else {
+                                     onChange('enableGlobally', false)
+                                 }
+                             } }/>
             </div>
             <ScrollIntoView>
                 { ({ scrollIntoView }) => (

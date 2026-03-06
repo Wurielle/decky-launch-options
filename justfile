@@ -91,18 +91,11 @@ logs:
     ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
       "echo '${DECK_PASS}' | journalctl -u plugin_loader -f"
 
-rundebug:
-    ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
-      "echo '${DECK_PASS}' | nano .dlo/debug.log"
-
 taildebug:
-    ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
-      "tail -f .dlo/debug.log"
+    ssh -t ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
+      "watch -d -n 1 cat .dlo/debug.log"
 
 tailsettings:
     ssh -t ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
       "watch -d -n 1 cat .dlo/settings.json"
 
-showdebug:
-    ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
-      "printf '=== CURRENT (debug.log) ===\n'; cat .dlo/debug.log 2>/dev/null || true; printf '\n=== PREVIOUS (debug.prev.log) ===\n'; cat .dlo/debug.prev.log 2>/dev/null || true"
