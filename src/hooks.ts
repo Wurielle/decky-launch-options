@@ -87,7 +87,11 @@ export function useSettings() {
 
         // Global fallback for valueId groups: the globally-enabled option, if any.
         const globallyEnabled = siblings.find((item) => item.enableGlobally)
-        return globallyEnabled?.id || null
+        if (globallyEnabled) return globallyEnabled.id
+
+        // Last resort: the fallbackValue option, or the first sibling.
+        const fallback = siblings.find((item) => item.fallbackValue)
+        return fallback?.id || siblings[0].id
     }
 
     const getLaunchOptionState = (appid: string, launchOptionId: string): boolean => {
@@ -170,11 +174,10 @@ export function useSettings() {
                     const siblingIds = siblings.map((item) => item.id)
 
                     if (value) {
-                        // Always prefer fallbackValue (None) as the global default for a clean slate.
+                        // Prefer the fallbackValue option as the global default.
                         // Fall back to the edited option only if no fallbackValue exists.
-                        const fallbackValue = siblings.find((item) => item.fallbackValue)
-                        const selectedId = fallbackValue?.id ?? launchOption.id
-
+                        const fallbackOption = siblings.find((item) => item.fallbackValue)
+                        const selectedId = fallbackOption?.id ?? launchOption.id
                         siblings.forEach((item) => {
                             item.enableGlobally = item.id === selectedId
                         })
@@ -228,7 +231,6 @@ export function useSettings() {
 
                 if (launchOption.valueId) {
                     const siblings = draft.launchOptions.filter((item) => item.valueId === launchOption.valueId)
-                    const fallbackValueOption = siblings.find((item) => item.fallbackValue)
                     if (siblings.length === 0) return
                     if (!draft.profiles[appid]) {
                         draft.profiles[appid] = profileFactory()
@@ -240,12 +242,8 @@ export function useSettings() {
                     if (value) {
                         appProfile.state[launchOptionId] = true
                     } else {
-                        if (fallbackValueOption) {
-                            appProfile.state[fallbackValueOption.id] = true
-                        } else {
-                            // Marker: explicit group disabled
-                            appProfile.state[siblings[0].id] = false
-                        }
+                        // Marker: explicit group disabled
+                        appProfile.state[siblings[0].id] = false
                     }
                     return
                 }
@@ -264,16 +262,14 @@ export function useSettings() {
         getAppLaunchOptionState: (appid: string, launchOptionId: string) => {
             return getLaunchOptionState(appid, launchOptionId)
         },
-        setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string | null, setAsDefault = false) => {
+        setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string, setAsDefault = false) => {
             setSettings((draft) => {
                 const siblings = draft.launchOptions.filter((item) => item.valueId === valueId)
-                const fallbackValueOption = siblings.find((item) => item.fallbackValue)
-                const effectiveSelectedLaunchOptionId = selectedLaunchOptionId ?? fallbackValueOption?.id ?? null
                 if (siblings.length === 0) return
 
                 if (setAsDefault) {
                     siblings.forEach((item) => {
-                        item.enableGlobally = effectiveSelectedLaunchOptionId !== null && item.id === effectiveSelectedLaunchOptionId
+                        item.enableGlobally = item.id === selectedLaunchOptionId
                     })
                     // Clear per-app state across all profiles so the global default takes effect
                     // (explicit app state has higher priority than enableGlobally)
@@ -285,22 +281,11 @@ export function useSettings() {
                     draft.profiles[appid] = profileFactory()
                 }
                 const appProfile = draft.profiles[appid]
-                // Remove all siblings from state (fall back to enableGlobally defaults)
+                // Remove all siblings from state (fall back to enableGlobally/fallbackValue defaults)
                 for (const sibling of siblings) {
                     delete appProfile.state[sibling.id]
                 }
-
-                // If a specific option was selected, set it explicitly.
-                if (effectiveSelectedLaunchOptionId !== null) {
-                    const selected = siblings.find((item) => item.id === effectiveSelectedLaunchOptionId)
-                    if (selected) {
-                        appProfile.state[effectiveSelectedLaunchOptionId] = true
-                    }
-                    return
-                }
-
-                // Marker: explicit group disabled
-                appProfile.state[siblings[0].id] = false
+                appProfile.state[selectedLaunchOptionId] = true
             })
         },
         getAppActiveLocalLaunchOptions: (appid: string) => {

@@ -168,7 +168,12 @@ def get_final_args_details(settings, appid):
             continue
 
         global_selected = next((opt["id"] for opt in siblings if opt.get("enableGlobally", False)), None)
-        selected_by_value_id[value_id] = global_selected
+        if global_selected is not None:
+            selected_by_value_id[value_id] = global_selected
+            continue
+
+        fallback = next((opt["id"] for opt in siblings if opt.get("fallbackValue", False)), None)
+        selected_by_value_id[value_id] = fallback if fallback is not None else siblings[0]["id"]
 
     # Parse each enabled launch option
     for opt in settings["launchOptions"]:

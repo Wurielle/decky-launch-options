@@ -172,7 +172,7 @@ interface ValueIdSelectItemProps {
     indentLevel: number;
     appid: string;
     getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean;
-    setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string | null, setAsDefault?: boolean) => void;
+    setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string, setAsDefault?: boolean) => void;
     setValueAsDefault: boolean;
     onEdit: (id: string) => void;
 }
@@ -191,26 +191,21 @@ function ValueIdSelectItem({
     const activeColor = 'oklch(80.9% 0.105 251.813)'
 
     const selectedOption = launchOptions.find((lo) => getAppLaunchOptionState(appid, lo.id))
-    const selectedId = selectedOption?.fallbackValue ? null : (selectedOption?.id ?? null)
+    const selectedId = selectedOption?.id ?? launchOptions[0]?.id ?? null
 
-    const rgOptions = [
-        { data: null, label: 'None' },
-        ...launchOptions
-            .filter((lo) => !lo.fallbackValue)
-            .map((lo) => ({
-            data: lo.id,
-            label: lo.valueName || lo.on || lo.name,
-        })),
-    ]
+    const rgOptions = launchOptions.map((lo) => ({
+        data: lo.id,
+        label: lo.valueName || lo.on || lo.name,
+    }))
 
     const description = (
         <span style={ { color: 'oklch(55.4% 0.046 257.417)' } }>
-            { selectedOption && !selectedOption.fallbackValue ? (
+            { selectedOption?.on ? (
                 <span style={ { color: activeColor } }>
                     ON: { selectedOption.on }
                 </span>
             ) : (
-                'None'
+                selectedOption?.valueName || selectedOption?.name || 'None'
             ) }
         </span>
     )
@@ -246,7 +241,7 @@ interface RenderItemsParams {
     appid: string;
     getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean;
     setAppLaunchOptionState: (appid: string, launchOptionId: string, value: boolean) => void;
-    setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string | null, setAsDefault?: boolean) => void;
+    setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string, setAsDefault?: boolean) => void;
     setValueAsDefault: boolean;
     onEdit: (id: string) => void;
 }
