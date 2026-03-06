@@ -13,13 +13,14 @@ interface LaunchOptionFieldsProps {
 
 export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionFieldsProps) {
     const [showAdvanced, setShowAdvanced] = useState(false)
+    const [enableGloballyKey, setEnableGloballyKey] = useState(0)
     const hasValueId = !!data.valueId
     const hidePerValue = commonOnly && hasValueId
 
     return (
         <>
             <div style={ { marginBottom: 22 } }>
-                <ToggleField label={ 'Enable globally' } checked={ data.enableGlobally }
+                <ToggleField key={ enableGloballyKey } label={ 'Enable globally' } checked={ data.enableGlobally }
                              onChange={ (value) => {
                                  if (value) {
                                      showModal(
@@ -29,6 +30,7 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
                                              strOKButtonText="Confirm"
                                              strCancelButtonText="Cancel"
                                              onOK={ () => onChange('enableGlobally', true) }
+                                             onCancel={ () => setEnableGloballyKey((k) => k + 1) }
                                          />,
                                      )
                                  } else {
