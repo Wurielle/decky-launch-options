@@ -27,7 +27,7 @@ export function useSettings() {
                     ...item,
                     valueId: item.valueId || '',
                     valueName: item.valueName || '',
-                    unsetDefault: !!item.unsetDefault,
+                    fallbackValue: !!item.fallbackValue,
                 })),
             })
         }
@@ -46,11 +46,11 @@ export function useSettings() {
         }
     }
 
-    const normalizeUnsetDefaultOptions = (draft: WritableDraft<Settings>) => {
+    const normalizeFallbackValues = (draft: WritableDraft<Settings>) => {
         const groups = new Map<string, LaunchOption[]>()
         draft.launchOptions.forEach((item) => {
             if (!item.valueId) {
-                item.unsetDefault = false
+                item.fallbackValue = false
                 return
             }
             const siblings = groups.get(item.valueId) || []
@@ -59,14 +59,14 @@ export function useSettings() {
         })
 
         groups.forEach((siblings) => {
-            let hasUnsetDefault = false
+            let hasFallbackValue = false
             siblings.forEach((item) => {
-                if (!item.unsetDefault) return
-                if (hasUnsetDefault) {
-                    item.unsetDefault = false
+                if (!item.fallbackValue) return
+                if (hasFallbackValue) {
+                    item.fallbackValue = false
                     return
                 }
-                hasUnsetDefault = true
+                hasFallbackValue = true
             })
         })
     }
@@ -112,7 +112,7 @@ export function useSettings() {
             setSettings((draft) => {
                 const nextLaunchOption = launchOptionFactory(launchOption)
                 draft.launchOptions.unshift(nextLaunchOption)
-                normalizeUnsetDefaultOptions(draft)
+                normalizeFallbackValues(draft)
             })
         },
         batchCreateLaunchOptions: (launchOptions: LaunchOption[]) => {
@@ -126,7 +126,7 @@ export function useSettings() {
                         draft.launchOptions.unshift(nextLaunchOption)
                     }
                 })
-                normalizeUnsetDefaultOptions(draft)
+                normalizeFallbackValues(draft)
             })
         },
         updateLaunchOption: (
@@ -150,14 +150,14 @@ export function useSettings() {
                     }
                 }
 
-                if (path === 'unsetDefault') {
+                if (path === 'fallbackValue') {
                     const updatedLaunchOption = draft.launchOptions[index]
                     if (!updatedLaunchOption.valueId || !value) {
-                        updatedLaunchOption.unsetDefault = false
+                        updatedLaunchOption.fallbackValue = false
                     } else {
                         draft.launchOptions.forEach((item) => {
                             if (item.valueId === updatedLaunchOption.valueId) {
-                                item.unsetDefault = item.id === updatedLaunchOption.id
+                                item.fallbackValue = item.id === updatedLaunchOption.id
                             }
                         })
                     }
@@ -170,10 +170,10 @@ export function useSettings() {
                     const siblingIds = siblings.map((item) => item.id)
 
                     if (value) {
-                        // Always prefer unsetDefault (None) as the global default for a clean slate.
-                        // Fall back to the edited option only if no unsetDefault exists.
-                        const unsetDefault = siblings.find((item) => item.unsetDefault)
-                        const selectedId = unsetDefault?.id ?? launchOption.id
+                        // Always prefer fallbackValue (None) as the global default for a clean slate.
+                        // Fall back to the edited option only if no fallbackValue exists.
+                        const fallbackValue = siblings.find((item) => item.fallbackValue)
+                        const selectedId = fallbackValue?.id ?? launchOption.id
 
                         siblings.forEach((item) => {
                             item.enableGlobally = item.id === selectedId
@@ -192,14 +192,14 @@ export function useSettings() {
                     clearProfileState(draft, [launchOption.id])
                 }
 
-                normalizeUnsetDefaultOptions(draft)
+                normalizeFallbackValues(draft)
             })
         },
         deleteLaunchOption: (id: LaunchOption['id']) => {
             setSettings((draft) => {
                 const index = draft.launchOptions.findIndex((item) => item.id === id)
                 if (index !== -1) draft.launchOptions.splice(index, 1)
-                normalizeUnsetDefaultOptions(draft)
+                normalizeFallbackValues(draft)
             })
         },
         deleteLaunchOptionsByValueId: (valueId: string) => {
@@ -218,7 +218,7 @@ export function useSettings() {
                         }
                     })
                 })
-                normalizeUnsetDefaultOptions(draft)
+                normalizeFallbackValues(draft)
             })
         },
         setAppLaunchOptionState: (appid: string, launchOptionId: string, value: boolean) => {
@@ -228,7 +228,7 @@ export function useSettings() {
 
                 if (launchOption.valueId) {
                     const siblings = draft.launchOptions.filter((item) => item.valueId === launchOption.valueId)
-                    const unsetDefaultOption = siblings.find((item) => item.unsetDefault)
+                    const fallbackValueOption = siblings.find((item) => item.fallbackValue)
                     if (siblings.length === 0) return
                     if (!draft.profiles[appid]) {
                         draft.profiles[appid] = profileFactory()
@@ -240,8 +240,8 @@ export function useSettings() {
                     if (value) {
                         appProfile.state[launchOptionId] = true
                     } else {
-                        if (unsetDefaultOption) {
-                            appProfile.state[unsetDefaultOption.id] = true
+                        if (fallbackValueOption) {
+                            appProfile.state[fallbackValueOption.id] = true
                         } else {
                             // Marker: explicit group disabled
                             appProfile.state[siblings[0].id] = false
@@ -267,8 +267,8 @@ export function useSettings() {
         setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string | null, setAsDefault = false) => {
             setSettings((draft) => {
                 const siblings = draft.launchOptions.filter((item) => item.valueId === valueId)
-                const unsetDefaultOption = siblings.find((item) => item.unsetDefault)
-                const effectiveSelectedLaunchOptionId = selectedLaunchOptionId ?? unsetDefaultOption?.id ?? null
+                const fallbackValueOption = siblings.find((item) => item.fallbackValue)
+                const effectiveSelectedLaunchOptionId = selectedLaunchOptionId ?? fallbackValueOption?.id ?? null
                 if (siblings.length === 0) return
 
                 if (setAsDefault) {

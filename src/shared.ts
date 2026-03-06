@@ -23,7 +23,7 @@ export const launchOptionFactory = (launchOption: Partial<LaunchOption> = {}): L
     group: launchOption.group || '',
     valueId: launchOption.valueId || '',
     valueName: launchOption.valueName || '',
-    unsetDefault: launchOption.unsetDefault || false,
+    fallbackValue: launchOption.fallbackValue || false,
 })
 
 export type Profile = {
@@ -40,7 +40,7 @@ export type LaunchOption = {
     group: string
     valueId: string
     valueName: string
-    unsetDefault: boolean
+    fallbackValue: boolean
 }
 
 export type Settings = {

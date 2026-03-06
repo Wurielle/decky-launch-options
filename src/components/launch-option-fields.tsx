@@ -176,11 +176,11 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
             { showAdvanced && !hidePerValue && (
                 <div style={ { marginBottom: 22 } }>
                     <ToggleField
-                        label={ 'Unset default (None)' }
-                        checked={ data.unsetDefault }
+                        label={ 'Set as fallback value' }
+                        checked={ data.fallbackValue }
                         disabled={ !data.valueId }
-                        description={ !data.valueId ? 'Set Value ID to enable an explicit None option.' : undefined }
-                        onChange={ (value) => onChange('unsetDefault', value) }
+                        description={ !data.valueId ? 'Set Value ID to enable this option.' : undefined }
+                        onChange={ (value) => onChange('fallbackValue', value) }
                     />
                 </div>
             ) }

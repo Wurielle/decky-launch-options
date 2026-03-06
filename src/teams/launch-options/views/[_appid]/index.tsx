@@ -191,12 +191,12 @@ function ValueIdSelectItem({
     const activeColor = 'oklch(80.9% 0.105 251.813)'
 
     const selectedOption = launchOptions.find((lo) => getAppLaunchOptionState(appid, lo.id))
-    const selectedId = selectedOption?.unsetDefault ? null : (selectedOption?.id ?? null)
+    const selectedId = selectedOption?.fallbackValue ? null : (selectedOption?.id ?? null)
 
     const rgOptions = [
         { data: null, label: 'None' },
         ...launchOptions
-            .filter((lo) => !lo.unsetDefault)
+            .filter((lo) => !lo.fallbackValue)
             .map((lo) => ({
             data: lo.id,
             label: lo.valueName || lo.on || lo.name,
@@ -205,7 +205,7 @@ function ValueIdSelectItem({
 
     const description = (
         <span style={ { color: 'oklch(55.4% 0.046 257.417)' } }>
-            { selectedOption && !selectedOption.unsetDefault ? (
+            { selectedOption && !selectedOption.fallbackValue ? (
                 <span style={ { color: activeColor } }>
                     ON: { selectedOption.on }
                 </span>

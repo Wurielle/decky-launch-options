@@ -90,7 +90,7 @@ export function Content() {
                                             enableGlobally: false,
                                             valueId: 'proton-version',
                                             valueName: 'None',
-                                            unsetDefault: true,
+                                            fallbackValue: true,
                                         },
                                         {
                                             id: 'proton-ver-7',
