@@ -8,6 +8,7 @@ import { settingsStore } from "../stores"
 export function Content() {
     const [showMore, setShowMore] = useState(false)
     const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy)
+    const showCommands = useStore(settingsStore, (state) => state.showCommands)
     return (
         <PanelSection>
             <PanelSectionRow>
@@ -31,6 +32,19 @@ export function Content() {
                     } }
                     description={ 'Display launch options with a similar starting name in a tree structure' }
                     label={ 'Enable hierarchy display' }
+                    bottomSeparator={ 'none' }
+                />
+            </PanelSectionRow>
+            <PanelSectionRow>
+                <ToggleField
+                    checked={ showCommands }
+                    onChange={ (value) => {
+                        settingsStore.setState((state) => {
+                            state.showCommands = value
+                        })
+                    } }
+                    description={ 'Show the on/off commands below each launch option' }
+                    label={ 'Show commands' }
                     bottomSeparator={ 'none' }
                 />
             </PanelSectionRow>
