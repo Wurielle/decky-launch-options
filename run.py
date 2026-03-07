@@ -8,7 +8,6 @@ from pathlib import Path
 from shared import SETTINGS_FOLDER_PATH, SETTINGS_PATH
 
 LOG_FILE = os.path.join(SETTINGS_FOLDER_PATH, 'debug.log')
-PREV_LOG_FILE = os.path.join(SETTINGS_FOLDER_PATH, 'debug.prev.log')
 
 executable = sys.argv[1] if len(sys.argv) > 1 else None
 args = sys.argv[1:]
@@ -258,15 +257,10 @@ if __name__ == "__main__":
                 log_path = Path(LOG_FILE)
                 log_path.parent.mkdir(parents=True, exist_ok=True)
 
-                # Rotate current log to previous log so both are easy to compare.
-                if log_path.exists():
-                    shutil.copyfile(LOG_FILE, PREV_LOG_FILE)
-
                 with open(LOG_FILE, "w", encoding="utf-8") as f:
                     f.write("=== CURRENT LAUNCH ===\n")
                     f.write(f"Timestamp: {datetime.datetime.now().isoformat()}\n")
                     f.write(f"AppID: {appid}\n")
-                    f.write(f"Previous log: {PREV_LOG_FILE}\n")
                     f.write("\n")
 
                     f.write("[Original Args]\n")
