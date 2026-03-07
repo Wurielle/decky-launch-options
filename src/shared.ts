@@ -21,6 +21,9 @@ export const launchOptionFactory = (launchOption: Partial<LaunchOption> = {}): L
     off: launchOption.off || '',
     enableGlobally: launchOption.enableGlobally || false,
     group: launchOption.group || '',
+    valueId: launchOption.valueId || '',
+    valueName: launchOption.valueName || '',
+    fallbackValue: launchOption.fallbackValue || false,
 })
 
 export type Profile = {
@@ -35,6 +38,9 @@ export type LaunchOption = {
     off: string
     enableGlobally: boolean
     group: string
+    valueId: string
+    valueName: string
+    fallbackValue: boolean
 }
 
 export type Settings = {

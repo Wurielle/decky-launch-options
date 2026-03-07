@@ -3,6 +3,7 @@ import {
     DialogBody,
     DialogButton,
     DialogHeader,
+    DropdownItem,
     Field,
     findModule,
     Focusable,
@@ -14,6 +15,7 @@ import {
     ToggleField,
     useParams,
 } from '@decky/ui'
+import { SingleDropdownOption } from '@decky/ui/dist/components/Dropdown'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSettings } from '../../../../hooks'
 import { FaPen } from 'react-icons/fa'
@@ -163,6 +165,175 @@ function LaunchOptionItem({
     )
 }
 
+interface ValueIdSelectItemProps {
+    valueId: string;
+    launchOptions: LaunchOption[];
+    displayName: string;
+    indentLevel: number;
+    appid: string;
+    getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean;
+    setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string, setAsDefault?: boolean) => void;
+    setValueAsDefault: boolean;
+    onEdit: (id: string) => void;
+}
+
+function ValueIdSelectItem({
+                               valueId,
+                               launchOptions,
+                               displayName,
+                               indentLevel,
+                               appid,
+                               getAppLaunchOptionState,
+                               setAppValueIdState,
+                               setValueAsDefault,
+                               onEdit,
+                           }: ValueIdSelectItemProps) {
+    const activeColor = 'oklch(80.9% 0.105 251.813)'
+
+    const selectedOption = launchOptions.find((lo) => getAppLaunchOptionState(appid, lo.id))
+    const selectedId = selectedOption?.id ?? launchOptions[0]?.id ?? null
+
+    const rgOptions = launchOptions.map((lo) => ({
+        data: lo.id,
+        label: lo.valueName || lo.on || lo.name,
+    }))
+
+    const description = (
+        <span style={ { color: 'oklch(55.4% 0.046 257.417)' } }>
+            { selectedOption?.on ? (
+                <span style={ { color: activeColor } }>
+                    ON: { selectedOption.on }
+                </span>
+            ) : (
+                selectedOption?.valueName || selectedOption?.name || 'None'
+            ) }
+        </span>
+    )
+
+    return (
+        <Focusable style={ { display: 'flex', gap: 10 } }>
+            <Focusable style={ { flex: 1 } }>
+                <DropdownItem
+                    indentLevel={ indentLevel }
+                    label={ displayName }
+                    description={ description }
+                    rgOptions={ rgOptions }
+                    selectedOption={ selectedId }
+                    onChange={ (option: SingleDropdownOption) => {
+                        setAppValueIdState(appid, valueId, option.data, setValueAsDefault)
+                    } }
+                />
+            </Focusable>
+            <Focusable style={ { flexShrink: 0, padding: '10px 0' } }>
+                <DialogButton
+                    style={ { minWidth: 46, height: 46, padding: 0 } }
+                    onClick={ () => onEdit(selectedOption?.id ?? launchOptions[0].id) }
+                >
+                    <FaPen/>
+                </DialogButton>
+            </Focusable>
+        </Focusable>
+    )
+}
+
+interface RenderItemsParams {
+    items: HierarchicalLaunchOption[];
+    appid: string;
+    getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean;
+    setAppLaunchOptionState: (appid: string, launchOptionId: string, value: boolean) => void;
+    setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string, setAsDefault?: boolean) => void;
+    setValueAsDefault: boolean;
+    onEdit: (id: string) => void;
+}
+
+function renderLaunchOptionItems({
+                                     items,
+                                     appid,
+                                     getAppLaunchOptionState,
+                                     setAppLaunchOptionState,
+                                     setAppValueIdState,
+                                     setValueAsDefault,
+                                     onEdit,
+                                 }: RenderItemsParams) {
+    const result: React.ReactNode[] = []
+    const processedValueIds = new Set<string>()
+
+    for (const item of items) {
+        const { launchOption } = item
+
+        // If this item has a valueId, render it as part of a dropdown group
+        if (launchOption.valueId) {
+            if (processedValueIds.has(launchOption.valueId)) continue
+            processedValueIds.add(launchOption.valueId)
+
+            // Collect all items in this list that share the same valueId
+            const siblings = items
+                .filter((i) => i.launchOption.valueId === launchOption.valueId)
+                .map((i) => i.launchOption)
+
+            result.push(
+                <ValueIdSelectItem
+                    key={ `valueId-${launchOption.valueId}` }
+                    valueId={ launchOption.valueId }
+                    launchOptions={ siblings }
+                    displayName={ item.displayName }
+                    indentLevel={ item.indentLevel }
+                    appid={ appid }
+                    getAppLaunchOptionState={ getAppLaunchOptionState }
+                    setAppValueIdState={ setAppValueIdState }
+                    setValueAsDefault={ setValueAsDefault }
+                    onEdit={ onEdit }
+                />
+            )
+        } else {
+            // Normal toggle item
+            result.push(
+                <LaunchOptionItem
+                    key={ launchOption.id }
+                    launchOption={ launchOption }
+                    displayName={ item.displayName }
+                    indentLevel={ item.indentLevel }
+                    isChecked={ getAppLaunchOptionState(appid, launchOption.id) }
+                    onToggle={ (value) => setAppLaunchOptionState(appid, launchOption.id, value) }
+                    onEdit={ () => onEdit(launchOption.id) }
+                />
+            )
+        }
+    }
+
+    return result
+}
+
+/**
+ * Count active launch options, treating valueId groups as at most 1.
+ */
+function countActiveLaunchOptions(
+    launchOptions: LaunchOption[],
+    appid: string,
+    getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean,
+    filter?: (item: LaunchOption) => boolean,
+): number {
+    const filtered = filter ? launchOptions.filter(filter) : launchOptions
+    const countedValueIds = new Set<string>()
+    let count = 0
+
+    for (const item of filtered) {
+        const isActive = getAppLaunchOptionState(appid, item.id)
+        const hasCommand = isActive ? !!item.on : !!item.off
+
+        if (!hasCommand) continue
+
+        if (item.valueId) {
+            if (countedValueIds.has(item.valueId)) continue
+            countedValueIds.add(item.valueId)
+        }
+
+        count++
+    }
+
+    return count
+}
+
 export function AppLaunchOptionsPage() {
     const { appid } = useParams<{ appid: string }>()
     const [tab, setTab] = useState<string>('local')
@@ -171,11 +342,27 @@ export function AppLaunchOptionsPage() {
         settings,
         getAppLaunchOptionState,
         setAppLaunchOptionState,
+        setAppValueIdState,
         getAppOriginalLaunchOptions,
         setAppOriginalLaunchOptions,
-        getAppActiveLocalLaunchOptions,
-        getAppActiveGlobalLaunchOptions,
     } = useSettings()
+    const globalValueIds = useMemo(() => {
+        const valueIds = new Set<string>()
+        settings.launchOptions.forEach((item) => {
+            if (item.valueId && item.enableGlobally) {
+                valueIds.add(item.valueId)
+            }
+        })
+        return valueIds
+    }, [settings.launchOptions])
+
+    const isLaunchOptionGlobal = useCallback((item: LaunchOption) => {
+        if (item.valueId) {
+            return globalValueIds.has(item.valueId)
+        }
+        return item.enableGlobally
+    }, [globalValueIds])
+
     const groups = useMemo(() => {
         const groupSet = new Set<string>()
         settings.launchOptions.forEach((item) => {
@@ -189,8 +376,8 @@ export function AppLaunchOptionsPage() {
             const inGroup = settings.launchOptions
                 .filter((item) => item.group === group)
                 .sort((a, b) => a.name.localeCompare(b.name))
-            const localFiltered = inGroup.filter((item) => !item.enableGlobally)
-            const globalFiltered = inGroup.filter((item) => item.enableGlobally)
+            const localFiltered = inGroup.filter((item) => !isLaunchOptionGlobal(item))
+            const globalFiltered = inGroup.filter((item) => isLaunchOptionGlobal(item))
             map[group] = {
                 local: useHierarchy ? buildHierarchy(localFiltered) : localFiltered.map(item => ({
                     launchOption: item,
@@ -205,23 +392,27 @@ export function AppLaunchOptionsPage() {
             }
         }
         return map
-    }, [settings, groups, useHierarchy])
+    }, [settings, groups, useHierarchy, isLaunchOptionGlobal])
     const localLaunchOptions = useMemo(() => {
-        const filtered = settings.launchOptions.filter((item) => !item.enableGlobally && !item.group).sort((a, b) => a.name.localeCompare(b.name))
+        const filtered = settings.launchOptions
+            .filter((item) => !isLaunchOptionGlobal(item) && !item.group)
+            .sort((a, b) => a.name.localeCompare(b.name))
         return useHierarchy ? buildHierarchy(filtered) : filtered.map(item => ({
             launchOption: item,
             displayName: item.name,
             indentLevel: 0,
         }))
-    }, [settings, useHierarchy])
+    }, [settings, useHierarchy, isLaunchOptionGlobal])
     const globalLaunchOptions = useMemo(() => {
-        const filtered = settings.launchOptions.filter((item) => item.enableGlobally && !item.group).sort((a, b) => a.name.localeCompare(b.name))
+        const filtered = settings.launchOptions
+            .filter((item) => isLaunchOptionGlobal(item) && !item.group)
+            .sort((a, b) => a.name.localeCompare(b.name))
         return useHierarchy ? buildHierarchy(filtered) : filtered.map(item => ({
             launchOption: item,
             displayName: item.name,
             indentLevel: 0,
         }))
-    }, [settings, useHierarchy])
+    }, [settings, useHierarchy, isLaunchOptionGlobal])
     const { TabCount } = findModule((mod) => {
         if (typeof mod !== 'object') return false
 
@@ -264,10 +455,11 @@ export function AppLaunchOptionsPage() {
                 <UpdateLaunchOptionForm
                     id={ id }
                     onDelete={ () => modalResult.Close() }
+                    deleteByValueId
                 />
             </ModalWrapper>,
         )
-    }, [])
+    }, [appid])
 
     return (
         <div
@@ -299,17 +491,15 @@ export function AppLaunchOptionsPage() {
                                     <div style={ { marginTop: '16px' } }>
                                         <strong>Global</strong>
                                     </div>
-                                    { groupedLaunchOptions[group].global.map((item) => (
-                                        <LaunchOptionItem
-                                            key={ item.launchOption.id }
-                                            launchOption={ item.launchOption }
-                                            displayName={ item.displayName }
-                                            indentLevel={ item.indentLevel }
-                                            isChecked={ getAppLaunchOptionState(appid, item.launchOption.id) }
-                                            onToggle={ (value) => setAppLaunchOptionState(appid, item.launchOption.id, value) }
-                                            onEdit={ () => showUpdateLaunchOptionFormModal(item.launchOption.id) }
-                                        />
-                                    )) }
+                                    { renderLaunchOptionItems({
+                                        items: groupedLaunchOptions[group].global,
+                                        appid,
+                                        getAppLaunchOptionState,
+                                        setAppLaunchOptionState,
+                                        setAppValueIdState,
+                                        setValueAsDefault: true,
+                                        onEdit: showUpdateLaunchOptionFormModal,
+                                    }) }
                                 </div>
                             ) }
                             { groupedLaunchOptions[group]?.local.length > 0 && (
@@ -317,29 +507,26 @@ export function AppLaunchOptionsPage() {
                                     <div style={ { marginTop: '16px' } }>
                                         <strong>Local</strong>
                                     </div>
-                                    { groupedLaunchOptions[group].local.map((item) => (
-                                        <LaunchOptionItem
-                                            key={ item.launchOption.id }
-                                            launchOption={ item.launchOption }
-                                            displayName={ item.displayName }
-                                            indentLevel={ item.indentLevel }
-                                            isChecked={ getAppLaunchOptionState(appid, item.launchOption.id) }
-                                            onToggle={ (value) => setAppLaunchOptionState(appid, item.launchOption.id, value) }
-                                            onEdit={ () => showUpdateLaunchOptionFormModal(item.launchOption.id) }
-                                        />
-                                    )) }
+                                    { renderLaunchOptionItems({
+                                        items: groupedLaunchOptions[group].local,
+                                        appid,
+                                        getAppLaunchOptionState,
+                                        setAppLaunchOptionState,
+                                        setAppValueIdState,
+                                        setValueAsDefault: false,
+                                        onEdit: showUpdateLaunchOptionFormModal,
+                                    }) }
                                 </div>
                             ) }
                         </Focusable>
                     ),
                     renderTabAddon: () => {
-                        const appProfile = settings.profiles[appid]
-                        const count = settings.launchOptions.filter((item) => {
-                            if (item.group !== group) return false
-                            const state = appProfile?.state?.[item.id]
-                            const isActive = state !== undefined ? state : !!item.enableGlobally
-                            return isActive ? !!item.on : !!item.off
-                        }).length
+                        const count = countActiveLaunchOptions(
+                            settings.launchOptions,
+                            appid,
+                            getAppLaunchOptionState,
+                            (item) => item.group === group,
+                        )
                         return <span className={ TabCount }>{ count }</span>
                     },
                 })),
@@ -365,21 +552,26 @@ export function AppLaunchOptionsPage() {
                                     onChange={ (e) => setAppOriginalLaunchOptions(appid, e.target.value) }
                                     style={ { width: 400 } }/>
                             </Field>
-                            { localLaunchOptions.map((item) => (
-                                <LaunchOptionItem
-                                    key={ item.launchOption.id }
-                                    launchOption={ item.launchOption }
-                                    displayName={ item.displayName }
-                                    indentLevel={ item.indentLevel }
-                                    isChecked={ getAppLaunchOptionState(appid, item.launchOption.id) }
-                                    onToggle={ (value) => setAppLaunchOptionState(appid, item.launchOption.id, value) }
-                                    onEdit={ () => showUpdateLaunchOptionFormModal(item.launchOption.id) }
-                                />
-                            )) }
+                            { renderLaunchOptionItems({
+                                items: localLaunchOptions,
+                                appid,
+                                getAppLaunchOptionState,
+                                setAppLaunchOptionState,
+                                setAppValueIdState,
+                                setValueAsDefault: false,
+                                onEdit: showUpdateLaunchOptionFormModal,
+                            }) }
                         </Focusable>
                     ),
-                    renderTabAddon: () => <span
-                        className={ TabCount }>{ getAppActiveLocalLaunchOptions(appid).filter(item => !item.group).length+(Number(!!getAppOriginalLaunchOptions(appid))) }</span>,
+                    renderTabAddon: () => {
+                        const count = countActiveLaunchOptions(
+                            settings.launchOptions,
+                            appid,
+                            getAppLaunchOptionState,
+                            (item) => !isLaunchOptionGlobal(item) && !item.group,
+                        )
+                        return <span className={ TabCount }>{ count + (Number(!!getAppOriginalLaunchOptions(appid))) }</span>
+                    },
                 },
                 {
                     id: 'global',
@@ -397,21 +589,26 @@ export function AppLaunchOptionsPage() {
                                     Add launch option
                                 </ButtonItem>
                             </PanelSectionRow>
-                            { globalLaunchOptions.map((item) => (
-                                <LaunchOptionItem
-                                    key={ item.launchOption.id }
-                                    launchOption={ item.launchOption }
-                                    displayName={ item.displayName }
-                                    indentLevel={ item.indentLevel }
-                                    isChecked={ getAppLaunchOptionState(appid, item.launchOption.id) }
-                                    onToggle={ (value) => setAppLaunchOptionState(appid, item.launchOption.id, value) }
-                                    onEdit={ () => showUpdateLaunchOptionFormModal(item.launchOption.id) }
-                                />
-                            )) }
+                            { renderLaunchOptionItems({
+                                items: globalLaunchOptions,
+                                appid,
+                                getAppLaunchOptionState,
+                                setAppLaunchOptionState,
+                                setAppValueIdState,
+                                setValueAsDefault: true,
+                                onEdit: showUpdateLaunchOptionFormModal,
+                            }) }
                         </Focusable>
                     ),
-                    renderTabAddon: () => <span
-                        className={ TabCount }>{ getAppActiveGlobalLaunchOptions(appid).filter(item => !item.group).length }</span>,
+                    renderTabAddon: () => {
+                        const count = countActiveLaunchOptions(
+                            settings.launchOptions,
+                            appid,
+                            getAppLaunchOptionState,
+                            (item) => isLaunchOptionGlobal(item) && !item.group,
+                        )
+                        return <span className={ TabCount }>{ count }</span>
+                    },
                 },
             ] }/>
         </div>
