@@ -3,7 +3,7 @@ import {
     DialogBody,
     DialogButton,
     DialogHeader,
-    DropdownItem,
+    Dropdown,
     Field,
     findModule,
     Focusable,
@@ -12,7 +12,7 @@ import {
     showModal,
     Tabs,
     TextField,
-    ToggleField,
+    Toggle,
     useParams,
 } from '@decky/ui'
 import { SingleDropdownOption } from '@decky/ui/dist/components/Dropdown'
@@ -112,6 +112,7 @@ interface LaunchOptionItemProps {
     displayName: string;
     indentLevel: number;
     isChecked: boolean;
+    showCommands: boolean;
     onToggle: (value: boolean) => void;
     onEdit: () => void;
 }
@@ -121,11 +122,12 @@ function LaunchOptionItem({
                               displayName,
                               indentLevel,
                               isChecked,
+                              showCommands,
                               onToggle,
                               onEdit,
                           }: LaunchOptionItemProps) {
     const activeColor = 'oklch(80.9% 0.105 251.813)'
-    const description = (
+    const description = showCommands ? (
         <span style={ { color: 'oklch(55.4% 0.046 257.417)' } }>
             { launchOption.on && (
                 <span style={ { color: isChecked ? activeColor : undefined } }>
@@ -140,28 +142,25 @@ function LaunchOptionItem({
             ) }
             { !launchOption.on && !launchOption.off && 'None' }
         </span>
-    )
+    ) : undefined
 
     return (
-        <Focusable style={ { display: 'flex', gap: 10 } }>
-            <Focusable style={ { flex: 1 } }>
-                <ToggleField
-                    indentLevel={ indentLevel }
-                    checked={ isChecked }
-                    onChange={ onToggle }
-                    description={ description }
-                    label={ displayName }
-                />
-            </Focusable>
-            <Focusable style={ { flexShrink: 0, padding: '10px 0' } }>
+        <Field
+            indentLevel={ indentLevel }
+            label={ displayName }
+            description={ description }
+            childrenLayout={ 'inline' }
+        >
+            <Focusable style={ { display: 'flex', gap: 10, alignItems: 'center' } }>
+                <Toggle value={ isChecked } onChange={ onToggle }/>
                 <DialogButton
-                    style={ { minWidth: 46, height: 46, padding: 0 } }
+                    style={ { minWidth: 40, width: 40, height: 40, padding: 0 } }
                     onClick={ onEdit }
                 >
                     <FaPen/>
                 </DialogButton>
             </Focusable>
-        </Focusable>
+        </Field>
     )
 }
 
@@ -171,6 +170,7 @@ interface ValueIdSelectItemProps {
     displayName: string;
     indentLevel: number;
     appid: string;
+    showCommands: boolean;
     getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean;
     setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string, setAsDefault?: boolean) => void;
     setValueAsDefault: boolean;
@@ -183,6 +183,7 @@ function ValueIdSelectItem({
                                displayName,
                                indentLevel,
                                appid,
+                               showCommands,
                                getAppLaunchOptionState,
                                setAppValueIdState,
                                setValueAsDefault,
@@ -198,7 +199,7 @@ function ValueIdSelectItem({
         label: lo.valueName || lo.on || lo.name,
     }))
 
-    const description = (
+    const description = showCommands ? (
         <span style={ { color: 'oklch(55.4% 0.046 257.417)' } }>
             { selectedOption?.on ? (
                 <span style={ { color: activeColor } }>
@@ -208,37 +209,46 @@ function ValueIdSelectItem({
                 selectedOption?.valueName || selectedOption?.name || 'None'
             ) }
         </span>
-    )
+    ) : undefined
 
     return (
-        <Focusable style={ { display: 'flex', gap: 10 } }>
-            <Focusable style={ { flex: 1 } }>
-                <DropdownItem
-                    indentLevel={ indentLevel }
-                    label={ displayName }
-                    description={ description }
-                    rgOptions={ rgOptions }
-                    selectedOption={ selectedId }
-                    onChange={ (option: SingleDropdownOption) => {
-                        setAppValueIdState(appid, valueId, option.data, setValueAsDefault)
-                    } }
-                />
-            </Focusable>
-            <Focusable style={ { flexShrink: 0, padding: '10px 0' } }>
+        <Field
+            indentLevel={ indentLevel }
+            label={ displayName }
+            description={ description }
+            childrenLayout={ 'inline' }
+        >
+            <Focusable style={ { display: 'flex', gap: 10, alignItems: 'center' } }>
+                <Focusable style={ { flex: 1 } }>
+                    <div style={ {
+                        display: 'flex',
+                        justifyContent: 'stretch',
+                        minWidth: 200,
+                    } }>
+                        <Dropdown
+                            rgOptions={ rgOptions }
+                            selectedOption={ selectedId }
+                            onChange={ (option: SingleDropdownOption) => {
+                                setAppValueIdState(appid, valueId, option.data, setValueAsDefault)
+                            } }
+                        />
+                    </div>
+                </Focusable>
                 <DialogButton
-                    style={ { minWidth: 46, height: 46, padding: 0 } }
+                    style={ { minWidth: 40, width: 40, height: 40, padding: 0 } }
                     onClick={ () => onEdit(selectedOption?.id ?? launchOptions[0].id) }
                 >
                     <FaPen/>
                 </DialogButton>
             </Focusable>
-        </Focusable>
+        </Field>
     )
 }
 
 interface RenderItemsParams {
     items: HierarchicalLaunchOption[];
     appid: string;
+    showCommands: boolean;
     getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean;
     setAppLaunchOptionState: (appid: string, launchOptionId: string, value: boolean) => void;
     setAppValueIdState: (appid: string, valueId: string, selectedLaunchOptionId: string, setAsDefault?: boolean) => void;
@@ -249,6 +259,7 @@ interface RenderItemsParams {
 function renderLaunchOptionItems({
                                      items,
                                      appid,
+                                     showCommands,
                                      getAppLaunchOptionState,
                                      setAppLaunchOptionState,
                                      setAppValueIdState,
@@ -273,17 +284,18 @@ function renderLaunchOptionItems({
 
             result.push(
                 <ValueIdSelectItem
-                    key={ `valueId-${launchOption.valueId}` }
+                    key={ `valueId-${ launchOption.valueId }` }
                     valueId={ launchOption.valueId }
                     launchOptions={ siblings }
                     displayName={ item.displayName }
                     indentLevel={ item.indentLevel }
                     appid={ appid }
+                    showCommands={ showCommands }
                     getAppLaunchOptionState={ getAppLaunchOptionState }
                     setAppValueIdState={ setAppValueIdState }
                     setValueAsDefault={ setValueAsDefault }
                     onEdit={ onEdit }
-                />
+                />,
             )
         } else {
             // Normal toggle item
@@ -294,9 +306,10 @@ function renderLaunchOptionItems({
                     displayName={ item.displayName }
                     indentLevel={ item.indentLevel }
                     isChecked={ getAppLaunchOptionState(appid, launchOption.id) }
+                    showCommands={ showCommands }
                     onToggle={ (value) => setAppLaunchOptionState(appid, launchOption.id, value) }
                     onEdit={ () => onEdit(launchOption.id) }
-                />
+                />,
             )
         }
     }
@@ -338,6 +351,7 @@ export function AppLaunchOptionsPage() {
     const { appid } = useParams<{ appid: string }>()
     const [tab, setTab] = useState<string>('local')
     const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy)
+    const showCommands = useStore(settingsStore, (state) => state.showCommands)
     const {
         settings,
         getAppLaunchOptionState,
@@ -494,6 +508,7 @@ export function AppLaunchOptionsPage() {
                                     { renderLaunchOptionItems({
                                         items: groupedLaunchOptions[group].global,
                                         appid,
+                                        showCommands,
                                         getAppLaunchOptionState,
                                         setAppLaunchOptionState,
                                         setAppValueIdState,
@@ -510,6 +525,7 @@ export function AppLaunchOptionsPage() {
                                     { renderLaunchOptionItems({
                                         items: groupedLaunchOptions[group].local,
                                         appid,
+                                        showCommands,
                                         getAppLaunchOptionState,
                                         setAppLaunchOptionState,
                                         setAppValueIdState,
@@ -546,7 +562,7 @@ export function AppLaunchOptionsPage() {
                                     Add launch option
                                 </ButtonItem>
                             </PanelSectionRow>
-                            <Field label={ 'Original launch options' }>
+                            <Field childrenLayout={ 'below' } label={ 'Original launch options' }>
                                 <TextField
                                     value={ getAppOriginalLaunchOptions(appid) }
                                     onChange={ (e) => setAppOriginalLaunchOptions(appid, e.target.value) }
@@ -555,6 +571,7 @@ export function AppLaunchOptionsPage() {
                             { renderLaunchOptionItems({
                                 items: localLaunchOptions,
                                 appid,
+                                showCommands,
                                 getAppLaunchOptionState,
                                 setAppLaunchOptionState,
                                 setAppValueIdState,
@@ -570,7 +587,8 @@ export function AppLaunchOptionsPage() {
                             getAppLaunchOptionState,
                             (item) => !isLaunchOptionGlobal(item) && !item.group,
                         )
-                        return <span className={ TabCount }>{ count + (Number(!!getAppOriginalLaunchOptions(appid))) }</span>
+                        return <span
+                            className={ TabCount }>{ count+(Number(!!getAppOriginalLaunchOptions(appid))) }</span>
                     },
                 },
                 {
@@ -592,6 +610,7 @@ export function AppLaunchOptionsPage() {
                             { renderLaunchOptionItems({
                                 items: globalLaunchOptions,
                                 appid,
+                                showCommands,
                                 getAppLaunchOptionState,
                                 setAppLaunchOptionState,
                                 setAppValueIdState,
