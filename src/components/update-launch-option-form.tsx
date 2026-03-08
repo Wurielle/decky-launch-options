@@ -29,7 +29,7 @@ export function UpdateLaunchOptionForm({
                 strTitle={ deleteByValueId && data.valueId ? 'Remove launch options' : 'Remove launch option' }
                 strDescription={
                     deleteByValueId && data.valueId
-                        ? `Do you want to remove all launch options with value ID "${ data.valueId }"?`
+                        ? `Do you want to remove all launch options with Value ID "${ data.valueId }"?`
                         : `Do you want to remove the "${ data.name || 'Unnamed' }" launch option?`
                 }
                 strOKButtonText="Confirm"
@@ -60,7 +60,7 @@ export function UpdateLaunchOptionForm({
                         color: 'oklch(63.7% 0.237 25.331)',
                         fontWeight: 'bold',
                     } }>
-                        Remove launch option
+                        { deleteByValueId && data.valueId ? 'Remove launch options' : 'Remove launch option' }
                     </div>
                 </DialogButton>
             </div>
