@@ -562,7 +562,7 @@ export function AppLaunchOptionsPage() {
                                     Add launch option
                                 </ButtonItem>
                             </PanelSectionRow>
-                            <Field label={ 'Original launch options' }>
+                            <Field childrenLayout={ 'below' } label={ 'Original launch options' }>
                                 <TextField
                                     value={ getAppOriginalLaunchOptions(appid) }
                                     onChange={ (e) => setAppOriginalLaunchOptions(appid, e.target.value) }
