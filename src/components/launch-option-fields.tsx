@@ -30,7 +30,7 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
                                              strOKButtonText="Confirm"
                                              strCancelButtonText="Cancel"
                                              onOK={ () => onChange('enableGlobally', true) }
-                                             onCancel={ () => setEnableGloballyKey((k) => k + 1) }
+                                             onCancel={ () => setEnableGloballyKey((k) => k+1) }
                                          />,
                                      )
                                  } else {
@@ -116,6 +116,7 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
                         <TextField
                             label={ 'Group' }
                             { ...({ placeholder: 'E.g.: Favorites' }) }
+                            description={ 'Groups this launch option under a named tab' }
                             style={ { width: '100%' } }
                             value={ data.group }
                             onChange={ (e) => {
@@ -137,6 +138,7 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
                         <TextField
                             label={ 'Value ID' }
                             { ...({ placeholder: 'E.g.: proton-version' }) }
+                            description={ 'Options sharing the same Value ID are displayed as a single dropdown' }
                             style={ { width: '100%' } }
                             value={ data.valueId }
                             onChange={ (e) => {
@@ -158,6 +160,7 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
                         <TextField
                             label={ 'Value Name' }
                             { ...({ placeholder: 'E.g.: Version 7' }) }
+                            description={ 'Display name shown in the dropdown' }
                             style={ { width: '100%' } }
                             value={ data.valueName }
                             onChange={ (e) => {
@@ -179,7 +182,7 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
                         label={ 'Set as fallback value' }
                         checked={ data.fallbackValue }
                         disabled={ !data.valueId }
-                        description={ !data.valueId ? 'Set Value ID to enable this option.' : undefined }
+                        description={ 'Selected by default in the dropdown when no other value is chosen' }
                         onChange={ (value) => onChange('fallbackValue', value) }
                     />
                 </div>
