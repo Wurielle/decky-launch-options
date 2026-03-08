@@ -107,7 +107,9 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
                         setShowAdvanced((value) => !value)
                     } }
                 >
-                    Advanced { showAdvanced ? <FaChevronUp/> : <FaChevronDown/> }
+                    <div style={ { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' } }>
+                        <span>Advanced</span> { showAdvanced ? <FaChevronUp/> : <FaChevronDown/> }
+                    </div>
                 </DialogButton>
             </div>
             { showAdvanced && (
@@ -116,7 +118,8 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
                         <TextField
                             label={ 'Group' }
                             { ...({ placeholder: 'E.g.: Favorites' }) }
-                            description={ 'Groups this launch option under a named tab' }
+                            description={ <div style={ { textAlign: 'left' } }>Groups this launch option under a named
+                                tab</div> }
                             style={ { width: '100%' } }
                             value={ data.group }
                             onChange={ (e) => {
@@ -138,7 +141,9 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
                         <TextField
                             label={ 'Value ID' }
                             { ...({ placeholder: 'E.g.: proton-version' }) }
-                            description={ 'Options sharing the same Value ID are displayed as a single dropdown' }
+                            description={ <div style={ { textAlign: 'left' } }>Launch options sharing the same Value
+                                ID are displayed as a
+                                dropdown</div> }
                             style={ { width: '100%' } }
                             value={ data.valueId }
                             onChange={ (e) => {
@@ -160,7 +165,8 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
                         <TextField
                             label={ 'Value Name' }
                             { ...({ placeholder: 'E.g.: Version 7' }) }
-                            description={ 'Display name shown in the dropdown' }
+                            description={ <div style={ { textAlign: 'left' } }>Display name shown in the
+                                dropdown</div> }
                             style={ { width: '100%' } }
                             value={ data.valueName }
                             onChange={ (e) => {
