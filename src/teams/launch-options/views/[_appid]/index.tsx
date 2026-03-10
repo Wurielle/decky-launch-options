@@ -194,10 +194,18 @@ function ValueIdSelectItem({
     const selectedOption = launchOptions.find((lo) => getAppLaunchOptionState(appid, lo.id))
     const selectedId = selectedOption?.id ?? launchOptions[0]?.id ?? null
 
-    const rgOptions = launchOptions.map((lo) => ({
-        data: lo.id,
-        label: lo.valueName || lo.on || lo.name,
-    }))
+    const rgOptions = launchOptions
+        .map((lo) => ({
+            data: lo.id,
+            label: (lo.valueName || lo.on || lo.name) + '\u00A0\u00A0',
+            _emptyOn: !lo.on,
+            _fallback: !!lo.fallbackValue,
+        }))
+        .sort((a, b) => {
+            if (a._emptyOn !== b._emptyOn) return a._emptyOn ? -1 : 1
+            if (a._fallback !== b._fallback) return a._fallback ? -1 : 1
+            return a.label.localeCompare(b.label)
+        })
 
     const description = showCommands ? (
         <span style={ { color: 'oklch(55.4% 0.046 257.417)' } }>
