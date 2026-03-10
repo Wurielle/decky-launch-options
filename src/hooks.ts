@@ -1,5 +1,5 @@
 import { set } from 'es-toolkit/compat'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { produce, WritableDraft } from 'immer'
 import { LaunchOption, launchOptionFactory, profileFactory, Settings } from './shared'
 import { useGetSettingsQuery, useSetSettingsMutation } from './query'
@@ -12,11 +12,15 @@ export function useSettings() {
 
     const getSettingsQuery = useGetSettingsQuery()
     const setSettingsMutation = useSetSettingsMutation()
+    const initializedRef = useRef(false)
 
     const setSettings = (draftSettings: (draft: WritableDraft<Settings>) => void) => {
-        const newSettings = produce(settings, draftSettings)
-        _setSettings(newSettings)
-        setSettingsMutation.mutate(newSettings)
+        if (!initializedRef.current) return
+        _setSettings((prev) => {
+            const newSettings = produce(prev, draftSettings)
+            setSettingsMutation.mutate(newSettings)
+            return newSettings
+        })
     }
 
     useEffect(() => {
@@ -30,6 +34,7 @@ export function useSettings() {
                     fallbackValue: !!item.fallbackValue,
                 })),
             })
+            initializedRef.current = true
         }
     }, [getSettingsQuery.data, getSettingsQuery.isFetched])
 

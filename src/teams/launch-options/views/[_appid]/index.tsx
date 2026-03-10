@@ -500,23 +500,6 @@ export function AppLaunchOptionsPage() {
                                     Add launch option
                                 </ButtonItem>
                             </PanelSectionRow>
-                            { groupedLaunchOptions[group]?.global.length > 0 && (
-                                <div>
-                                    <div style={ { marginTop: '16px' } }>
-                                        <strong>Global</strong>
-                                    </div>
-                                    { renderLaunchOptionItems({
-                                        items: groupedLaunchOptions[group].global,
-                                        appid,
-                                        showCommands,
-                                        getAppLaunchOptionState,
-                                        setAppLaunchOptionState,
-                                        setAppValueIdState,
-                                        setValueAsDefault: true,
-                                        onEdit: showUpdateLaunchOptionFormModal,
-                                    }) }
-                                </div>
-                            ) }
                             { groupedLaunchOptions[group]?.local.length > 0 && (
                                 <div>
                                     <div style={ { marginTop: '16px' } }>
@@ -530,6 +513,23 @@ export function AppLaunchOptionsPage() {
                                         setAppLaunchOptionState,
                                         setAppValueIdState,
                                         setValueAsDefault: false,
+                                        onEdit: showUpdateLaunchOptionFormModal,
+                                    }) }
+                                </div>
+                            ) }
+                            { groupedLaunchOptions[group]?.global.length > 0 && (
+                                <div>
+                                    <div style={ { marginTop: '16px' } }>
+                                        <strong>Global</strong>
+                                    </div>
+                                    { renderLaunchOptionItems({
+                                        items: groupedLaunchOptions[group].global,
+                                        appid,
+                                        showCommands,
+                                        getAppLaunchOptionState,
+                                        setAppLaunchOptionState,
+                                        setAppValueIdState,
+                                        setValueAsDefault: true,
                                         onEdit: showUpdateLaunchOptionFormModal,
                                     }) }
                                 </div>
