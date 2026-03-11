@@ -24,6 +24,7 @@ export const launchOptionFactory = (launchOption: Partial<LaunchOption> = {}): L
     valueId: launchOption.valueId || '',
     valueName: launchOption.valueName || '',
     fallbackValue: launchOption.fallbackValue || false,
+    priority: launchOption.priority || 0,
 })
 
 export type Profile = {
@@ -41,6 +42,7 @@ export type LaunchOption = {
     valueId: string
     valueName: string
     fallbackValue: boolean
+    priority: number
 }
 
 export type Settings = {

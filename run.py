@@ -174,11 +174,13 @@ def get_final_args_details(settings, appid):
         fallback = next((opt["id"] for opt in siblings if opt.get("fallbackValue", False)), None)
         selected_by_value_id[value_id] = fallback if fallback is not None else siblings[0]["id"]
 
-    # Parse each enabled launch option
+    # Parse each enabled launch option, collecting with priority for sorting
+    launch_option_parts = []
     for opt in settings["launchOptions"]:
         opt_id = opt["id"]
         value_id = opt.get("valueId", "")
         enable_globally = opt.get("enableGlobally", False)
+        priority = opt.get("priority", 0) or 0
         if value_id:
             is_enabled = selected_by_value_id.get(value_id) == opt_id
             # For valueId groups, only the selected option contributes commands.
@@ -190,10 +192,18 @@ def get_final_args_details(settings, appid):
 
         if raw_command and raw_command.strip():
             parsed = parse_launch_option(raw_command)
-            all_env_vars.update(parsed['env_vars'])
-            if parsed['prefix']:
-                all_prefixes.append(parsed['prefix'])
-            all_suffixes.extend(parsed['suffix'])
+            launch_option_parts.append((priority, parsed))
+
+    # Sort by priority descending (higher priority = leftmost prefix command).
+    # Python's sort is stable, so equal-priority options keep their original order.
+    launch_option_parts.sort(key=lambda x: x[0], reverse=True)
+
+    # Merge sorted results into collectors
+    for priority, parsed in launch_option_parts:
+        all_env_vars.update(parsed['env_vars'])
+        if parsed['prefix']:
+            all_prefixes.append(parsed['prefix'])
+        all_suffixes.extend(parsed['suffix'])
 
     # Apply all environment variables
     for key, value in all_env_vars.items():

@@ -144,7 +144,7 @@ export function useSettings() {
             value: any,
             syncCommonFields = true,
         ) => {
-            const commonFields = ['name', 'group', 'valueId']
+            const commonFields = ['name', 'group', 'valueId', 'priority']
             setSettings((draft) => {
                 const index = draft.launchOptions.findIndex((item) => item.id === launchOption.id)
                 if (index === -1) return
