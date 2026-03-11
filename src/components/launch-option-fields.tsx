@@ -193,6 +193,30 @@ export function LaunchOptionFields({ data, onChange, commonOnly }: LaunchOptionF
                     />
                 </div>
             ) }
+            { showAdvanced && (
+                <ScrollIntoView>
+                    { ({ scrollIntoView }) => (
+                        <TextField
+                            label={ 'Priority' }
+                            { ...({ placeholder: '0' }) }
+                            description={ <div style={ { textAlign: 'left' } }>Higher priority options run first
+                                (leftmost command prefix). Default is 0.</div> }
+                            style={ { width: '100%' } }
+                            value={ data.priority ? String(data.priority) : '' }
+                            onChange={ (e) => {
+                                scrollIntoView(e)
+                                const num = Number(e.target.value)
+                                onChange('priority', Number.isFinite(num) ? num : 0)
+                            } }
+                            onKeyDown={ scrollIntoView }
+                            onKeyUp={ scrollIntoView }
+                            onInput={ scrollIntoView }
+                            onSelect={ scrollIntoView }
+                            onFocus={ scrollIntoView }
+                        />
+                    ) }
+                </ScrollIntoView>
+            ) }
         </>
     )
 }

@@ -10,7 +10,8 @@ import os
 # Add current directory to path to import run.py
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from run import parse_launch_option
+from unittest.mock import patch
+from run import parse_launch_option, get_final_args_details
 
 def test_case(name, raw_command, expected=None):
     print(f"\n{'='*60}")
@@ -285,6 +286,126 @@ if __name__ == "__main__":
             'suffix': ['-norestrictions', '-nomemrestrict', '-availablevidmem', '6144', '-width', '1280', '-height', '800', '-refreshrate', '60']
         }
     )
+
+    # =========================================================
+    # Priority ordering tests
+    # =========================================================
+    print("\n" + "="*60)
+    print("Priority Ordering Tests")
+    print("="*60)
+
+    # Helper to build mock settings for priority tests
+    def make_settings(launch_options, appid="123", state=None):
+        return {
+            "profiles": {
+                str(appid): {
+                    "state": state or {},
+                    "originalLaunchOptions": "",
+                }
+            },
+            "launchOptions": launch_options,
+        }
+
+    def make_opt(opt_id, on, priority=0):
+        return {
+            "id": opt_id,
+            "name": opt_id,
+            "on": on,
+            "off": "",
+            "enableGlobally": True,
+            "group": "",
+            "valueId": "",
+            "valueName": "",
+            "fallbackValue": False,
+            "priority": priority,
+        }
+
+    # Save and override sys.argv for tests, mock shutil.which so prefix
+    # executables aren't skipped due to not existing on this machine.
+    original_argv = sys.argv
+    sys.argv = ["run.py", "/path/to/game"]
+
+    with patch("run.shutil.which", return_value="/usr/bin/fake"):
+
+        # Test A: Higher priority prefix comes first (leftmost)
+        print(f"\n{'='*60}")
+        print("Test: Priority ordering - higher priority runs first")
+        print(f"{'='*60}")
+        settings_a = make_settings([
+            make_opt("a", "mangohud %command%", priority=0),
+            make_opt("b", "gamescope %command%", priority=10),
+        ])
+        final_args_a, _ = get_final_args_details(settings_a, "123")
+        # gamescope (priority 10) should be before mangohud (priority 0)
+        expected_a = ["gamescope", "mangohud", "/path/to/game"]
+        match_a = final_args_a == expected_a
+        print(f"Result:   {final_args_a}")
+        print(f"Expected: {expected_a}")
+        print(f"\n{'✓ PASS' if match_a else '✗ FAIL'}")
+
+        # Test B: Stable sort - equal priorities keep original order
+        print(f"\n{'='*60}")
+        print("Test: Stable sort - equal priorities keep original array order")
+        print(f"{'='*60}")
+        settings_b = make_settings([
+            make_opt("a", "first %command%", priority=0),
+            make_opt("b", "middle %command%", priority=5),
+            make_opt("c", "last %command%", priority=0),
+        ])
+        final_args_b, _ = get_final_args_details(settings_b, "123")
+        # middle (priority 5) first, then first and last keep their relative order
+        expected_b = ["middle", "first", "last", "/path/to/game"]
+        match_b = final_args_b == expected_b
+        print(f"Result:   {final_args_b}")
+        print(f"Expected: {expected_b}")
+        print(f"\n{'✓ PASS' if match_b else '✗ FAIL'}")
+
+        # Test C: All default priority (0) preserves original order
+        print(f"\n{'='*60}")
+        print("Test: Default priority preserves original array order")
+        print(f"{'='*60}")
+        settings_c = make_settings([
+            make_opt("a", "alpha %command%"),
+            make_opt("b", "beta %command%"),
+            make_opt("c", "gamma %command%"),
+        ])
+        final_args_c, _ = get_final_args_details(settings_c, "123")
+        expected_c = ["alpha", "beta", "gamma", "/path/to/game"]
+        match_c = final_args_c == expected_c
+        print(f"Result:   {final_args_c}")
+        print(f"Expected: {expected_c}")
+        print(f"\n{'✓ PASS' if match_c else '✗ FAIL'}")
+
+        # Test D: Missing/undefined priority treated as 0
+        print(f"\n{'='*60}")
+        print("Test: Missing priority treated as 0")
+        print(f"{'='*60}")
+        opt_no_priority = {
+            "id": "x",
+            "name": "x",
+            "on": "tool_x %command%",
+            "off": "",
+            "enableGlobally": True,
+            "group": "",
+            "valueId": "",
+            "valueName": "",
+            "fallbackValue": False,
+            # no "priority" key at all
+        }
+        settings_d = make_settings([
+            opt_no_priority,
+            make_opt("y", "tool_y %command%", priority=1),
+        ])
+        final_args_d, _ = get_final_args_details(settings_d, "123")
+        # tool_y (priority 1) should be before tool_x (no priority = 0)
+        expected_d = ["tool_y", "tool_x", "/path/to/game"]
+        match_d = final_args_d == expected_d
+        print(f"Result:   {final_args_d}")
+        print(f"Expected: {expected_d}")
+        print(f"\n{'✓ PASS' if match_d else '✗ FAIL'}")
+
+    # Restore sys.argv
+    sys.argv = original_argv
 
     print("\n" + "="*60)
     print("All tests completed!")
