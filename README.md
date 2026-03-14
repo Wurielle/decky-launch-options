@@ -126,7 +126,22 @@ You can also check if Decky Launch Options is available with:
 (window as any).hasDeckyLaunchOptions
 ```
 
-> **Note:** Every field of a launch option is optional but I recommend at least setting a static id for each one to
+### `LaunchOption` properties:
+
+| Property         | Type      | Description                                                                                                                             |
+|------------------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `id`             | `string`  | Stable unique identifier used to select values and to let reimports override an existing launch option instead of creating a duplicate. |
+| `name`           | `string`  | Human-readable label shown in the UI.                                                                                                   |
+| `on`             | `string`  | Command applied when the launch option is enabled.                                                                                      |
+| `off`            | `string`  | Command applied when the launch option is disabled.                                                                                     |
+| `enableGlobally` | `boolean` | Whether the launch option is enabled by default for all games.                                                                          |
+| `group`          | `string`  | Group name that creates a new tab in the UI for related launch options.                                                                 |
+| `valueId`        | `string`  | Shared identifier that groups launch options together in a dropdown.                                                                    |
+| `valueName`      | `string`  | Display name shown for the grouped value in the dropdown UI.                                                                            |
+| `fallbackValue`  | `boolean` | Marks this option as the fallback/default choice for its `valueId` group.                                                               |
+| `priority`       | `number`  | Sort priority used when ordering launch options. Higher values run first.                                                               |
+
+> **Note:** Every property of a launch option is optional but I recommend at least setting a static id for each one to
 > allow Decky Launch Options to override launch options with matching ids in case the user decides to import them again.
 
 ## Understanding launch options
