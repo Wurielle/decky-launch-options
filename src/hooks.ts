@@ -14,6 +14,16 @@ export function useSettings() {
     const setSettingsMutation = useSetSettingsMutation()
     const initializedRef = useRef(false)
 
+    const normalizeSettings = (nextSettings?: Settings | null): Settings => ({
+        profiles: nextSettings?.profiles || {},
+        launchOptions: (nextSettings?.launchOptions || []).map((item) => ({
+            ...item,
+            valueId: item.valueId || '',
+            valueName: item.valueName || '',
+            fallbackValue: !!item.fallbackValue,
+        })),
+    })
+
     const setSettings = (draftSettings: (draft: WritableDraft<Settings>) => void) => {
         if (!initializedRef.current) return
         _setSettings((prev) => {
@@ -24,18 +34,17 @@ export function useSettings() {
     }
 
     useEffect(() => {
-        if (getSettingsQuery.isFetched && getSettingsQuery.data) {
-            _setSettings({
-                profiles: getSettingsQuery.data.profiles || {},
-                launchOptions: (getSettingsQuery.data.launchOptions || []).map((item) => ({
-                    ...item,
-                    valueId: item.valueId || '',
-                    valueName: item.valueName || '',
-                    fallbackValue: !!item.fallbackValue,
-                })),
-            })
+        if (!getSettingsQuery.isFetched) return
+
+        if (!initializedRef.current) {
+            _setSettings(normalizeSettings(getSettingsQuery.data))
             initializedRef.current = true
+            return
         }
+
+        if (!getSettingsQuery.data) return
+
+        _setSettings(normalizeSettings(getSettingsQuery.data))
     }, [getSettingsQuery.data, getSettingsQuery.isFetched])
 
     /**
