@@ -13,6 +13,7 @@ import decky
 SETTINGS_FOLDER_NAME = '.dlo'
 SETTINGS_FOLDER_PATH = os.path.join(os.path.expanduser('~'), SETTINGS_FOLDER_NAME)
 SETTINGS_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'settings.json')}"
+DEBUG_LOG_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'debug.log')}"
 
 PY_LAUNCHER_PATH = os.path.join(decky.DECKY_PLUGIN_DIR, "run.py")
 
@@ -29,6 +30,7 @@ info = {
     "SHORT_SH_COMMAND_PATH": SHORT_SH_COMMAND_PATH,
     "FULL_SH_COMMAND_PATH": FULL_SH_COMMAND_PATH,
     "COMMAND": COMMAND,
+    "DEBUG_LOG_PATH": DEBUG_LOG_PATH,
 }
 
 
@@ -131,6 +133,15 @@ class Plugin:
 
     async def has_shell_script(self):
         return os.path.exists(FULL_SH_COMMAND_PATH)
+
+    async def get_debug_log(self):
+        path = Path(DEBUG_LOG_PATH)
+        if not path.exists():
+            return None
+        try:
+            return await asyncio.to_thread(path.read_text)
+        except (OSError, IOError):
+            return None
 
     async def get_info(self):
         return info

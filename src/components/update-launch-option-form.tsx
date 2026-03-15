@@ -1,13 +1,22 @@
-import {usePlugin} from "./plugin-provider";
-import {ConfirmModal, DialogButton, showModal, TextField, ToggleField} from "@decky/ui";
-import {useMemo} from "react";
-import {ScrollIntoView} from "./scroll-into-view";
+import { usePlugin } from "./plugin-provider"
+import { ConfirmModal, DialogButton, showModal } from "@decky/ui"
+import { useMemo } from "react"
+import { LaunchOptionFields } from "./launch-option-fields"
 
-export function UpdateLaunchOptionForm({id, onDelete}: {
+export function UpdateLaunchOptionForm({
+                                           id,
+                                           onDelete,
+                                           commonOnly = true,
+                                           syncCommonFields = true,
+                                           deleteByValueId = false,
+                                       }: {
     id: string,
     onDelete?: () => void
+    commonOnly?: boolean
+    syncCommonFields?: boolean
+    deleteByValueId?: boolean
 }) {
-    const {updateLaunchOption, deleteLaunchOption, settings} = usePlugin().settings
+    const { updateLaunchOption, deleteLaunchOption, deleteLaunchOptionsByValueId, settings } = usePlugin().settings
 
     const data = useMemo(() => settings.launchOptions.find((launchOption) => launchOption.id === id), [settings.launchOptions, id])
 
@@ -17,91 +26,41 @@ export function UpdateLaunchOptionForm({id, onDelete}: {
         if (!data) return null
         return showModal(
             <ConfirmModal
-                strTitle={`Remove launch option`}
+                strTitle={ deleteByValueId && data.valueId ? 'Remove launch options' : 'Remove launch option' }
                 strDescription={
-                    `Do you want to remove the "${data.name || 'Unnamed'}" launch option?`
+                    deleteByValueId && data.valueId
+                        ? `Do you want to remove all launch options with Value ID "${ data.valueId }"?`
+                        : `Do you want to remove the "${ data.name || 'Unnamed' }" launch option?`
                 }
                 strOKButtonText="Confirm"
                 strCancelButtonText="Cancel"
-                onOK={async () => {
-                    deleteLaunchOption(data.id)
+                onOK={ async () => {
+                    if (deleteByValueId && data.valueId) {
+                        deleteLaunchOptionsByValueId(data.valueId)
+                    } else {
+                        deleteLaunchOption(data.id)
+                    }
                     onDelete?.()
-                }}
+                } }
             />,
         )
     }
 
     return (
         <div>
-            <div style={{marginBottom: 22}}>
-                <ToggleField label={'Enable globally'} checked={data.enableGlobally}
-                             onChange={(value) => updateLaunchOption(data, 'enableGlobally', value)}/>
-            </div>
-            <ScrollIntoView>
-                {({scrollIntoView}) => (
-                    <TextField
-                        label={'Name'}
-                        {...({placeholder: 'E.g.: My favorite launch options'})}
-                        style={{width: '100%'}}
-                        value={data.name}
-                        onChange={(e) => {
-                            scrollIntoView(e)
-                            updateLaunchOption(data, 'name', e.target.value)
-                        }}
-                        onKeyDown={scrollIntoView}
-                        onKeyUp={scrollIntoView}
-                        onInput={scrollIntoView}
-                        onSelect={scrollIntoView}
-                        onFocus={scrollIntoView}
-                    />
-                )}
-            </ScrollIntoView>
-            <ScrollIntoView>
-                {({scrollIntoView}) => (
-                    <TextField
-                        label={'On command'}
-                        {...({placeholder: 'E.g.: SteamDeck=1 ~/script/install %command% -novid'})}
-                        style={{width: '100%'}}
-                        value={data.on}
-                        onChange={(e) => {
-                            scrollIntoView(e)
-                            updateLaunchOption(data, 'on', e.target.value)
-                        }}
-                        onKeyDown={scrollIntoView}
-                        onKeyUp={scrollIntoView}
-                        onInput={scrollIntoView}
-                        onSelect={scrollIntoView}
-                        onFocus={scrollIntoView}
-                    />
-                )}
-            </ScrollIntoView>
-            <ScrollIntoView>
-                {({scrollIntoView}) => (
-                    <TextField
-                        label={'Off command'}
-                        {...({placeholder: 'E.g.: SteamDeck=0 ~/script/uninstall %command% -novid'})}
-                        style={{width: '100%'}}
-                        value={data.off}
-                        onChange={(e) => {
-                            scrollIntoView(e)
-                            updateLaunchOption(data, 'off', e.target.value)
-                        }}
-                        onKeyDown={scrollIntoView}
-                        onKeyUp={scrollIntoView}
-                        onInput={scrollIntoView}
-                        onSelect={scrollIntoView}
-                        onFocus={scrollIntoView}
-                    />
-                )}
-            </ScrollIntoView>
-            <div style={{display: 'flex', gap: '10px'}}>
-                <DialogButton style={{flex: 1}}
-                              onClick={remove}>
-                    <div style={{
+            <LaunchOptionFields
+                data={ data }
+                onChange={ (field, value) => updateLaunchOption(data, field, value, syncCommonFields) }
+                commonOnly={ commonOnly }
+            />
+            <div style={ { display: 'flex', gap: '10px' } }>
+                <DialogButton style={ { flex: 1 } }
+                              onClick={ remove }>
+                    <div style={ {
                         color: 'oklch(63.7% 0.237 25.331)',
                         fontWeight: 'bold',
-                    }}>
-                        Remove launch option
+                    } }>
+                        { deleteByValueId && data.valueId ? 'Remove launch options' : 'Remove launch option' }
                     </div>
                 </DialogButton>
             </div>

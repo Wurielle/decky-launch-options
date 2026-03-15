@@ -91,6 +91,11 @@ logs:
     ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
       "echo '${DECK_PASS}' | journalctl -u plugin_loader -f"
 
-rundebug:
-    ssh ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
-      "echo '${DECK_PASS}' | nano .dlo/debug.log"
+taildebug:
+    ssh -t ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
+      "watch -d -n 1 cat .dlo/debug.log"
+
+tailsettings:
+    ssh -t ${DECK_USER}@${DECK_IP} -p ${DECK_PORT} ${DECK_KEY} \
+      "watch -d -n 1 cat .dlo/settings.json"
+

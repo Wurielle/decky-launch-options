@@ -1,7 +1,8 @@
-import {LaunchOption, launchOptionFactory} from "../shared";
-import {useImmer} from "use-immer";
-import {useSettings} from "../hooks";
-import {useCallback} from "react";
+import { LaunchOption, launchOptionFactory } from "../shared"
+import { useImmer } from "use-immer"
+import { useSettings } from "../hooks"
+import { sortBy } from "es-toolkit"
+import { useCallback } from "react"
 import {
     DialogBody,
     DialogButton,
@@ -15,93 +16,93 @@ import {
     ModalRoot,
     showModal,
     TextField,
-    ToggleField
-} from "@decky/ui";
-import {QueryClientProvider} from "@tanstack/react-query";
-import {queryClient} from "../query";
+    ToggleField,
+} from "@decky/ui"
+import { QueryClientProvider } from "@tanstack/react-query"
+import { queryClient } from "../query"
 
 
-export function BatchAddLaunchOptions({data, onSubmit, onCancel}: {
+export function BatchAddLaunchOptions({ data, onSubmit, onCancel }: {
     data: Partial<LaunchOption>[],
     onSubmit: () => void,
     onCancel: () => void
 }) {
-    const [launchOptions, setLaunchOptions] = useImmer(data.map(launchOptionFactory))
-    const {batchCreateLaunchOptions} = useSettings()
+    const [launchOptions, setLaunchOptions] = useImmer(sortBy(data.map(launchOptionFactory), ['name']))
+    const { batchCreateLaunchOptions } = useSettings()
     const showLaunchOptions = useCallback(() => {
         const modalResult = showModal(
-            <ModalRoot onCancel={() => {
+            <ModalRoot onCancel={ () => {
                 onCancel()
                 modalResult.Close()
-            }}>
+            } }>
                 <DialogBody>
-                    {launchOptions.map((launchOption, index) => (
+                    { launchOptions.map((launchOption, index) => (
                         <DialogControlsSection>
-                            <DialogControlsSectionHeader>{launchOption.name}</DialogControlsSectionHeader>
+                            <DialogControlsSectionHeader>{ launchOption.name }{ launchOption.valueName ? ` (${launchOption.valueName})` : '' }</DialogControlsSectionHeader>
                             <Field description={
-                                <div style={{padding: '0 0 0 22'}}>
+                                <div style={ { padding: '0 0 0 22' } }>
                                     <TextField
-                                        label={'On command'}
-                                        disabled={true}
-                                        value={launchOption.on}
+                                        label={ 'On command' }
+                                        disabled={ true }
+                                        value={ launchOption.on }
                                     />
                                     <TextField
-                                        label={'Off command'}
-                                        disabled={true}
-                                        value={launchOption.off}
+                                        label={ 'Off command' }
+                                        disabled={ true }
+                                        value={ launchOption.off }
                                     />
                                     <ToggleField
-                                        label={'Enable globally'}
-                                        bottomSeparator={'none'}
-                                        checked={launchOption.enableGlobally}
-                                        onChange={(value) => {
+                                        label={ 'Enable globally' }
+                                        bottomSeparator={ 'none' }
+                                        checked={ launchOption.enableGlobally }
+                                        onChange={ (value) => {
                                             setLaunchOptions((draft) => {
                                                 draft[index].enableGlobally = value
                                             })
-                                        }}
+                                        } }
                                     />
                                 </div>
                             }/>
                         </DialogControlsSection>
-                    ))}
+                    )) }
                 </DialogBody>
                 <DialogFooter>
-                    <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-                        <DialogButtonPrimary onClick={() => {
+                    <div style={ { display: 'flex', flexDirection: 'column', gap: '10px' } }>
+                        <DialogButtonPrimary onClick={ () => {
                             batchCreateLaunchOptions(launchOptions)
                             onSubmit()
                             modalResult.Close()
-                        }}>Add to Decky Launch Options</DialogButtonPrimary>
-                        <DialogButton onClick={() => {
+                        } }>Add to Decky Launch Options</DialogButtonPrimary>
+                        <DialogButton onClick={ () => {
                             onCancel()
                             modalResult.Close()
-                        }}>Cancel</DialogButton>
+                        } }>Cancel</DialogButton>
                     </div>
                 </DialogFooter>
-            </ModalRoot>
+            </ModalRoot>,
         )
     }, [onCancel, launchOptions, onSubmit, batchCreateLaunchOptions])
     return (
-        <ModalRoot onCancel={onCancel}>
+        <ModalRoot onCancel={ onCancel }>
             <DialogHeader>Decky Launch Options</DialogHeader>
             <DialogBody>
                 <p>An application would like to add the following launch options:</p>
-                <Focusable style={{maxHeight: "145px", overflowY: "auto"}}>
+                <Focusable style={ { maxHeight: "145px", overflowY: "auto" } }>
                     <ul>
-                        {launchOptions.map((launchOption, index) => (
-                            <li key={index}>
-                                {launchOption.name}
+                        { launchOptions.map((launchOption, index) => (
+                            <li key={ index }>
+                                { launchOption.name }{ launchOption.valueName ? ` (${launchOption.valueName})` : '' }
                             </li>
-                        ))}
+                        )) }
                     </ul>
                 </Focusable>
                 <p>Please review each of them carefully before accepting.</p>
             </DialogBody>
             <DialogFooter>
-                <div style={{display: 'flex', flexDirection: 'column', gap: '10px'}}>
-                    <DialogButtonPrimary onClick={() => {
+                <div style={ { display: 'flex', flexDirection: 'column', gap: '10px' } }>
+                    <DialogButtonPrimary onClick={ () => {
                         showLaunchOptions()
-                    }}>I understand</DialogButtonPrimary>
+                    } }>I understand</DialogButtonPrimary>
                 </div>
             </DialogFooter>
         </ModalRoot>
@@ -110,13 +111,13 @@ export function BatchAddLaunchOptions({data, onSubmit, onCancel}: {
 
 export function batchCreateLaunchOptions(launchOptions: Partial<LaunchOption>[]) {
     const modalResult = showModal(
-        <QueryClientProvider client={queryClient}>
+        <QueryClientProvider client={ queryClient }>
             <BatchAddLaunchOptions
-                data={launchOptions}
-                onSubmit={() => modalResult.Close()}
-                onCancel={() => modalResult.Close()}
+                data={ launchOptions }
+                onSubmit={ () => modalResult.Close() }
+                onCancel={ () => modalResult.Close() }
             />
-        </QueryClientProvider>
+        </QueryClientProvider>,
     )
 
 }

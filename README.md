@@ -108,6 +108,7 @@ window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
         },
         {
             id: 'steam-deck-env',
+            group: 'Steam Utils',
             name: 'Steam Deck env',
             on: 'SteamDeck=1',
             off: 'SteamDeck=0',
@@ -125,7 +126,22 @@ You can also check if Decky Launch Options is available with:
 (window as any).hasDeckyLaunchOptions
 ```
 
-> **Note:** Every field of a launch option is optional but I recommend at least setting a static id for each one to
+### `LaunchOption` properties:
+
+| Property         | Type      | Description                                                                                                                             |
+|------------------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `id`             | `string`  | Stable unique identifier used to select values and update the launch option during reimport.                                            |
+| `name`           | `string`  | Display label shown in the UI.                                                                                                          |
+| `on`             | `string`  | Command string applied when the launch option is enabled.                                                                               |
+| `off`            | `string`  | Command string applied when the launch option is disabled.                                                                              |
+| `enableGlobally` | `boolean` | Default state applied across all games.                                                                                                 |
+| `group`          | `string`  | Group name that creates a new tab in the UI.                                                                                            |
+| `valueId`        | `string`  | Shared identifier that groups launch options into a dropdown.                                                                           |
+| `valueName`      | `string`  | Display name shown for the dropdown value in the UI.                                                                                    |
+| `fallbackValue`  | `boolean` | Default choice used for its `valueId` group.                                                                                            |
+| `priority`       | `number`  | Execution priority for the launch option. Higher values run first.                                                                      |
+
+> **Note:** Every property of a launch option is optional but I recommend at least setting a static id for each one to
 > allow Decky Launch Options to override launch options with matching ids in case the user decides to import them again.
 
 ## Understanding launch options

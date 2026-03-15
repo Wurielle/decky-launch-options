@@ -11,7 +11,8 @@ function createStore<S>(state: S, options: StoreOptions<S, (state: S) => void> =
 export const settingsLocalStorageKey = 'decky-launch-options-settings'
 const settingsLocalStorageValue = localStorage.getItem(settingsLocalStorageKey)
 const defaultSettingsStoreState = {
-    useHierarchy: true
+    useHierarchy: true,
+    showCommands: false,
 }
 export const settingsStore = createStore<typeof defaultSettingsStoreState>({
     ...defaultSettingsStoreState,
