@@ -1,7 +1,6 @@
 import asyncio
 import json
 import os
-import shutil
 import stat
 from pathlib import Path
 
@@ -163,23 +162,19 @@ class Plugin:
         await self.cleanup()
 
     async def _uninstall(self):
-        if os.path.exists(SETTINGS_FOLDER_PATH):
-            try:
-                shutil.rmtree(SETTINGS_FOLDER_PATH)
+        try:
+            folder_path = Path(SETTINGS_FOLDER_PATH)
+            folder_path.mkdir(parents=True, exist_ok=True)
 
-                # Recreate run command just in case anything still points to it for some reason
-                folder_path = Path(SETTINGS_FOLDER_PATH)
-                folder_path.mkdir(parents=True, exist_ok=True)
+            with open(FULL_SH_COMMAND_PATH, "w") as file:
+                file.write("#!/bin/bash\n")
+                file.write("exec \"$@\"\n")
 
-                with open(FULL_SH_COMMAND_PATH, "w") as file:
-                    file.write("#!/bin/bash\n")
-                    file.write("exec \"$@\"\n")
-
-                current_stat = os.stat(FULL_SH_COMMAND_PATH)
-                os.chmod(FULL_SH_COMMAND_PATH, current_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-            except (OSError, IOError, PermissionError) as e:
-                log(f"Failed to remove settings folder during uninstall: {e}")
-                raise
+            current_stat = os.stat(FULL_SH_COMMAND_PATH)
+            os.chmod(FULL_SH_COMMAND_PATH, current_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        except (OSError, IOError, PermissionError) as e:
+            log(f"Failed to update launcher script during uninstall: {e}")
+            raise
 
     async def _migration(self):
         pass
