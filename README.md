@@ -21,8 +21,8 @@
 - [How to use](#how-to-use)
 - [Recipes](#recipes)
 - [Integration with Third-Party plugins](#integration-with-third-party-plugins)
-    - [Add a new tab in the UI](#add-a-new-tab-in-the-ui)
-    - [Add a dropdown with `valueId` and `valueName`](#add-a-dropdown-with-valueid-and-valuename)
+    - [Add a tab](#add-a-tab)
+    - [Add a dropdown](#add-a-dropdown)
 - [Understanding launch options](#understanding-launch-options)
 - [Philosophy](#philosophy)
 - [Development](#development)
@@ -146,7 +146,7 @@ You can also check if Decky Launch Options is available with:
 > **Note:** Every property of a launch option is optional but I recommend at least setting a static id for each one to
 > allow Decky Launch Options to override launch options with matching ids in case the user decides to import them again.
 
-### Add a new tab
+### Add a tab
 
 - Use the same `group` string for every launch option that should appear in the same tab
 
