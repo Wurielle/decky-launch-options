@@ -19,10 +19,10 @@
 
 - [Installation](#installation)
 - [How to use](#how-to-use)
+    - [Add a new tab](#add-a-new-tab)
+    - [Add a dropdown](#add-a-dropdown)
 - [Recipes](#recipes)
 - [Integration with Third-Party plugins](#integration-with-third-party-plugins)
-    - [Add a new tab in the UI](#add-a-new-tab-in-the-ui)
-    - [Add a dropdown with `valueId` and `valueName`](#add-a-dropdown-with-valueid-and-valuename)
 - [Understanding launch options](#understanding-launch-options)
 - [Philosophy](#philosophy)
 - [Development](#development)
@@ -76,6 +76,34 @@ When you turn it off, the **Off command** is used instead.
   executed normally. It is recommended to remove the original launch options once you have configured all your launch
   options with the plugin.
 
+### Add a new tab
+
+- Use the same `Group` name for every launch option that should appear in the same tab
+
+![Example of a custom tab created from the `group` field](./assets/new-tab.jpg)
+
+### Add a dropdown
+
+For each launch option that should appear in a dropdown:
+
+- Use the same `Value ID`
+- Use the same `Name`
+- Use a unique `Value Name` shown in the dropdown
+- Set `Fallback Value` to `On` on a launch option to use it as the default value
+
+![Fields used to configure a dropdown launch option](./assets/dropdown-value-id.jpg)
+
+<table>
+  <tr>
+    <td align="center"><strong>Before</strong></td>
+    <td align="center"><strong>After</strong></td>
+  </tr>
+  <tr>
+    <td><img src="./assets/dropdown-before.jpg" alt="Before using valueId and valueName, multiple options appear separately" /></td>
+    <td><img src="./assets/dropdown-after.jpg" alt="After using valueId and valueName, the options appear in a single dropdown" /></td>
+  </tr>
+</table>
+
 ## Recipes
 
 Decky Launch Options does not come with a pre-defined set of launch options.
@@ -121,7 +149,6 @@ window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
 ```
 
 This will prompt the user to review and confirm the provided launch options.
-
 You can also check if Decky Launch Options is available with:
 
 ```typescript
@@ -146,11 +173,7 @@ You can also check if Decky Launch Options is available with:
 > **Note:** Every property of a launch option is optional but I recommend at least setting a static id for each one to
 > allow Decky Launch Options to override launch options with matching ids in case the user decides to import them again.
 
-### Add a new tab
-
-- Use the same `group` string for every launch option that should appear in the same tab
-
-![Example of a custom tab created from the `group` field](./assets/new-tab.jpg)
+### Example: add a new tab
 
 ```typescript
 window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
@@ -175,27 +198,7 @@ window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
 }));
 ```
 
-### Add a dropdown
-
-For each launch option you want to group in a dropdown:
-
-- Set the same `valueId`
-- Set the same `name`
-- Set a unique `valueName` shown in the dropdown
-- Set one `fallbackValue: true` to make a launch option the default value
-
-![Fields used to configure a dropdown launch option](./assets/dropdown-value-id.jpg)
-
-<table>
-  <tr>
-    <td align="center"><strong>Before</strong></td>
-    <td align="center"><strong>After</strong></td>
-  </tr>
-  <tr>
-    <td><img src="./assets/dropdown-before.jpg" alt="Before using valueId and valueName, multiple options appear separately" /></td>
-    <td><img src="./assets/dropdown-after.jpg" alt="After using valueId and valueName, the options appear in a single dropdown" /></td>
-  </tr>
-</table>
+### Example: add a dropdown
 
 ```typescript
 window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
