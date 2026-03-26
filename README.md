@@ -19,6 +19,8 @@
 
 - [Installation](#installation)
 - [How to use](#how-to-use)
+    - [Add a new tab](#add-a-new-tab)
+    - [Add a dropdown](#add-a-dropdown)
 - [Recipes](#recipes)
 - [Integration with Third-Party plugins](#integration-with-third-party-plugins)
 - [Understanding launch options](#understanding-launch-options)
@@ -74,6 +76,34 @@ When you turn it off, the **Off command** is used instead.
   executed normally. It is recommended to remove the original launch options once you have configured all your launch
   options with the plugin.
 
+### Add a new tab
+
+- Use the same `Group` name for every launch option that should appear in the same tab
+
+![Example of a custom tab created from the `group` field](./assets/new-tab.jpg)
+
+### Add a dropdown
+
+For each launch option that should appear in a dropdown:
+
+- Use the same `Value ID`
+- Use the same `Name`
+- Use a unique `Value Name` shown in the dropdown
+- Set `Fallback Value` to `On` on a launch option to use it as the default value
+
+![Fields used to configure a dropdown launch option](./assets/dropdown-value-id.jpg)
+
+<table>
+  <tr>
+    <td align="center"><strong>Before</strong></td>
+    <td align="center"><strong>After</strong></td>
+  </tr>
+  <tr>
+    <td><img src="./assets/dropdown-before.jpg" alt="Before using valueId and valueName, multiple options appear separately" /></td>
+    <td><img src="./assets/dropdown-after.jpg" alt="After using valueId and valueName, the options appear in a single dropdown" /></td>
+  </tr>
+</table>
+
 ## Recipes
 
 Decky Launch Options does not come with a pre-defined set of launch options.
@@ -119,7 +149,6 @@ window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
 ```
 
 This will prompt the user to review and confirm the provided launch options.
-
 You can also check if Decky Launch Options is available with:
 
 ```typescript
@@ -128,21 +157,83 @@ You can also check if Decky Launch Options is available with:
 
 ### `LaunchOption` properties:
 
-| Property         | Type      | Description                                                                                                                             |
-|------------------|-----------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| `id`             | `string`  | Stable unique identifier used to select values and update the launch option during reimport.                                            |
-| `name`           | `string`  | Display label shown in the UI.                                                                                                          |
-| `on`             | `string`  | Command string applied when the launch option is enabled.                                                                               |
-| `off`            | `string`  | Command string applied when the launch option is disabled.                                                                              |
-| `enableGlobally` | `boolean` | Default state applied across all games.                                                                                                 |
-| `group`          | `string`  | Group name that creates a new tab in the UI.                                                                                            |
-| `valueId`        | `string`  | Shared identifier that groups launch options into a dropdown.                                                                           |
-| `valueName`      | `string`  | Display name shown for the dropdown value in the UI.                                                                                    |
-| `fallbackValue`  | `boolean` | Default choice used for its `valueId` group.                                                                                            |
-| `priority`       | `number`  | Execution priority for the launch option. Higher values run first.                                                                      |
+| Property         | Type      | Description                                                                                  |
+|------------------|-----------|----------------------------------------------------------------------------------------------|
+| `id`             | `string`  | Stable unique identifier used to select values and update the launch option during reimport. |
+| `name`           | `string`  | Display label shown in the UI.                                                               |
+| `on`             | `string`  | Command string applied when the launch option is enabled.                                    |
+| `off`            | `string`  | Command string applied when the launch option is disabled.                                   |
+| `enableGlobally` | `boolean` | Default state applied across all games.                                                      |
+| `group`          | `string`  | Group name that creates a new tab in the UI.                                                 |
+| `valueId`        | `string`  | Shared identifier that groups launch options into a dropdown.                                |
+| `valueName`      | `string`  | Display name shown for the dropdown value in the UI.                                         |
+| `fallbackValue`  | `boolean` | Default choice used for its `valueId` group.                                                 |
+| `priority`       | `number`  | Execution priority for the launch option. Higher values run first.                           |
 
 > **Note:** Every property of a launch option is optional but I recommend at least setting a static id for each one to
 > allow Decky Launch Options to override launch options with matching ids in case the user decides to import them again.
+
+### Example: add a new tab
+
+```typescript
+window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
+    detail: [
+        {
+            id: 'steam-deck-env',
+            group: 'Steam',
+            name: 'Steam Deck',
+            on: 'SteamDeck=1',
+            off: 'SteamDeck=0',
+            enableGlobally: true,
+        },
+        {
+            id: 'mangohud',
+            group: 'MangoHud',
+            name: 'MangoHud',
+            on: 'mangohud %command%',
+            off: '',
+            enableGlobally: false,
+        },
+    ]
+}));
+```
+
+### Example: add a dropdown
+
+```typescript
+window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
+    detail: [
+        {
+            id: 'mangohud-config-preset-none',
+            group: 'MangoHud',
+            name: 'MangoHud Preset',
+            on: '',
+            enableGlobally: false,
+            valueId: 'mangohud-config-preset',
+            valueName: 'None',
+            fallbackValue: true,
+        },
+        {
+            id: 'mangohud-config-preset-1',
+            group: 'MangoHud',
+            name: 'MangoHud Preset',
+            on: 'MANGOHUD_CONFIG="preset=1"',
+            enableGlobally: false,
+            valueId: 'mangohud-config-preset',
+            valueName: 'FPS Only',
+        },
+        {
+            id: 'mangohud-config-preset-4',
+            group: 'MangoHud',
+            name: 'MangoHud Preset',
+            on: 'MANGOHUD_CONFIG="preset=4"',
+            enableGlobally: false,
+            valueId: 'mangohud-config-preset',
+            valueName: 'Detailed',
+        },
+    ]
+}));
+```
 
 ## Understanding launch options
 
