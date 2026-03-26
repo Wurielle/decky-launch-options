@@ -42,6 +42,11 @@ def get_steam_appid():
 
     if appid_arg:
         return appid_arg.split("=")[1]
+
+    compat_appid = os.environ.get("STEAM_COMPAT_APP_ID")
+    if compat_appid:
+        return compat_appid
+
     return None
 
 
