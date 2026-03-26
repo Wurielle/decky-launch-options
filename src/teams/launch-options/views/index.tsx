@@ -9,10 +9,14 @@ import { UpdateLaunchOptionForm } from "../../../components/update-launch-option
 export function LaunchOptionsPage() {
     const { settings, loading } = useSettings()
     const [activePage, setActivePage] = useState<string>('new-launch-option')
+    const sortedLaunchOptions = useMemo(
+        () => [...settings.launchOptions].sort((a, b) => b.priority - a.priority),
+        [settings.launchOptions],
+    )
 
     const navKey = useMemo(
-        () => settings.launchOptions.map(({ id }) => id).join('|'),
-        [settings.launchOptions],
+        () => sortedLaunchOptions.map(({ id }) => id).join('|'),
+        [sortedLaunchOptions],
     )
 
     const pageIds = useMemo(() => new Set<string>([
@@ -53,7 +57,7 @@ export function LaunchOptionsPage() {
                                     route: 'new-launch-option',
                                     content: <CreateLaunchOptionForm/>,
                                 },
-                                ...settings.launchOptions.map(({ id, name }) => ({
+                                ...sortedLaunchOptions.map(({ id, name }) => ({
                                     icon: <FaTerminal/>,
                                     title: name || 'Unnamed',
                                     identifier: id,
