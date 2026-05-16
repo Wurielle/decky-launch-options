@@ -25,13 +25,154 @@ import { QueryClientProvider } from "@tanstack/react-query"
 import { queryClient } from "../../../../query"
 import { CreateLaunchOptionForm } from "../../../../components/create-launch-option-form"
 import { LaunchOption } from "../../../../shared"
-import { settingsStore } from "../../../../stores"
+import { settingsStore, type LaunchOptionSort } from "../../../../stores"
 import { useStore } from "@tanstack/react-store"
+
+type LaunchOptionScope = 'local' | 'global'
 
 interface HierarchicalLaunchOption {
     launchOption: LaunchOption;
     displayName: string;
     indentLevel: number;
+}
+
+interface HierarchicalLaunchOptionNode {
+    item: HierarchicalLaunchOption;
+    children: HierarchicalLaunchOptionNode[];
+    isActive: boolean;
+    originalIndex: number;
+}
+
+function compareLaunchOptionsAlphabetically(a: LaunchOption, b: LaunchOption): number {
+    const name = a.name.localeCompare(b.name)
+    if (name !== 0) return name
+
+    const valueName = (a.valueName ?? '').localeCompare(b.valueName ?? '')
+    if (valueName !== 0) return valueName
+
+    const on = (a.on ?? '').localeCompare(b.on ?? '')
+    if (on !== 0) return on
+
+    return a.id.localeCompare(b.id)
+}
+
+function isLaunchOptionActive(
+    item: LaunchOption,
+    appid: string,
+    getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean,
+): boolean {
+    return getAppLaunchOptionState(appid, item.id)
+}
+
+function sortLaunchOptions(
+    options: LaunchOption[],
+    sortMode: LaunchOptionSort,
+    appid: string,
+    getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean,
+    sortActive: boolean = sortMode.endsWith('-active'),
+): LaunchOption[] {
+    return [...options].sort((a, b) => {
+        if (sortActive) {
+            const active = Number(isLaunchOptionActive(b, appid, getAppLaunchOptionState))
+                - Number(isLaunchOptionActive(a, appid, getAppLaunchOptionState))
+            if (active !== 0) return active
+        }
+
+        return compareLaunchOptionsAlphabetically(a, b)
+    })
+}
+
+function sortHierarchicalLaunchOptions(
+    items: HierarchicalLaunchOption[],
+    sortMode: LaunchOptionSort,
+    appid: string,
+    getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean,
+): HierarchicalLaunchOption[] {
+    if (!sortMode.endsWith('-active')) return items
+
+    const roots: HierarchicalLaunchOptionNode[] = []
+    const stack: HierarchicalLaunchOptionNode[] = []
+
+    for (let index = 0; index < items.length; index++) {
+        const item = items[index]
+        const node: HierarchicalLaunchOptionNode = {
+            item,
+            children: [],
+            isActive: isLaunchOptionActive(item.launchOption, appid, getAppLaunchOptionState),
+            originalIndex: index,
+        }
+
+        while (stack.length > 0 && stack[stack.length-1].item.indentLevel >= item.indentLevel) {
+            stack.pop()
+        }
+
+        if (stack.length > 0) {
+            stack[stack.length-1].children.push(node)
+        } else {
+            roots.push(node)
+        }
+
+        stack.push(node)
+    }
+
+    const sortNodes = (nodes: HierarchicalLaunchOptionNode[]): boolean => {
+        let hasActiveNode = false
+
+        for (const node of nodes) {
+            node.isActive = sortNodes(node.children) || node.isActive
+            hasActiveNode = node.isActive || hasActiveNode
+        }
+
+        nodes.sort((a, b) => {
+            const active = Number(b.isActive) - Number(a.isActive)
+            if (active !== 0) return active
+
+            const alphabetical = compareLaunchOptionsAlphabetically(a.item.launchOption, b.item.launchOption)
+            if (alphabetical !== 0) return alphabetical
+
+            return a.originalIndex - b.originalIndex
+        })
+
+        return hasActiveNode
+    }
+
+    const flattenNodes = (nodes: HierarchicalLaunchOptionNode[]): HierarchicalLaunchOption[] => {
+        const result: HierarchicalLaunchOption[] = []
+
+        for (const node of nodes) {
+            result.push(node.item)
+            result.push(...flattenNodes(node.children))
+        }
+
+        return result
+    }
+
+    sortNodes(roots)
+    return flattenNodes(roots)
+}
+
+function toHierarchicalLaunchOptions(
+    options: LaunchOption[],
+    useHierarchy: boolean,
+    sortMode: LaunchOptionSort,
+    appid: string,
+    getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean,
+): HierarchicalLaunchOption[] {
+    if (!useHierarchy) {
+        return sortLaunchOptions(options, sortMode, appid, getAppLaunchOptionState).map(item => ({
+            launchOption: item,
+            displayName: item.name,
+            indentLevel: 0,
+        }))
+    }
+
+    const alphabetical = sortLaunchOptions(options, sortMode, appid, getAppLaunchOptionState, false)
+    return sortHierarchicalLaunchOptions(
+        buildHierarchy(alphabetical),
+        sortMode,
+        appid,
+        getAppLaunchOptionState,
+    )
 }
 
 function buildHierarchy(options: LaunchOption[]): HierarchicalLaunchOption[] {
@@ -360,6 +501,7 @@ export function AppLaunchOptionsPage() {
     const [tab, setTab] = useState<string>('local')
     const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy)
     const showCommands = useStore(settingsStore, (state) => state.showCommands)
+    const launchOptionSort = useStore(settingsStore, (state) => state.launchOptionSort)
     const {
         settings,
         getAppLaunchOptionState,
@@ -397,44 +539,52 @@ export function AppLaunchOptionsPage() {
         for (const group of groups) {
             const inGroup = settings.launchOptions
                 .filter((item) => item.group === group)
-                .sort((a, b) => a.name.localeCompare(b.name))
             const localFiltered = inGroup.filter((item) => !isLaunchOptionGlobal(item))
             const globalFiltered = inGroup.filter((item) => isLaunchOptionGlobal(item))
             map[group] = {
-                local: useHierarchy ? buildHierarchy(localFiltered) : localFiltered.map(item => ({
-                    launchOption: item,
-                    displayName: item.name,
-                    indentLevel: 0,
-                })),
-                global: useHierarchy ? buildHierarchy(globalFiltered) : globalFiltered.map(item => ({
-                    launchOption: item,
-                    displayName: item.name,
-                    indentLevel: 0,
-                })),
+                local: toHierarchicalLaunchOptions(
+                    localFiltered,
+                    useHierarchy,
+                    launchOptionSort,
+                    appid,
+                    getAppLaunchOptionState,
+                ),
+                global: toHierarchicalLaunchOptions(
+                    globalFiltered,
+                    useHierarchy,
+                    launchOptionSort,
+                    appid,
+                    getAppLaunchOptionState,
+                ),
             }
         }
         return map
-    }, [settings, groups, useHierarchy, isLaunchOptionGlobal])
+    }, [settings, groups, useHierarchy, launchOptionSort, appid, getAppLaunchOptionState, isLaunchOptionGlobal])
     const localLaunchOptions = useMemo(() => {
         const filtered = settings.launchOptions
             .filter((item) => !isLaunchOptionGlobal(item) && !item.group)
-            .sort((a, b) => a.name.localeCompare(b.name))
-        return useHierarchy ? buildHierarchy(filtered) : filtered.map(item => ({
-            launchOption: item,
-            displayName: item.name,
-            indentLevel: 0,
-        }))
-    }, [settings, useHierarchy, isLaunchOptionGlobal])
+        return toHierarchicalLaunchOptions(
+            filtered,
+            useHierarchy,
+            launchOptionSort,
+            appid,
+            getAppLaunchOptionState,
+        )
+    }, [settings, useHierarchy, launchOptionSort, appid, getAppLaunchOptionState, isLaunchOptionGlobal])
     const globalLaunchOptions = useMemo(() => {
         const filtered = settings.launchOptions
             .filter((item) => isLaunchOptionGlobal(item) && !item.group)
-            .sort((a, b) => a.name.localeCompare(b.name))
-        return useHierarchy ? buildHierarchy(filtered) : filtered.map(item => ({
-            launchOption: item,
-            displayName: item.name,
-            indentLevel: 0,
-        }))
-    }, [settings, useHierarchy, isLaunchOptionGlobal])
+        return toHierarchicalLaunchOptions(
+            filtered,
+            useHierarchy,
+            launchOptionSort,
+            appid,
+            getAppLaunchOptionState,
+        )
+    }, [settings, useHierarchy, launchOptionSort, appid, getAppLaunchOptionState, isLaunchOptionGlobal])
+    const groupSectionOrder: LaunchOptionScope[] = launchOptionSort.startsWith('global')
+        ? ['global', 'local']
+        : ['local', 'global']
     const { TabCount } = findModule((mod) => {
         if (typeof mod !== 'object') return false
 
@@ -508,40 +658,28 @@ export function AppLaunchOptionsPage() {
                                     Add launch option
                                 </ButtonItem>
                             </PanelSectionRow>
-                            { groupedLaunchOptions[group]?.local.length > 0 && (
-                                <div>
-                                    <div style={ { marginTop: '16px' } }>
-                                        <strong>Local</strong>
+                            { groupSectionOrder.map((scope) => {
+                                const items = groupedLaunchOptions[group]?.[scope] ?? []
+                                if (items.length === 0) return null
+
+                                return (
+                                    <div key={ scope }>
+                                        <div style={ { marginTop: '16px' } }>
+                                            <strong>{ scope === 'local' ? 'Local' : 'Global' }</strong>
+                                        </div>
+                                        { renderLaunchOptionItems({
+                                            items,
+                                            appid,
+                                            showCommands,
+                                            getAppLaunchOptionState,
+                                            setAppLaunchOptionState,
+                                            setAppValueIdState,
+                                            setValueAsDefault: scope === 'global',
+                                            onEdit: showUpdateLaunchOptionFormModal,
+                                        }) }
                                     </div>
-                                    { renderLaunchOptionItems({
-                                        items: groupedLaunchOptions[group].local,
-                                        appid,
-                                        showCommands,
-                                        getAppLaunchOptionState,
-                                        setAppLaunchOptionState,
-                                        setAppValueIdState,
-                                        setValueAsDefault: false,
-                                        onEdit: showUpdateLaunchOptionFormModal,
-                                    }) }
-                                </div>
-                            ) }
-                            { groupedLaunchOptions[group]?.global.length > 0 && (
-                                <div>
-                                    <div style={ { marginTop: '16px' } }>
-                                        <strong>Global</strong>
-                                    </div>
-                                    { renderLaunchOptionItems({
-                                        items: groupedLaunchOptions[group].global,
-                                        appid,
-                                        showCommands,
-                                        getAppLaunchOptionState,
-                                        setAppLaunchOptionState,
-                                        setAppValueIdState,
-                                        setValueAsDefault: true,
-                                        onEdit: showUpdateLaunchOptionFormModal,
-                                    }) }
-                                </div>
-                            ) }
+                                )
+                            }) }
                         </Focusable>
                     ),
                     renderTabAddon: () => {
