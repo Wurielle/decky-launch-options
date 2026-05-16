@@ -70,7 +70,8 @@ function isLaunchOptionActive(
   appid: string,
   getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean,
 ): boolean {
-  return getAppLaunchOptionState(appid, item.id);
+  const isActive = getAppLaunchOptionState(appid, item.id);
+  return isActive ? !!item.on : !!item.off;
 }
 
 function sortLaunchOptions(
@@ -575,10 +576,7 @@ function countActiveLaunchOptions(
   let count = 0;
 
   for (const item of filtered) {
-    const isActive = getAppLaunchOptionState(appid, item.id);
-    const hasCommand = isActive ? !!item.on : !!item.off;
-
-    if (!hasCommand) continue;
+    if (!isLaunchOptionActive(item, appid, getAppLaunchOptionState)) continue;
 
     if (item.valueId) {
       if (countedValueIds.has(item.valueId)) continue;
