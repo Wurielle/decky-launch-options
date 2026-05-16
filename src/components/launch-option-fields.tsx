@@ -15,7 +15,7 @@ import { useMemo, useState } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { usePlugin } from "./plugin-provider";
 
-const quickSelectPlaceholder = "__quick-select-placeholder__";
+const quickSelectLabel = "Quick select\u00A0\u00A0";
 
 interface LaunchOptionFieldsProps {
   data: LaunchOption;
@@ -35,11 +35,11 @@ export function LaunchOptionFields({
   const { settings } = usePlugin().settings;
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [enableGloballyKey, setEnableGloballyKey] = useState(0);
+  const [quickSelectKey, setQuickSelectKey] = useState(0);
   const hasValueId = !!data.valueId;
   const hidePerValue = commonOnly && hasValueId;
   const groupQuickSelectOptions = useMemo(
     () => [
-      { data: quickSelectPlaceholder, label: "Quick select\u00A0\u00A0" },
       { data: "", label: "None\u00A0\u00A0" },
       ...Array.from(
         new Set(
@@ -53,7 +53,6 @@ export function LaunchOptionFields({
   );
   const valueIdQuickSelectOptions = useMemo(
     () => [
-      { data: quickSelectPlaceholder, label: "Quick select\u00A0\u00A0" },
       { data: "", label: "None\u00A0\u00A0" },
       ...Array.from(
         new Set(
@@ -67,32 +66,30 @@ export function LaunchOptionFields({
   );
 
   return (
-    <Focusable>
-      <div style={{ marginBottom: 22 }}>
-        <Focusable>
-          <ToggleField
-            key={enableGloballyKey}
-            label={"Enable globally"}
-            checked={data.enableGlobally}
-            onChange={(value) => {
-              if (value) {
-                showModal(
-                  <ConfirmModal
-                    strTitle="Enable globally"
-                    strDescription="This will clear all per-app selections for this launch option. Do you want to continue?"
-                    strOKButtonText="Confirm"
-                    strCancelButtonText="Cancel"
-                    onOK={() => onChange("enableGlobally", true)}
-                    onCancel={() => setEnableGloballyKey((k) => k + 1)}
-                  />,
-                );
-              } else {
-                onChange("enableGlobally", false);
-              }
-            }}
-          />
-        </Focusable>
-      </div>
+    <Focusable style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <Focusable>
+        <ToggleField
+          key={enableGloballyKey}
+          label={"Enable globally"}
+          checked={data.enableGlobally}
+          onChange={(value) => {
+            if (value) {
+              showModal(
+                <ConfirmModal
+                  strTitle="Enable globally"
+                  strDescription="This will clear all per-app selections for this launch option. Do you want to continue?"
+                  strOKButtonText="Confirm"
+                  strCancelButtonText="Cancel"
+                  onOK={() => onChange("enableGlobally", true)}
+                  onCancel={() => setEnableGloballyKey((k) => k + 1)}
+                />,
+              );
+            } else {
+              onChange("enableGlobally", false);
+            }
+          }}
+        />
+      </Focusable>
       <ScrollIntoView>
         {({ scrollIntoView }) => (
           <Focusable>
@@ -169,29 +166,23 @@ export function LaunchOptionFields({
           )}
         </ScrollIntoView>
       )}
-      <div
-        style={{
-          marginBottom: 22,
+      <DialogButton
+        onClick={() => {
+          setShowAdvanced((value) => !value);
         }}
       >
-        <DialogButton
-          onClick={() => {
-            setShowAdvanced((value) => !value);
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-            }}
-          >
-            <span>Advanced</span>{" "}
-            {showAdvanced ? <FaChevronUp /> : <FaChevronDown />}
-          </div>
-        </DialogButton>
-      </div>
+          <span>Advanced</span>{" "}
+          {showAdvanced ? <FaChevronUp /> : <FaChevronDown />}
+        </div>
+      </DialogButton>
       {showAdvanced && (
         <ScrollIntoView>
           {({ scrollIntoView }) => (
@@ -206,7 +197,7 @@ export function LaunchOptionFields({
                 }
               >
                 <div style={{ display: "flex", gap: 10 }}>
-                  <div style={{ flex: "0 0 calc(50% - 5px)" }}>
+                  <div style={{ flex: "0 0 calc(70% - 5px)" }}>
                     <TextField
                       {...{ placeholder: "E.g.: Favorites" }}
                       style={{ width: "100%" }}
@@ -222,14 +213,15 @@ export function LaunchOptionFields({
                       onFocus={scrollIntoView}
                     />
                   </div>
-                  <div style={{ flex: "0 0 calc(50% - 5px)" }}>
+                  <div style={{ flex: "0 0 calc(30% - 5px)" }}>
                     <Dropdown
+                      key={`group-${quickSelectKey}`}
                       rgOptions={groupQuickSelectOptions}
-                      selectedOption={quickSelectPlaceholder}
+                      selectedOption={undefined}
+                      strDefaultLabel={quickSelectLabel}
                       onChange={(option: SingleDropdownOption) => {
-                        if (option.data !== quickSelectPlaceholder) {
-                          onChange("group", option.data);
-                        }
+                        onChange("group", option.data);
+                        setQuickSelectKey((key) => key + 1);
                       }}
                     />
                   </div>
@@ -254,7 +246,7 @@ export function LaunchOptionFields({
                 }
               >
                 <div style={{ display: "flex", gap: 10 }}>
-                  <div style={{ flex: "0 0 calc(50% - 5px)" }}>
+                  <div style={{ flex: "0 0 calc(70% - 5px)" }}>
                     <TextField
                       {...{ placeholder: "E.g.: proton-version" }}
                       style={{ width: "100%" }}
@@ -270,14 +262,15 @@ export function LaunchOptionFields({
                       onFocus={scrollIntoView}
                     />
                   </div>
-                  <div style={{ flex: "0 0 calc(50% - 5px)" }}>
+                  <div style={{ flex: "0 0 calc(30% - 5px)" }}>
                     <Dropdown
+                      key={`valueId-${quickSelectKey}`}
                       rgOptions={valueIdQuickSelectOptions}
-                      selectedOption={quickSelectPlaceholder}
+                      selectedOption={undefined}
+                      strDefaultLabel={quickSelectLabel}
                       onChange={(option: SingleDropdownOption) => {
-                        if (option.data !== quickSelectPlaceholder) {
-                          onChange("valueId", option.data);
-                        }
+                        onChange("valueId", option.data);
+                        setQuickSelectKey((key) => key + 1);
                       }}
                     />
                   </div>
@@ -320,19 +313,17 @@ export function LaunchOptionFields({
         </ScrollIntoView>
       )}
       {showAdvanced && !hidePerValue && (
-        <div style={{ marginBottom: 22 }}>
-          <Focusable>
-            <ToggleField
-              label={"Set as fallback value"}
-              checked={data.fallbackValue}
-              disabled={!data.valueId}
-              description={
-                "Selected by default in the dropdown when no other value is chosen"
-              }
-              onChange={(value) => onChange("fallbackValue", value)}
-            />
-          </Focusable>
-        </div>
+        <Focusable>
+          <ToggleField
+            label={"Set as fallback value"}
+            checked={data.fallbackValue}
+            disabled={!data.valueId}
+            description={
+              "Selected by default in the dropdown when no other value is chosen"
+            }
+            onChange={(value) => onChange("fallbackValue", value)}
+          />
+        </Focusable>
       )}
       {showAdvanced && (
         <ScrollIntoView>
