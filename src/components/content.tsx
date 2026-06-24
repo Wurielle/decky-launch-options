@@ -61,6 +61,10 @@ function DebugLogModal({ onClose }: { onClose: () => void }) {
 
 export function Content() {
   const [showMore, setShowMore] = useState(false);
+  const autoManageLaunchOptions = useStore(
+    settingsStore,
+    (state) => state.autoManageLaunchOptions,
+  );
   const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy);
   const showCommands = useStore(settingsStore, (state) => state.showCommands);
   const launchOptionSort = useStore(
@@ -92,6 +96,19 @@ export function Content() {
             }}
           />
         </Field>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <ToggleField
+          checked={autoManageLaunchOptions}
+          onChange={(value) => {
+            settingsStore.setState((state) => {
+              state.autoManageLaunchOptions = value;
+            });
+          }}
+          description={"Manage the Decky Launch Options command automatically"}
+          label={"Auto-manage Decky Launch Options command"}
+          bottomSeparator={"none"}
+        />
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
