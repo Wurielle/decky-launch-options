@@ -32,7 +32,7 @@ import { useStore } from "@tanstack/react-store";
 
 type LaunchOptionScope = "local" | "global";
 
-const settingsTabId = "__settings";
+const advancedTabId = "__advanced";
 
 interface FocusTarget {
   id: string;
@@ -595,6 +595,7 @@ function countActiveLaunchOptions(
 export function AppLaunchOptionsPage() {
   const { appid } = useParams<{ appid: string }>();
   const [tab, setTab] = useState<string>("local");
+  const [revertedLaunchOptions, setRevertedLaunchOptions] = useState(false);
   const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy);
   const showCommands = useStore(settingsStore, (state) => state.showCommands);
   const launchOptionSort = useStore(
@@ -753,7 +754,7 @@ export function AppLaunchOptionsPage() {
   }, [tab]);
   const showCreateLaunchOptionFormModal = useCallback(() => {
     const isGroupTab =
-      tab !== "local" && tab !== "global" && tab !== settingsTabId;
+      tab !== "local" && tab !== "global" && tab !== advancedTabId;
     const modalResult = showModal(
       <ModalWrapper
         title="Add launch option"
@@ -806,8 +807,8 @@ export function AppLaunchOptionsPage() {
         autoFocusContents
         tabs={[
           {
-            id: settingsTabId,
-            title: "Settings",
+            id: advancedTabId,
+            title: "Advanced",
             content: readyToShow && (
               <Focusable
                 key="settings"
@@ -816,19 +817,45 @@ export function AppLaunchOptionsPage() {
                 }
                 style={{ height: "100%" }}
               >
-                <PanelSectionRow>
-                  <ToggleField
-                    checked={getAppDisableAutoManageLaunchOptions(appid)}
-                    onChange={(value) =>
-                      setAppDisableAutoManageLaunchOptions(appid, value)
-                    }
-                    description={
-                      "Steam's \"Launch options\" field for this app will not be managed by Decky Launch Options"
-                    }
-                    label={"Disable auto-manage Steam Launch Options for this app"}
-                    bottomSeparator={"none"}
-                  />
-                </PanelSectionRow>
+                <ToggleField
+                  checked={getAppDisableAutoManageLaunchOptions(appid)}
+                  onChange={(value) =>
+                    setAppDisableAutoManageLaunchOptions(appid, value)
+                  }
+                  description={
+                    "Decky Launch Options will not manage the \"Launch Options\" field for this app"
+                  }
+                  label={"Disable \"Auto-manage Launch Options\" for this app"}
+                  bottomSeparator={"none"}
+                />
+                {
+                  getAppOriginalLaunchOptions(appid) && (
+                      <ButtonItem
+                        label={"Revert to original launch options"}
+                        description={
+                          getAppOriginalLaunchOptions(appid)
+                        }
+                        indentLevel={1}
+                        disabled={!getAppDisableAutoManageLaunchOptions(appid)}
+                        indentLevel={1}
+                        onClick={() => {
+                          SteamClient.Apps.SetAppLaunchOptions(
+                            Number(appid),
+                            getAppOriginalLaunchOptions(appid),
+                          );
+                          setRevertedLaunchOptions(true);
+                          window.setTimeout(
+                            () => setRevertedLaunchOptions(false),
+                            3000,
+                          );
+                        }}
+                      >
+                        {revertedLaunchOptions
+                          ? "✅ Reverted to original launch options"
+                          : "Revert to original launch options"}
+                      </ButtonItem>
+                  )
+                }
               </Focusable>
             ),
           },
@@ -862,7 +889,6 @@ export function AppLaunchOptionsPage() {
                     onChange={(e) =>
                       setAppOriginalLaunchOptions(appid, e.target.value)
                     }
-                    style={{ width: 400 }}
                   />
                 </Field>
                 {renderLaunchOptionItems({

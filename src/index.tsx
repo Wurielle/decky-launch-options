@@ -8,7 +8,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import contextMenuPatch, { LibraryContextMenu } from './patches/context-menu'
 import { getSettingsQueryOptions, queryClient } from './query'
 import { libraryAppPatch } from './patches/library-app'
-import { Content } from "./components/content"
+import { Content } from "./components/Content"
 import { batchCreateLaunchOptions } from "./components/batch-add-launch-options"
 
 export default definePlugin(() => {
@@ -40,7 +40,11 @@ export default definePlugin(() => {
     return {
         name: "Launch Options",
         titleView: <div className={ staticClasses.Title }>Launch Options</div>,
-        content: <Content/>,
+        content: (
+            <QueryClientProvider client={ queryClient }>
+                <Content/>
+            </QueryClientProvider>
+        ),
         icon: <FaTerminal/>,
         onDismount() {
             Object.values(routes).forEach((route) => {
