@@ -19,8 +19,6 @@ import { useGetInfoQuery } from "../query";
 import { routes, batchCreateLaunchOptionsEventType } from "../shared";
 import { settingsStore, launchOptionSortOptions, type LaunchOptionSort } from "../stores";
 import { copyTextToClipboard } from "../utils";
-import {
-} from "@decky/ui";
 import { get_debug_log } from "../query";
 
 function DebugLogModal({ onClose }: { onClose: () => void }) {
