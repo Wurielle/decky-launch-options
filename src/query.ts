@@ -66,8 +66,11 @@ export const useSetSettingsMutation = () =>
   });
 
 export const useApplyLaunchOptionsMutation = () => {
-  const { setAppOriginalLaunchOptions, getAppOriginalLaunchOptions } =
-    useSettings();
+  const {
+    setAppOriginalLaunchOptions,
+    getAppOriginalLaunchOptions,
+    getAppDisableAutoManageLaunchOptions,
+  } = useSettings();
   const autoManageLaunchOptions = useStore(
     settingsStore,
     (state) => state.autoManageLaunchOptions,
@@ -81,6 +84,8 @@ export const useApplyLaunchOptionsMutation = () => {
     {
       mutationFn(data) {
         if (!autoManageLaunchOptions) return Promise.resolve();
+        if (getAppDisableAutoManageLaunchOptions(String(data.appid)))
+          return Promise.resolve();
 
         return Promise.all([
           new Promise<

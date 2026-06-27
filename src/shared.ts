@@ -30,6 +30,7 @@ export const launchOptionFactory = (launchOption: Partial<LaunchOption> = {}): L
 export type Profile = {
     state: Record<string, boolean>
     originalLaunchOptions: string
+    disableAutoManageLaunchOptions?: boolean
 }
 
 export type LaunchOption = {
