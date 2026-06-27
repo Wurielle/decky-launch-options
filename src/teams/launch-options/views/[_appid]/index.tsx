@@ -823,9 +823,9 @@ export function AppLaunchOptionsPage() {
                       setAppDisableAutoManageLaunchOptions(appid, value)
                     }
                     description={
-                      "Prevent this game from automatically changing Steam launch options"
+                      "Steam's \"Launch options\" field for this app will not be managed by Decky Launch Options"
                     }
-                    label={"Disable auto-manage for this game"}
+                    label={"Disable auto-manage Steam Launch Options for this app"}
                     bottomSeparator={"none"}
                   />
                 </PanelSectionRow>
