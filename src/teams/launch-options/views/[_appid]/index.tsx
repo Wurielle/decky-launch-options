@@ -811,7 +811,7 @@ export function AppLaunchOptionsPage() {
             title: "Advanced",
             content: readyToShow && (
               <Focusable
-                key="settings"
+                key="advanced"
                 navEntryPreferPosition={
                   NavEntryPositionPreferences.PREFERRED_CHILD
                 }
