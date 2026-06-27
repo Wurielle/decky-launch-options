@@ -1,26 +1,24 @@
-import { batchCreateLaunchOptionsEventType, routes } from "../shared";
 import {
-  ButtonItem,
   DialogBody,
-  Dropdown,
-  Field,
   ModalRoot,
-  Navigation,
+  ScrollPanel,
   PanelSection,
   PanelSectionRow,
-  ScrollPanel,
-  showModal,
+  ButtonItem,
+  Navigation,
+  Field,
+  Dropdown,
+  SingleDropdownOption,
   ToggleField,
+  showModal
 } from "@decky/ui";
-import { SingleDropdownOption } from "@decky/ui/dist/components/Dropdown";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import { useEffect, useState } from "react";
 import { useStore } from "@tanstack/react-store";
-import {
-  launchOptionSortOptions,
-  settingsStore,
-  type LaunchOptionSort,
-} from "../stores";
+import { useEffect, useState } from "react";
+import { FaChevronUp, FaChevronDown } from "react-icons/fa";
+import { useGetInfoQuery } from "../query";
+import { routes, batchCreateLaunchOptionsEventType } from "../shared";
+import { settingsStore, launchOptionSortOptions, type LaunchOptionSort } from "../stores";
+import { copyTextToClipboard } from "../utils";
 import { get_debug_log } from "../query";
 
 function DebugLogModal({ onClose }: { onClose: () => void }) {
@@ -61,11 +59,17 @@ function DebugLogModal({ onClose }: { onClose: () => void }) {
 
 export function Content() {
   const [showMore, setShowMore] = useState(false);
+  const [copiedCommand, setCopiedCommand] = useState(false);
+  const getInfoQuery = useGetInfoQuery();
+  const autoManageLaunchOptions = useStore(
+    settingsStore,
+    (state) => state.autoManageLaunchOptions
+  );
   const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy);
   const showCommands = useStore(settingsStore, (state) => state.showCommands);
   const launchOptionSort = useStore(
     settingsStore,
-    (state) => state.launchOptionSort,
+    (state) => state.launchOptionSort
   );
   return (
     <PanelSection>
@@ -81,6 +85,23 @@ export function Content() {
         </ButtonItem>
       </PanelSectionRow>
       <PanelSectionRow>
+        <ButtonItem
+          layout="below"
+          disabled={!getInfoQuery.data?.COMMAND}
+          onClick={() => {
+            const command = getInfoQuery.data?.COMMAND;
+            if (!command) return;
+
+            copyTextToClipboard(command).then(() => {
+              setCopiedCommand(true);
+              window.setTimeout(() => setCopiedCommand(false), 3000);
+            });
+          }}
+        >
+          {copiedCommand ? "✅ Copied DLO command" : "Copy DLO command"}
+        </ButtonItem>
+      </PanelSectionRow>
+      <PanelSectionRow>
         <Field childrenLayout={"below"} label={"Sort launch options"}>
           <Dropdown
             rgOptions={launchOptionSortOptions}
@@ -89,9 +110,20 @@ export function Content() {
               settingsStore.setState((state) => {
                 state.launchOptionSort = option.data as LaunchOptionSort;
               });
-            }}
-          />
+            }} />
         </Field>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <ToggleField
+          checked={autoManageLaunchOptions}
+          onChange={(value) => {
+            settingsStore.setState((state) => {
+              state.autoManageLaunchOptions = value;
+            });
+          }}
+          description={"Let Decky Launch Options manage the \"Launch Options\" field for all apps automatically"}
+          label={"Auto-manage Launch Options"}
+          bottomSeparator={"none"} />
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
@@ -101,12 +133,9 @@ export function Content() {
               state.useHierarchy = value;
             });
           }}
-          description={
-            "Display launch options with a similar starting name in a tree structure"
-          }
+          description={"Display launch options with a similar starting name in a tree structure"}
           label={"Enable hierarchy display"}
-          bottomSeparator={"none"}
-        />
+          bottomSeparator={"none"} />
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
@@ -116,10 +145,9 @@ export function Content() {
               state.showCommands = value;
             });
           }}
-          description={"Show the on/off commands below each launch option"}
+          description={"Show on/off commands below each launch option"}
           label={"Show commands"}
-          bottomSeparator={"none"}
-        />
+          bottomSeparator={"none"} />
       </PanelSectionRow>
       <PanelSectionRow>
         <ButtonItem
@@ -148,7 +176,7 @@ export function Content() {
               layout="below"
               onClick={() => {
                 const modalResult = showModal(
-                  <DebugLogModal onClose={() => modalResult.Close()} />,
+                  <DebugLogModal onClose={() => modalResult.Close()} />
                 );
               }}
             >
@@ -247,7 +275,7 @@ export function Content() {
                         valueName: "Detailed",
                       },
                     ],
-                  }),
+                  })
                 );
               }}
             >

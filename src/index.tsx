@@ -40,7 +40,11 @@ export default definePlugin(() => {
     return {
         name: "Launch Options",
         titleView: <div className={ staticClasses.Title }>Launch Options</div>,
-        content: <Content/>,
+        content: (
+            <QueryClientProvider client={ queryClient }>
+                <Content/>
+            </QueryClientProvider>
+        ),
         icon: <FaTerminal/>,
         onDismount() {
             Object.values(routes).forEach((route) => {

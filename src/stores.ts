@@ -10,10 +10,12 @@ function createStore<S>(state: S, options: StoreOptions<S, (state: S) => void> =
 
 export const settingsLocalStorageKey = 'decky-launch-options-settings'
 const settingsLocalStorageValue = localStorage.getItem(settingsLocalStorageKey)
+const savedSettingsStoreState = settingsLocalStorageValue ? JSON.parse(settingsLocalStorageValue) : {}
 
 export type LaunchOptionSort = 'local-alphabetical' | 'local-active' | 'global-alphabetical' | 'global-active'
 
 interface SettingsStoreState {
+    autoManageLaunchOptions: boolean;
     useHierarchy: boolean;
     showCommands: boolean;
     launchOptionSort: LaunchOptionSort;
@@ -27,13 +29,15 @@ export const launchOptionSortOptions: Array<{ data: LaunchOptionSort; label: str
 ]
 
 const defaultSettingsStoreState: SettingsStoreState = {
+    autoManageLaunchOptions: true,
     useHierarchy: true,
     showCommands: false,
     launchOptionSort: 'global-active',
 }
 export const settingsStore = createStore<SettingsStoreState>({
     ...defaultSettingsStoreState,
-    ...(settingsLocalStorageValue ? JSON.parse(settingsLocalStorageValue) : {})
+    ...savedSettingsStoreState,
+    autoManageLaunchOptions: savedSettingsStoreState.autoManageLaunchOptions ?? savedSettingsStoreState.autoUpdateLaunchOptions ?? defaultSettingsStoreState.autoManageLaunchOptions,
 }, {
     onUpdate() {
         localStorage.setItem(settingsLocalStorageKey, JSON.stringify(settingsStore.state))

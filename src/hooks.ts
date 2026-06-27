@@ -335,5 +335,20 @@ export function useSettings() {
                 })
             })
         },
+        getAppDisableAutoManageLaunchOptions: (appid: string) => settings.profiles[appid]?.disableAutoManageLaunchOptions === true,
+        setAppDisableAutoManageLaunchOptions: (appid: string, value: boolean) => {
+            setSettings((draft) => {
+                if (!value) {
+                    if (!draft.profiles[appid]) return
+                    delete draft.profiles[appid].disableAutoManageLaunchOptions
+                    return
+                }
+
+                draft.profiles[appid] = profileFactory({
+                    ...draft.profiles[appid],
+                })
+                draft.profiles[appid].disableAutoManageLaunchOptions = true
+            })
+        },
     }
 }
