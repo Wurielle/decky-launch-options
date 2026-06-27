@@ -34,8 +34,6 @@ Thumbs.db
 
 # Ignore built ts files
 dist/
-dist.root-owned-backup/
-.dist.root-owned-backup-delete-me/
 
 __pycache__/
 
