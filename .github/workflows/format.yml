@@ -2,15 +2,21 @@ name: Format
 
 on:
   push:
+    branches:
+      - "**"
   pull_request:
 
 jobs:
   prettier:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -26,5 +32,23 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check formatting
+      - name: Format
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        run: pnpm format
+
+      - name: Commit formatting changes
+        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src
+          git commit -m "style: format source"
+          git push origin "HEAD:${GITHUB_HEAD_REF:-${GITHUB_REF_NAME}}"
+
+      - name: Check fork pull request formatting
+        if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository
         run: pnpm format:check
