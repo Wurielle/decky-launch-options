@@ -3,7 +3,6 @@
   "version": "1.10.0",
   "description": "Manage launch options for your games with ease.",
   "type": "module",
-  "packageManager": "pnpm@10.34.4",
   "scripts": {
     "build": "rollup -c",
     "format": "prettier --write src",
