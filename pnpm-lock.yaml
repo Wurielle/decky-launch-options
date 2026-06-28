@@ -43,8 +43,8 @@ importers:
         specifier: ^1.0.2
         version: 1.0.2
       '@decky/ui':
-        specifier: ^4.11.3
-        version: 4.11.3
+        specifier: ^4.11.6
+        version: 4.11.6
       '@rollup/rollup-linux-x64-musl':
         specifier: ^4.53.3
         version: 4.53.3
@@ -57,6 +57,9 @@ importers:
       '@types/webpack':
         specifier: ^5.28.5
         version: 5.28.5
+      prettier:
+        specifier: ^3.9.1
+        version: 3.9.1
       rollup:
         specifier: ^4.53.3
         version: 4.53.3
@@ -72,8 +75,8 @@ packages:
   '@decky/rollup@1.0.2':
     resolution: {integrity: sha512-ixuHH3msw156ACbgWZi4hgccdzDBIuqYGOVja8sLX4lHFgaWUKji1vomDi7Dk1CamgjmKt+Dqf75Pezv2FB6Bw==}
 
-  '@decky/ui@4.11.3':
-    resolution: {integrity: sha512-lA79I3isehiYpjisbrQCiqmzOOVjJaMwd8Ta3ZHVH3iNgCgeeG9F4LjkjiV3Palpx/ShDawR9H4MOsvhd/EfxA==}
+  '@decky/ui@4.11.6':
+    resolution: {integrity: sha512-vPCr2/KODeM6DAzIL/XN2e/RY7vhebXoWoh8e0VvB5QJU59Usb1z/cIpNmqe/GEMd1P3om6DFMcpEW5v8Se95Q==}
 
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
@@ -798,6 +801,11 @@ packages:
     resolution: {integrity: sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==}
     engines: {node: '>=12'}
 
+  prettier@3.9.1:
+    resolution: {integrity: sha512-ppiDo2CSwexck1eyZUwJHg/N3nf1+6IRCv7W/VJ5vaLnVCmB7+3CdRfMwoCHBBX6xTrREDTksZ4OZl5SSf4zXA==}
+    engines: {node: '>=14'}
+    hasBin: true
+
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
@@ -1043,7 +1051,7 @@ snapshots:
       tslib: 2.7.0
       typescript: 5.6.2
 
-  '@decky/ui@4.11.3': {}
+  '@decky/ui@4.11.6': {}
 
   '@isaacs/cliui@8.0.2':
     dependencies:
@@ -1695,6 +1703,8 @@ snapshots:
   picomatch@2.3.1: {}
 
   picomatch@4.0.3: {}
+
+  prettier@3.9.1: {}
 
   punycode@2.3.1: {}
 
