@@ -9,7 +9,7 @@ import { routes } from '../../../shared'
 
 export function LaunchOptionsPage() {
     const { settings, loading } = useSettings()
-    const newLaunchOptionRoute = routes.launchOptionsManager('new')
+    const newLaunchOptionRoute = routes.launchOptionsManagerItem('new')
     const [activePage, setActivePage] = useState<string>(newLaunchOptionRoute)
 
     const navKey = useMemo(
@@ -19,7 +19,7 @@ export function LaunchOptionsPage() {
 
     const pageRoutes = useMemo(() => new Set<string>([
         newLaunchOptionRoute,
-        ...settings.launchOptions.map((item) => routes.launchOptionsManager(item.id)),
+        ...settings.launchOptions.map((item) => routes.launchOptionsManagerItem(item.id)),
     ]), [newLaunchOptionRoute, settings.launchOptions])
 
     useEffect(() => {
@@ -52,14 +52,14 @@ export function LaunchOptionsPage() {
                                     icon: <FaPlus/>,
                                     title: 'New launch option',
                                     identifier: 'new-launch-option',
-                                    route: routes.launchOptionsManager('new'),
+                                    route: routes.launchOptionsManagerItem('new'),
                                     content: <CreateLaunchOptionForm/>,
                                 },
                                 ...settings.launchOptions.map(({ id, name }) => ({
                                     icon: <FaTerminal/>,
                                     title: name || 'Unnamed',
                                     identifier: id,
-                                    route: routes.launchOptionsManager(id),
+                                    route: routes.launchOptionsManagerItem(id),
                                     content: <UpdateLaunchOptionForm
                                         key={ id || '' }
                                         id={ id }
