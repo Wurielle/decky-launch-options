@@ -7,24 +7,24 @@ import {
   showModal,
   TextField,
   ToggleField,
-} from "@decky/ui";
-import { SingleDropdownOption } from "@decky/ui/dist/components/Dropdown";
-import { LaunchOption } from "../shared";
-import { ScrollIntoView } from "./scroll-into-view";
-import { useMemo, useState } from "react";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
-import { usePlugin } from "./plugin-provider";
+} from "@decky/ui"
+import { SingleDropdownOption } from "@decky/ui/dist/components/Dropdown"
+import { LaunchOption } from "../shared"
+import { ScrollIntoView } from "./scroll-into-view"
+import { useMemo, useState } from "react"
+import { FaChevronDown, FaChevronUp } from "react-icons/fa"
+import { usePlugin } from "./plugin-provider"
 
-const quickSelectLabel = "Quick select\u00A0\u00A0";
+const quickSelectLabel = "Quick select\u00A0\u00A0"
 
 interface LaunchOptionFieldsProps {
-  data: LaunchOption;
+  data: LaunchOption
   onChange: <K extends keyof LaunchOption>(
     field: K,
     value: LaunchOption[K],
-  ) => void;
+  ) => void
   /** When true, only show fields common to a valueId group (enableGlobally, name, group, valueId) */
-  commonOnly?: boolean;
+  commonOnly?: boolean
 }
 
 export function LaunchOptionFields({
@@ -32,12 +32,12 @@ export function LaunchOptionFields({
   onChange,
   commonOnly,
 }: LaunchOptionFieldsProps) {
-  const { settings } = usePlugin().settings;
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [enableGloballyKey, setEnableGloballyKey] = useState(0);
-  const [quickSelectKey, setQuickSelectKey] = useState(0);
-  const hasValueId = !!data.valueId;
-  const hidePerValue = commonOnly && hasValueId;
+  const { settings } = usePlugin().settings
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [enableGloballyKey, setEnableGloballyKey] = useState(0)
+  const [quickSelectKey, setQuickSelectKey] = useState(0)
+  const hasValueId = !!data.valueId
+  const hidePerValue = commonOnly && hasValueId
   const groupQuickSelectOptions = useMemo(
     () => [
       { data: "", label: "None\u00A0\u00A0" },
@@ -50,7 +50,7 @@ export function LaunchOptionFields({
         .map((group) => ({ data: group, label: `${group}\u00A0\u00A0` })),
     ],
     [settings.launchOptions],
-  );
+  )
   const valueIdQuickSelectOptions = useMemo(
     () => [
       { data: "", label: "None\u00A0\u00A0" },
@@ -63,7 +63,7 @@ export function LaunchOptionFields({
         .map((valueId) => ({ data: valueId, label: `${valueId}\u00A0\u00A0` })),
     ],
     [settings.launchOptions],
-  );
+  )
 
   return (
     <Focusable style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -83,9 +83,9 @@ export function LaunchOptionFields({
                   onOK={() => onChange("enableGlobally", true)}
                   onCancel={() => setEnableGloballyKey((k) => k + 1)}
                 />,
-              );
+              )
             } else {
-              onChange("enableGlobally", false);
+              onChange("enableGlobally", false)
             }
           }}
         />
@@ -99,8 +99,8 @@ export function LaunchOptionFields({
                 style={{ width: "100%" }}
                 value={data.name}
                 onChange={(e) => {
-                  scrollIntoView(e);
-                  onChange("name", e.target.value);
+                  scrollIntoView(e)
+                  onChange("name", e.target.value)
                 }}
                 onKeyDown={scrollIntoView}
                 onKeyUp={scrollIntoView}
@@ -125,8 +125,8 @@ export function LaunchOptionFields({
                   style={{ width: "100%" }}
                   value={data.on}
                   onChange={(e) => {
-                    scrollIntoView(e);
-                    onChange("on", e.target.value);
+                    scrollIntoView(e)
+                    onChange("on", e.target.value)
                   }}
                   onKeyDown={scrollIntoView}
                   onKeyUp={scrollIntoView}
@@ -152,8 +152,8 @@ export function LaunchOptionFields({
                   style={{ width: "100%" }}
                   value={data.off}
                   onChange={(e) => {
-                    scrollIntoView(e);
-                    onChange("off", e.target.value);
+                    scrollIntoView(e)
+                    onChange("off", e.target.value)
                   }}
                   onKeyDown={scrollIntoView}
                   onKeyUp={scrollIntoView}
@@ -168,7 +168,7 @@ export function LaunchOptionFields({
       )}
       <DialogButton
         onClick={() => {
-          setShowAdvanced((value) => !value);
+          setShowAdvanced((value) => !value)
         }}
       >
         <div
@@ -203,8 +203,8 @@ export function LaunchOptionFields({
                       style={{ width: "100%" }}
                       value={data.group}
                       onChange={(e) => {
-                        scrollIntoView(e);
-                        onChange("group", e.target.value);
+                        scrollIntoView(e)
+                        onChange("group", e.target.value)
                       }}
                       onKeyDown={scrollIntoView}
                       onKeyUp={scrollIntoView}
@@ -220,8 +220,8 @@ export function LaunchOptionFields({
                       selectedOption={undefined}
                       strDefaultLabel={quickSelectLabel}
                       onChange={(option: SingleDropdownOption) => {
-                        onChange("group", option.data);
-                        setQuickSelectKey((key) => key + 1);
+                        onChange("group", option.data)
+                        setQuickSelectKey((key) => key + 1)
                       }}
                     />
                   </div>
@@ -252,8 +252,8 @@ export function LaunchOptionFields({
                       style={{ width: "100%" }}
                       value={data.valueId}
                       onChange={(e) => {
-                        scrollIntoView(e);
-                        onChange("valueId", e.target.value);
+                        scrollIntoView(e)
+                        onChange("valueId", e.target.value)
                       }}
                       onKeyDown={scrollIntoView}
                       onKeyUp={scrollIntoView}
@@ -269,8 +269,8 @@ export function LaunchOptionFields({
                       selectedOption={undefined}
                       strDefaultLabel={quickSelectLabel}
                       onChange={(option: SingleDropdownOption) => {
-                        onChange("valueId", option.data);
-                        setQuickSelectKey((key) => key + 1);
+                        onChange("valueId", option.data)
+                        setQuickSelectKey((key) => key + 1)
                       }}
                     />
                   </div>
@@ -298,8 +298,8 @@ export function LaunchOptionFields({
                   style={{ width: "100%" }}
                   value={data.valueName}
                   onChange={(e) => {
-                    scrollIntoView(e);
-                    onChange("valueName", e.target.value);
+                    scrollIntoView(e)
+                    onChange("valueName", e.target.value)
                   }}
                   onKeyDown={scrollIntoView}
                   onKeyUp={scrollIntoView}
@@ -343,9 +343,9 @@ export function LaunchOptionFields({
                   style={{ width: "100%" }}
                   value={data.priority ? String(data.priority) : ""}
                   onChange={(e) => {
-                    scrollIntoView(e);
-                    const num = Number(e.target.value);
-                    onChange("priority", Number.isFinite(num) ? num : 0);
+                    scrollIntoView(e)
+                    const num = Number(e.target.value)
+                    onChange("priority", Number.isFinite(num) ? num : 0)
                   }}
                   onKeyDown={scrollIntoView}
                   onKeyUp={scrollIntoView}
@@ -359,5 +359,5 @@ export function LaunchOptionFields({
         </ScrollIntoView>
       )}
     </Focusable>
-  );
+  )
 }

@@ -1,7 +1,7 @@
-import { usePlugin } from "./plugin-provider";
-import { ConfirmModal, DialogButton, showModal } from "@decky/ui";
-import { useMemo } from "react";
-import { LaunchOptionFields } from "./launch-option-fields";
+import { usePlugin } from "./plugin-provider"
+import { ConfirmModal, DialogButton, showModal } from "@decky/ui"
+import { useMemo } from "react"
+import { LaunchOptionFields } from "./launch-option-fields"
 
 export function UpdateLaunchOptionForm({
   id,
@@ -10,28 +10,28 @@ export function UpdateLaunchOptionForm({
   syncCommonFields = true,
   deleteByValueId = false,
 }: {
-  id: string;
-  onDelete?: () => void;
-  commonOnly?: boolean;
-  syncCommonFields?: boolean;
-  deleteByValueId?: boolean;
+  id: string
+  onDelete?: () => void
+  commonOnly?: boolean
+  syncCommonFields?: boolean
+  deleteByValueId?: boolean
 }) {
   const {
     updateLaunchOption,
     deleteLaunchOption,
     deleteLaunchOptionsByValueId,
     settings,
-  } = usePlugin().settings;
+  } = usePlugin().settings
 
   const data = useMemo(
     () => settings.launchOptions.find((launchOption) => launchOption.id === id),
     [settings.launchOptions, id],
-  );
+  )
 
-  if (!data) return null;
+  if (!data) return null
 
   function remove() {
-    if (!data) return null;
+    if (!data) return null
     return showModal(
       <ConfirmModal
         strTitle={
@@ -48,14 +48,14 @@ export function UpdateLaunchOptionForm({
         strCancelButtonText="Cancel"
         onOK={async () => {
           if (deleteByValueId && data.valueId) {
-            deleteLaunchOptionsByValueId(data.valueId);
+            deleteLaunchOptionsByValueId(data.valueId)
           } else {
-            deleteLaunchOption(data.id);
+            deleteLaunchOption(data.id)
           }
-          onDelete?.();
+          onDelete?.()
         }}
       />,
-    );
+    )
   }
 
   return (
@@ -80,5 +80,5 @@ export function UpdateLaunchOptionForm({
         </div>
       </DialogButton>
     </div>
-  );
+  )
 }
