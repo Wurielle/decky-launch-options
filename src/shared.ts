@@ -5,6 +5,7 @@ export const batchCreateLaunchOptionsEventType = 'dlo-add-launch-options'
 export const routes = {
     launchOptions: () => '/launch-options',
     appLaunchOptions: (appid: number | string = ':appid') => `/launch-options/${appid}`,
+    launchOptionsManager: (page: number | string = ':page') => `/launch-options-manager/${page}`,
 }
 
 export const profileFactory = (profile: Partial<Profile> = {}): Profile => ({

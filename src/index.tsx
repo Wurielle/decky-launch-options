@@ -26,6 +26,13 @@ export default definePlugin(() => {
             </QueryClientProvider>
         )
     })
+    routerHook.addRoute(routes.launchOptionsManager(), () => {
+        return (
+            <QueryClientProvider client={ queryClient }>
+                <LaunchOptionsPage/>
+            </QueryClientProvider>
+        )
+    })
     // shamefully stolen from the talented people at SteamGridDB
     const menuPatches = contextMenuPatch(LibraryContextMenu)
     const libraryAppPatchResult = libraryAppPatch()
@@ -61,6 +68,8 @@ export default definePlugin(() => {
             }
             window.removeEventListener(batchCreateLaunchOptionsEventType as any, onBatchCreateLaunchOptions)
             delete (window as any).hasDeckyLaunchOptions
+            routerHook.removeRoute(routes.launchOptions())
+            routerHook.removeRoute(routes.launchOptionsManager())
         },
     }
 })

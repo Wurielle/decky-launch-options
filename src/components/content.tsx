@@ -77,7 +77,7 @@ export function Content() {
         <ButtonItem
           layout="below"
           onClick={() => {
-            Navigation.Navigate(routes.launchOptions());
+            Navigation.Navigate(routes.launchOptionsManager("new"));
             Navigation.CloseSideMenus();
           }}
         >
