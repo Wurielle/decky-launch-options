@@ -2,7 +2,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 jobs:
   release:
     if: startsWith(github.ref, 'refs/tags/')
@@ -25,7 +25,7 @@ jobs:
         id: github_release
         uses: mikepenz/release-changelog-builder-action@v1
         with:
-          configuration: 'changelog.config.json'
+          configuration: "changelog.config.json"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -46,7 +46,7 @@ jobs:
   #          prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'beta') || contains(github.ref, 'alpha')}}
 
   deploy:
-    needs: [ release ]
+    needs: [release]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -67,22 +67,24 @@ jobs:
         with:
           node-version: 18
 
+      - name: Set release version
+        id: release_version
+        shell: bash
+        run: |
+          echo "RELEASE_VERSION=${GITHUB_REF_NAME}" >> $GITHUB_ENV
+          echo "package_version=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
       - name: Set package.json version
         uses: wurielle/package-version-action@v1
         with:
-          version: ${{ env.RELEASE_VERSION }}
+          version: ${{ steps.release_version.outputs.package_version }}
           targets: |
             ./package.json
 
-      - name: Set env variables
-        shell: bash
-        run: |
-          echo "RELEASE_VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
-
-      - name: Setup PNPM@9
+      - name: Setup PNPM
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: 10.34.4
 
       - name: Decky CLI Build
         run: |
