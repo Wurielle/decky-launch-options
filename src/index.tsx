@@ -19,7 +19,7 @@ export default definePlugin(() => {
             </QueryClientProvider>
         )
     })
-    routerHook.addRoute(routes.launchOptions(), () => {
+    routerHook.addRoute(routes.launchOptionsManagerItem(), () => {
         return (
             <QueryClientProvider client={ queryClient }>
                 <LaunchOptionsPage/>

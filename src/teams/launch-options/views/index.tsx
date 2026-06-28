@@ -5,26 +5,28 @@ import { FaPlus, FaTerminal } from "react-icons/fa"
 import { PluginProvider } from '../../../components/plugin-provider'
 import { CreateLaunchOptionForm } from "../../../components/create-launch-option-form"
 import { UpdateLaunchOptionForm } from "../../../components/update-launch-option-form"
+import { routes } from '../../../shared'
 
 export function LaunchOptionsPage() {
     const { settings, loading } = useSettings()
-    const [activePage, setActivePage] = useState<string>('new-launch-option')
+    const newLaunchOptionRoute = routes.launchOptionsManagerItem('new')
+    const [activePage, setActivePage] = useState<string>(newLaunchOptionRoute)
 
     const navKey = useMemo(
         () => settings.launchOptions.map(({ id }) => id).join('|'),
         [settings.launchOptions],
     )
 
-    const pageIds = useMemo(() => new Set<string>([
-        'new-launch-option',
-        ...settings.launchOptions.map((item) => item.id),
-    ]), [settings.launchOptions])
+    const pageRoutes = useMemo(() => new Set<string>([
+        newLaunchOptionRoute,
+        ...settings.launchOptions.map((item) => routes.launchOptionsManagerItem(item.id)),
+    ]), [newLaunchOptionRoute, settings.launchOptions])
 
     useEffect(() => {
-        if (!pageIds.has(activePage)) {
-            setActivePage('new-launch-option')
+        if (!pageRoutes.has(activePage)) {
+            setActivePage(newLaunchOptionRoute)
         }
-    }, [activePage, pageIds])
+    }, [activePage, newLaunchOptionRoute, pageRoutes])
 
     return (
         <PluginProvider>
@@ -50,14 +52,14 @@ export function LaunchOptionsPage() {
                                     icon: <FaPlus/>,
                                     title: 'New launch option',
                                     identifier: 'new-launch-option',
-                                    route: 'new-launch-option',
+                                    route: routes.launchOptionsManagerItem('new'),
                                     content: <CreateLaunchOptionForm/>,
                                 },
                                 ...settings.launchOptions.map(({ id, name }) => ({
                                     icon: <FaTerminal/>,
                                     title: name || 'Unnamed',
                                     identifier: id,
-                                    route: id,
+                                    route: routes.launchOptionsManagerItem(id),
                                     content: <UpdateLaunchOptionForm
                                         key={ id || '' }
                                         id={ id }

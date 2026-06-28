@@ -1,10 +1,10 @@
-import {v4 as uuid} from 'uuid'
+import { v4 as uuid } from 'uuid'
 
 export const batchCreateLaunchOptionsEventType = 'dlo-add-launch-options'
 
 export const routes = {
-    launchOptions: () => '/launch-options',
-    appLaunchOptions: (appid: number | string = ':appid') => `/launch-options/${appid}`,
+    appLaunchOptions: (appid: number | string = ':appid') => `/launch-options/${ appid }`,
+    launchOptionsManagerItem: (page: number | string = ':page') => `/launch-options-manager/${ page }`,
 }
 
 export const profileFactory = (profile: Partial<Profile> = {}): Profile => ({
