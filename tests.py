@@ -7,6 +7,9 @@ Run with: python test_launch_options.py
 import sys
 import os
 
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
 # Add current directory to path to import run.py
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -295,15 +298,22 @@ if __name__ == "__main__":
     print("="*60)
 
     # Helper to build mock settings for priority tests
-    def make_settings(launch_options, appid="123", state=None):
+    def make_settings(
+        launch_options,
+        appid="123",
+        state=None,
+        env_variable_merges=None,
+        original_launch_options="",
+    ):
         return {
             "profiles": {
                 str(appid): {
                     "state": state or {},
-                    "originalLaunchOptions": "",
+                    "originalLaunchOptions": original_launch_options,
                 }
             },
             "launchOptions": launch_options,
+            "envVariableMerges": env_variable_merges or [],
         }
 
     def make_opt(opt_id, on, priority=0):
@@ -403,6 +413,99 @@ if __name__ == "__main__":
         print(f"Result:   {final_args_d}")
         print(f"Expected: {expected_d}")
         print(f"\n{'✓ PASS' if match_d else '✗ FAIL'}")
+
+        # Test E: Merge configured env var values with a semicolon delimiter
+        print(f"\n{'='*60}")
+        print("Test: Env variable merge - WINEDLLOVERRIDES uses semicolon")
+        print(f"{'='*60}")
+        settings_e = make_settings(
+            [
+                make_opt("wine-a", 'WINEDLLOVERRIDES="dinput8=n,b"', priority=0),
+                make_opt("wine-b", 'WINEDLLOVERRIDES="dxgi=n,b"', priority=0),
+            ],
+            env_variable_merges=[
+                {
+                    "id": "winedlloverrides",
+                    "name": "WINEDLLOVERRIDES",
+                    "delimiter": ";",
+                }
+            ],
+        )
+        _, env_vars_e = get_final_args_details(settings_e, "123")
+        expected_e = {"WINEDLLOVERRIDES": "dinput8=n,b;dxgi=n,b"}
+        match_e = env_vars_e == expected_e
+        print(f"Result:   {env_vars_e}")
+        print(f"Expected: {expected_e}")
+        print(f"\n{'PASS' if match_e else 'FAIL'}")
+
+        # Test F: Merge configured env var values with a comma delimiter
+        print(f"\n{'='*60}")
+        print("Test: Env variable merge - MANGOHUD_CONFIG uses comma")
+        print(f"{'='*60}")
+        settings_f = make_settings(
+            [
+                make_opt("mango-a", 'MANGOHUD_CONFIG="cpu_temp,gpu_temp"', priority=0),
+                make_opt(
+                    "mango-b",
+                    'MANGOHUD_CONFIG="position=top-right,height=500,font_size=32"',
+                    priority=0,
+                ),
+            ],
+            env_variable_merges=[
+                {
+                    "id": "mangohud-config",
+                    "name": "MANGOHUD_CONFIG",
+                    "delimiter": ",",
+                }
+            ],
+        )
+        _, env_vars_f = get_final_args_details(settings_f, "123")
+        expected_f = {
+            "MANGOHUD_CONFIG": "cpu_temp,gpu_temp,position=top-right,height=500,font_size=32"
+        }
+        match_f = env_vars_f == expected_f
+        print(f"Result:   {env_vars_f}")
+        print(f"Expected: {expected_f}")
+        print(f"\n{'PASS' if match_f else 'FAIL'}")
+
+        # Test G: Without a merge rule, repeated env vars keep last-value-wins behavior
+        print(f"\n{'='*60}")
+        print("Test: Env variable merge - unconfigured variables still replace")
+        print(f"{'='*60}")
+        settings_g = make_settings([
+            make_opt("hud-a", "DXVK_HUD=fps", priority=0),
+            make_opt("hud-b", "DXVK_HUD=compiler", priority=0),
+        ])
+        _, env_vars_g = get_final_args_details(settings_g, "123")
+        expected_g = {"DXVK_HUD": "compiler"}
+        match_g = env_vars_g == expected_g
+        print(f"Result:   {env_vars_g}")
+        print(f"Expected: {expected_g}")
+        print(f"\n{'PASS' if match_g else 'FAIL'}")
+
+        # Test H: Original launch options participate in configured env var merges
+        print(f"\n{'='*60}")
+        print("Test: Env variable merge - original launch options merge first")
+        print(f"{'='*60}")
+        settings_h = make_settings(
+            [
+                make_opt("wine-a", 'WINEDLLOVERRIDES="dxgi=n,b"', priority=0),
+            ],
+            original_launch_options='WINEDLLOVERRIDES="dinput8=n,b"',
+            env_variable_merges=[
+                {
+                    "id": "winedlloverrides",
+                    "name": "WINEDLLOVERRIDES",
+                    "delimiter": ";",
+                }
+            ],
+        )
+        _, env_vars_h = get_final_args_details(settings_h, "123")
+        expected_h = {"WINEDLLOVERRIDES": "dinput8=n,b;dxgi=n,b"}
+        match_h = env_vars_h == expected_h
+        print(f"Result:   {env_vars_h}")
+        print(f"Expected: {expected_h}")
+        print(f"\n{'PASS' if match_h else 'FAIL'}")
 
     # Restore sys.argv
     sys.argv = original_argv

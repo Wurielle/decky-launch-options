@@ -2,6 +2,8 @@ import { set } from "es-toolkit/compat"
 import { useEffect, useRef, useState } from "react"
 import { produce, WritableDraft } from "immer"
 import {
+  EnvVariableMerge,
+  envVariableMergeFactory,
   LaunchOption,
   launchOptionFactory,
   profileFactory,
@@ -13,6 +15,7 @@ export function useSettings() {
   const [settings, _setSettings] = useState<Settings>({
     profiles: {},
     launchOptions: [],
+    envVariableMerges: [],
   })
 
   const getSettingsQuery = useGetSettingsQuery()
@@ -26,7 +29,11 @@ export function useSettings() {
       valueId: item.valueId || "",
       valueName: item.valueName || "",
       fallbackValue: !!item.fallbackValue,
+      priority: item.priority || 0,
     })),
+    envVariableMerges: (nextSettings?.envVariableMerges || []).map((item) =>
+      envVariableMergeFactory(item),
+    ),
   })
 
   const setSettings = (
@@ -275,6 +282,34 @@ export function useSettings() {
           })
         })
         normalizeFallbackValues(draft)
+      })
+    },
+    createEnvVariableMerge: (envVariableMerge: EnvVariableMerge) => {
+      setSettings((draft) => {
+        draft.envVariableMerges.unshift(
+          envVariableMergeFactory(envVariableMerge),
+        )
+      })
+    },
+    updateEnvVariableMerge: (
+      envVariableMerge: EnvVariableMerge,
+      path: keyof EnvVariableMerge,
+      value: EnvVariableMerge[keyof EnvVariableMerge],
+    ) => {
+      setSettings((draft) => {
+        const index = draft.envVariableMerges.findIndex(
+          (item) => item.id === envVariableMerge.id,
+        )
+        if (index === -1) return
+        set(draft, ["envVariableMerges", index, path], value)
+      })
+    },
+    deleteEnvVariableMerge: (id: EnvVariableMerge["id"]) => {
+      setSettings((draft) => {
+        const index = draft.envVariableMerges.findIndex(
+          (item) => item.id === id,
+        )
+        if (index !== -1) draft.envVariableMerges.splice(index, 1)
       })
     },
     setAppLaunchOptionState: (

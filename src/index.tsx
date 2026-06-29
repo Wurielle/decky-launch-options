@@ -8,6 +8,7 @@ import {
 } from "./shared"
 import { LaunchOptionsPage } from "./teams/launch-options/views"
 import { AppLaunchOptionsPage } from "./teams/launch-options/views/[_appid]"
+import { EnvVariableMergesPage } from "./teams/env-variable-merges/views"
 import { QueryClientProvider } from "@tanstack/react-query"
 import contextMenuPatch, { LibraryContextMenu } from "./patches/context-menu"
 import { getSettingsQueryOptions, queryClient } from "./query"
@@ -27,6 +28,13 @@ export default definePlugin(() => {
     return (
       <QueryClientProvider client={queryClient}>
         <LaunchOptionsPage />
+      </QueryClientProvider>
+    )
+  })
+  routerHook.addRoute(routes.envVariableMergesManagerItem(), () => {
+    return (
+      <QueryClientProvider client={queryClient}>
+        <EnvVariableMergesPage />
       </QueryClientProvider>
     )
   })

@@ -128,6 +128,35 @@ def parse_launch_option(raw_command):
     }
 
 
+def get_env_variable_merge_rules(settings):
+    rules = {}
+    for rule in settings.get("envVariableMerges", []):
+        name = str(rule.get("name", "")).strip()
+        delimiter = rule.get("delimiter")
+        if not name or delimiter is None:
+            continue
+        rules[name] = str(delimiter)
+    return rules
+
+
+def add_env_vars(env_var_values, merge_rules, env_vars):
+    for key, value in env_vars.items():
+        if key in merge_rules:
+            env_var_values.setdefault(key, []).append(value)
+        else:
+            env_var_values[key] = [value]
+
+
+def finalize_env_vars(env_var_values, merge_rules):
+    final_env_vars = {}
+    for key, values in env_var_values.items():
+        if key in merge_rules and len(values) > 1:
+            final_env_vars[key] = merge_rules[key].join(values)
+        elif values:
+            final_env_vars[key] = values[-1]
+    return final_env_vars
+
+
 def get_final_args_details(settings, appid):
     base_args = sys.argv[1:]
 
@@ -140,14 +169,15 @@ def get_final_args_details(settings, appid):
     profile_original_launch_options = profile.get("originalLaunchOptions", "")
 
     # Collections for all launch option components
-    all_env_vars = {}
+    env_merge_rules = get_env_variable_merge_rules(settings)
+    all_env_var_values = {}
     all_prefixes = []
     all_suffixes = []
 
     # Parse original launch options first
     if profile_original_launch_options:
         parsed = parse_launch_option(profile_original_launch_options)
-        all_env_vars.update(parsed['env_vars'])
+        add_env_vars(all_env_var_values, env_merge_rules, parsed['env_vars'])
         if parsed['prefix']:
             all_prefixes.append(parsed['prefix'])
         all_suffixes.extend(parsed['suffix'])
@@ -205,10 +235,12 @@ def get_final_args_details(settings, appid):
 
     # Merge sorted results into collectors
     for priority, parsed in launch_option_parts:
-        all_env_vars.update(parsed['env_vars'])
+        add_env_vars(all_env_var_values, env_merge_rules, parsed['env_vars'])
         if parsed['prefix']:
             all_prefixes.append(parsed['prefix'])
         all_suffixes.extend(parsed['suffix'])
+
+    all_env_vars = finalize_env_vars(all_env_var_values, env_merge_rules)
 
     # Apply all environment variables
     for key, value in all_env_vars.items():
