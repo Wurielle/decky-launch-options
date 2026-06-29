@@ -2,6 +2,7 @@ import { set } from "es-toolkit/compat"
 import { useEffect, useRef, useState } from "react"
 import { produce, WritableDraft } from "immer"
 import {
+  defaultEnvVariableMerges,
   EnvVariableMerge,
   envVariableMergeFactory,
   LaunchOption,
@@ -22,19 +23,26 @@ export function useSettings() {
   const setSettingsMutation = useSetSettingsMutation()
   const initializedRef = useRef(false)
 
-  const normalizeSettings = (nextSettings?: Settings | null): Settings => ({
-    profiles: nextSettings?.profiles || {},
-    launchOptions: (nextSettings?.launchOptions || []).map((item) => ({
-      ...item,
-      valueId: item.valueId || "",
-      valueName: item.valueName || "",
-      fallbackValue: !!item.fallbackValue,
-      priority: item.priority || 0,
-    })),
-    envVariableMerges: (nextSettings?.envVariableMerges || []).map((item) =>
-      envVariableMergeFactory(item),
-    ),
-  })
+  const normalizeSettings = (nextSettings?: Settings | null): Settings => {
+    const envVariableMerges =
+      nextSettings?.envVariableMerges === undefined
+        ? defaultEnvVariableMerges
+        : nextSettings.envVariableMerges
+
+    return {
+      profiles: nextSettings?.profiles || {},
+      launchOptions: (nextSettings?.launchOptions || []).map((item) => ({
+        ...item,
+        valueId: item.valueId || "",
+        valueName: item.valueName || "",
+        fallbackValue: !!item.fallbackValue,
+        priority: item.priority || 0,
+      })),
+      envVariableMerges: envVariableMerges.map((item) =>
+        envVariableMergeFactory(item),
+      ),
+    }
+  }
 
   const setSettings = (
     draftSettings: (draft: WritableDraft<Settings>) => void,

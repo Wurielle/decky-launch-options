@@ -298,14 +298,16 @@ if __name__ == "__main__":
     print("="*60)
 
     # Helper to build mock settings for priority tests
+    OMIT_ENV_VARIABLE_MERGES = object()
+
     def make_settings(
         launch_options,
         appid="123",
         state=None,
-        env_variable_merges=None,
+        env_variable_merges=OMIT_ENV_VARIABLE_MERGES,
         original_launch_options="",
     ):
-        return {
+        settings = {
             "profiles": {
                 str(appid): {
                     "state": state or {},
@@ -313,8 +315,10 @@ if __name__ == "__main__":
                 }
             },
             "launchOptions": launch_options,
-            "envVariableMerges": env_variable_merges or [],
         }
+        if env_variable_merges is not OMIT_ENV_VARIABLE_MERGES:
+            settings["envVariableMerges"] = env_variable_merges or []
+        return settings
 
     def make_opt(opt_id, on, priority=0):
         return {
@@ -472,12 +476,15 @@ if __name__ == "__main__":
         print(f"\n{'='*60}")
         print("Test: Env variable merge - unconfigured variables still replace")
         print(f"{'='*60}")
-        settings_g = make_settings([
-            make_opt("hud-a", "DXVK_HUD=fps", priority=0),
-            make_opt("hud-b", "DXVK_HUD=compiler", priority=0),
-        ])
+        settings_g = make_settings(
+            [
+                make_opt("custom-a", "CUSTOM_ENV=fps", priority=0),
+                make_opt("custom-b", "CUSTOM_ENV=compiler", priority=0),
+            ],
+            env_variable_merges=[],
+        )
         _, env_vars_g = get_final_args_details(settings_g, "123")
-        expected_g = {"DXVK_HUD": "compiler"}
+        expected_g = {"CUSTOM_ENV": "compiler"}
         match_g = env_vars_g == expected_g
         print(f"Result:   {env_vars_g}")
         print(f"Expected: {expected_g}")
@@ -506,6 +513,21 @@ if __name__ == "__main__":
         print(f"Result:   {env_vars_h}")
         print(f"Expected: {expected_h}")
         print(f"\n{'PASS' if match_h else 'FAIL'}")
+
+        # Test I: Default merge rules apply when older settings omit envVariableMerges
+        print(f"\n{'='*60}")
+        print("Test: Env variable merge - defaults apply to older settings")
+        print(f"{'='*60}")
+        settings_i = make_settings([
+            make_opt("hud-a", "DXVK_HUD=fps", priority=0),
+            make_opt("hud-b", "DXVK_HUD=frametimes", priority=0),
+        ])
+        _, env_vars_i = get_final_args_details(settings_i, "123")
+        expected_i = {"DXVK_HUD": "fps,frametimes"}
+        match_i = env_vars_i == expected_i
+        print(f"Result:   {env_vars_i}")
+        print(f"Expected: {expected_i}")
+        print(f"\n{'PASS' if match_i else 'FAIL'}")
 
     # Restore sys.argv
     sys.argv = original_argv

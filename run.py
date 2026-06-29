@@ -8,6 +8,14 @@ from pathlib import Path
 from shared import SETTINGS_FOLDER_PATH, SETTINGS_PATH
 
 LOG_FILE = os.path.join(SETTINGS_FOLDER_PATH, 'debug.log')
+DEFAULT_ENV_VARIABLE_MERGES = [
+    {"name": "WINEDLLOVERRIDES", "delimiter": ";"},
+    {"name": "MANGOHUD_CONFIG", "delimiter": ","},
+    {"name": "DXVK_CONFIG", "delimiter": ";"},
+    {"name": "VKD3D_CONFIG", "delimiter": ","},
+    {"name": "DXVK_HUD", "delimiter": ","},
+    {"name": "RADV_PERFTEST", "delimiter": ","},
+]
 
 executable = sys.argv[1] if len(sys.argv) > 1 else None
 args = sys.argv[1:]
@@ -130,7 +138,8 @@ def parse_launch_option(raw_command):
 
 def get_env_variable_merge_rules(settings):
     rules = {}
-    for rule in settings.get("envVariableMerges", []):
+    merge_rules = settings.get("envVariableMerges", DEFAULT_ENV_VARIABLE_MERGES)
+    for rule in merge_rules:
         name = str(rule.get("name", "")).strip()
         delimiter = rule.get("delimiter")
         if not name or delimiter is None:

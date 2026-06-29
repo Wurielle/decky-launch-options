@@ -41,6 +41,15 @@ export const envVariableMergeFactory = (
   delimiter: envVariableMerge.delimiter ?? "",
 })
 
+export const defaultEnvVariableMerges: EnvVariableMerge[] = [
+  { id: "winedlloverrides", name: "WINEDLLOVERRIDES", delimiter: ";" },
+  { id: "mangohud-config", name: "MANGOHUD_CONFIG", delimiter: "," },
+  { id: "dxvk-config", name: "DXVK_CONFIG", delimiter: ";" },
+  { id: "vkd3d-config", name: "VKD3D_CONFIG", delimiter: "," },
+  { id: "dxvk-hud", name: "DXVK_HUD", delimiter: "," },
+  { id: "radv-perftest", name: "RADV_PERFTEST", delimiter: "," },
+]
+
 export type Profile = {
   state: Record<string, boolean>
   originalLaunchOptions: string
