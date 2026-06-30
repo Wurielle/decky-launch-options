@@ -326,9 +326,7 @@ function LaunchOptionActionButton({
     menu = showContextMenu(
       <Menu label="Launch option actions" onCancel={() => menu.Hide()}>
         <MenuItem onSelected={runAction(onEdit)}>Edit</MenuItem>
-        <MenuItem onSelected={runAction(onDuplicate)}>
-          Duplicate
-        </MenuItem>
+        <MenuItem onSelected={runAction(onDuplicate)}>Duplicate</MenuItem>
       </Menu>,
       event.currentTarget,
     )
@@ -393,10 +391,7 @@ function LaunchOptionItem({
             onToggle(value)
           }}
         />
-        <LaunchOptionActionButton
-          onEdit={onEdit}
-          onDuplicate={onDuplicate}
-        />
+        <LaunchOptionActionButton onEdit={onEdit} onDuplicate={onDuplicate} />
       </Focusable>
     </Field>
   )
