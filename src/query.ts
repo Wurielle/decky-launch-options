@@ -83,6 +83,8 @@ export const useApplyLaunchOptionsMutation = () => {
     getAppOriginalLaunchOptions,
     getAppDisableAutoManageLaunchOptions,
   } = useSettings()
+  const backupOriginalLaunchOptionsMutation =
+    useBackupOriginalLaunchOptionsMutation()
   const autoManageLaunchOptions = useStore(
     settingsStore,
     (state) => state.autoManageLaunchOptions,
@@ -128,11 +130,19 @@ export const useApplyLaunchOptionsMutation = () => {
           }),
           has_shell_script(),
         ]).then(([partialContext, hasShellScript]) => {
-          if (partialContext.originalLaunchOptions !== null)
+          if (partialContext.originalLaunchOptions !== null) {
+            backupOriginalLaunchOptionsMutation.mutate(
+              {
+                appid: String(data.appid),
+                command: partialContext.originalLaunchOptions,
+              },
+              { onError: () => undefined },
+            )
             setAppOriginalLaunchOptions(
               String(data.appid),
               partialContext.originalLaunchOptions,
             )
+          }
           return {
             ...partialContext,
             hasShellScript,

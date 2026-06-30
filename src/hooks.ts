@@ -10,11 +10,7 @@ import {
   profileFactory,
   Settings,
 } from "./shared"
-import {
-  useBackupOriginalLaunchOptionsMutation,
-  useGetSettingsQuery,
-  useSetSettingsMutation,
-} from "./query"
+import { useGetSettingsQuery, useSetSettingsMutation } from "./query"
 
 export function useSettings() {
   const [settings, _setSettings] = useState<Settings>({
@@ -25,8 +21,6 @@ export function useSettings() {
 
   const getSettingsQuery = useGetSettingsQuery()
   const setSettingsMutation = useSetSettingsMutation()
-  const backupOriginalLaunchOptionsMutation =
-    useBackupOriginalLaunchOptionsMutation()
   const initializedRef = useRef(false)
 
   const normalizeSettings = (nextSettings?: Settings | null): Settings => {
@@ -435,10 +429,6 @@ export function useSettings() {
     getAppOriginalLaunchOptions: (appid: string) =>
       settings.profiles[appid]?.originalLaunchOptions || "",
     setAppOriginalLaunchOptions: (appid: string, command: string) => {
-      backupOriginalLaunchOptionsMutation.mutate(
-        { appid, command },
-        { onError: () => undefined },
-      )
       setSettings((draft) => {
         draft.profiles[appid] = profileFactory({
           ...draft.profiles[appid],
