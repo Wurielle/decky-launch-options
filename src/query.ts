@@ -29,12 +29,17 @@ export const get_info = callable<
     FULL_SH_COMMAND_PATH: string
     COMMAND: string
     DEBUG_LOG_PATH: string
+    BACKUPS_PATH: string
   }
 >("get_info")
 export const get_settings = callable<[], Settings | null>("get_settings")
 export const set_settings = callable<[Settings], void>("set_settings")
 export const has_shell_script = callable<[], boolean>("has_shell_script")
 export const get_debug_log = callable<[], string | null>("get_debug_log")
+export const backup_original_launch_options = callable<
+  [appid: string, command: string],
+  void
+>("backup_original_launch_options")
 
 export const useGetInfoQuery = () =>
   useQuery({
@@ -62,6 +67,13 @@ export const useSetSettingsMutation = () =>
       queryClient.refetchQueries({
         queryKey: keys.settings(),
       })
+    },
+  })
+
+export const useBackupOriginalLaunchOptionsMutation = () =>
+  useMutation<void, Error, { appid: string; command: string }>({
+    mutationFn(data) {
+      return backup_original_launch_options(data.appid, data.command)
     },
   })
 
