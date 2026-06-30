@@ -107,6 +107,20 @@ export function useSettings() {
     })
   }
 
+  const getCopyLabel = (label: string, existingLabels: Iterable<string>) => {
+    const baseLabel = label || "Unnamed"
+    const labels = new Set(existingLabels)
+    let nextLabel = `${baseLabel} (Copy)`
+    let index = 2
+
+    while (labels.has(nextLabel)) {
+      nextLabel = `${baseLabel} (Copy ${index})`
+      index++
+    }
+
+    return nextLabel
+  }
+
   const getSelectedValueIdLaunchOptionId = (
     appid: string,
     valueId: string,
@@ -289,6 +303,60 @@ export function useSettings() {
             }
           })
         })
+        normalizeFallbackValues(draft)
+      })
+    },
+    duplicateLaunchOption: (id: LaunchOption["id"]) => {
+      setSettings((draft) => {
+        const launchOption = draft.launchOptions.find((item) => item.id === id)
+        if (!launchOption) return
+
+        if (!launchOption.valueId) {
+          const name = getCopyLabel(
+            launchOption.name,
+            draft.launchOptions.map((item) => item.name),
+          )
+          draft.launchOptions.unshift(
+            launchOptionFactory({
+              ...launchOption,
+              id: undefined,
+              name,
+            }),
+          )
+          normalizeFallbackValues(draft)
+          return
+        }
+
+        const siblings = draft.launchOptions.filter(
+          (item) => item.valueId === launchOption.valueId,
+        )
+        const valueId = getCopyLabel(
+          launchOption.valueId,
+          draft.launchOptions.map((item) => item.valueId).filter(Boolean),
+        )
+        const namesByOriginalName = new Map<string, string>()
+
+        ;[...siblings].reverse().forEach((sibling) => {
+          if (!namesByOriginalName.has(sibling.name)) {
+            namesByOriginalName.set(
+              sibling.name,
+              getCopyLabel(
+                sibling.name,
+                draft.launchOptions.map((item) => item.name),
+              ),
+            )
+          }
+
+          draft.launchOptions.unshift(
+            launchOptionFactory({
+              ...sibling,
+              id: undefined,
+              name: namesByOriginalName.get(sibling.name) || sibling.name,
+              valueId,
+            }),
+          )
+        })
+
         normalizeFallbackValues(draft)
       })
     },
