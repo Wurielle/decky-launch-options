@@ -170,10 +170,14 @@ class Plugin:
         backup_path = backup_folder_path / f"{timestamp}.txt"
         backup_path.write_text(command, encoding='utf-8')
 
+    def _backup_original_launch_options_with_existing(self, appid, command):
+        self._backup_existing_original_launch_options()
+        self._backup_original_launch_options(appid, command)
+
     async def backup_original_launch_options(self, appid, command):
         try:
             await asyncio.to_thread(
-                self._backup_original_launch_options,
+                self._backup_original_launch_options_with_existing,
                 appid,
                 command,
             )
