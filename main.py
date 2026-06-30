@@ -166,7 +166,7 @@ class Plugin:
         backup_folder_path = self._get_backup_folder_path(appid)
         backup_folder_path.mkdir(parents=True, exist_ok=True)
 
-        timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S-%f")
+        timestamp = datetime.now().astimezone().isoformat(timespec='microseconds')
         backup_path = backup_folder_path / f"{timestamp}.txt"
         backup_path.write_text(command, encoding='utf-8')
 
