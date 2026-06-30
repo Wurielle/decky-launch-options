@@ -2,6 +2,9 @@ import { set } from "es-toolkit/compat"
 import { useEffect, useRef, useState } from "react"
 import { produce, WritableDraft } from "immer"
 import {
+  defaultEnvVariableMerges,
+  EnvVariableMerge,
+  envVariableMergeFactory,
   LaunchOption,
   launchOptionFactory,
   profileFactory,
@@ -13,21 +16,33 @@ export function useSettings() {
   const [settings, _setSettings] = useState<Settings>({
     profiles: {},
     launchOptions: [],
+    envVariableMerges: [],
   })
 
   const getSettingsQuery = useGetSettingsQuery()
   const setSettingsMutation = useSetSettingsMutation()
   const initializedRef = useRef(false)
 
-  const normalizeSettings = (nextSettings?: Settings | null): Settings => ({
-    profiles: nextSettings?.profiles || {},
-    launchOptions: (nextSettings?.launchOptions || []).map((item) => ({
-      ...item,
-      valueId: item.valueId || "",
-      valueName: item.valueName || "",
-      fallbackValue: !!item.fallbackValue,
-    })),
-  })
+  const normalizeSettings = (nextSettings?: Settings | null): Settings => {
+    const envVariableMerges =
+      nextSettings?.envVariableMerges === undefined
+        ? defaultEnvVariableMerges
+        : nextSettings.envVariableMerges
+
+    return {
+      profiles: nextSettings?.profiles || {},
+      launchOptions: (nextSettings?.launchOptions || []).map((item) => ({
+        ...item,
+        valueId: item.valueId || "",
+        valueName: item.valueName || "",
+        fallbackValue: !!item.fallbackValue,
+        priority: item.priority || 0,
+      })),
+      envVariableMerges: envVariableMerges.map((item) =>
+        envVariableMergeFactory(item),
+      ),
+    }
+  }
 
   const setSettings = (
     draftSettings: (draft: WritableDraft<Settings>) => void,
@@ -275,6 +290,34 @@ export function useSettings() {
           })
         })
         normalizeFallbackValues(draft)
+      })
+    },
+    createEnvVariableMerge: (envVariableMerge: EnvVariableMerge) => {
+      setSettings((draft) => {
+        draft.envVariableMerges.unshift(
+          envVariableMergeFactory(envVariableMerge),
+        )
+      })
+    },
+    updateEnvVariableMerge: (
+      envVariableMerge: EnvVariableMerge,
+      path: keyof EnvVariableMerge,
+      value: EnvVariableMerge[keyof EnvVariableMerge],
+    ) => {
+      setSettings((draft) => {
+        const index = draft.envVariableMerges.findIndex(
+          (item) => item.id === envVariableMerge.id,
+        )
+        if (index === -1) return
+        set(draft, ["envVariableMerges", index, path], value)
+      })
+    },
+    deleteEnvVariableMerge: (id: EnvVariableMerge["id"]) => {
+      setSettings((draft) => {
+        const index = draft.envVariableMerges.findIndex(
+          (item) => item.id === id,
+        )
+        if (index !== -1) draft.envVariableMerges.splice(index, 1)
       })
     },
     setAppLaunchOptionState: (
