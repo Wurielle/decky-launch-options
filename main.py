@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 import json
 import os
 import stat
@@ -13,6 +14,7 @@ SETTINGS_FOLDER_NAME = '.dlo'
 SETTINGS_FOLDER_PATH = os.path.join(os.path.expanduser('~'), SETTINGS_FOLDER_NAME)
 SETTINGS_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'settings.json')}"
 DEBUG_LOG_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'debug.log')}"
+BACKUPS_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'backups')}"
 
 PY_LAUNCHER_PATH = os.path.join(decky.DECKY_PLUGIN_DIR, "run.py")
 
@@ -30,6 +32,7 @@ info = {
     "FULL_SH_COMMAND_PATH": FULL_SH_COMMAND_PATH,
     "COMMAND": COMMAND,
     "DEBUG_LOG_PATH": DEBUG_LOG_PATH,
+    "BACKUPS_PATH": BACKUPS_PATH,
 }
 
 
@@ -41,6 +44,7 @@ class Plugin:
     async def prepare(self):
         folder_path = Path(SETTINGS_FOLDER_PATH)
         folder_path.mkdir(parents=True, exist_ok=True)
+        await self.backup_existing_original_launch_options()
 
         try:
             with open(FULL_SH_COMMAND_PATH, "w") as file:
@@ -150,6 +154,65 @@ class Plugin:
 
     async def get_settings(self):
         return await asyncio.to_thread(self._read_json, SETTINGS_PATH)
+
+    def _get_backup_folder_path(self, appid):
+        appid = str(appid)
+        if not appid.isdigit():
+            raise ValueError(f"Invalid Steam app id: {appid}")
+
+        return Path(BACKUPS_PATH) / appid
+
+    def _backup_original_launch_options(self, appid, command):
+        backup_folder_path = self._get_backup_folder_path(appid)
+        backup_folder_path.mkdir(parents=True, exist_ok=True)
+
+        timestamp = datetime.now().astimezone().isoformat(timespec='microseconds')
+        backup_path = backup_folder_path / f"{timestamp}.txt"
+        backup_path.write_text(command, encoding='utf-8')
+
+    def _backup_original_launch_options_with_existing(self, appid, command):
+        self._backup_existing_original_launch_options()
+        self._backup_original_launch_options(appid, command)
+
+    async def backup_original_launch_options(self, appid, command):
+        try:
+            await asyncio.to_thread(
+                self._backup_original_launch_options_with_existing,
+                appid,
+                command,
+            )
+        except (OSError, IOError, TypeError, ValueError) as e:
+            log(f"Failed to backup original launch options for {appid}: {e}")
+
+    def _backup_existing_original_launch_options(self):
+        backups_path = Path(BACKUPS_PATH)
+        if backups_path.exists():
+            return
+
+        backups_path.mkdir(parents=True, exist_ok=True)
+        settings = self._read_json(SETTINGS_PATH)
+        profiles = settings.get("profiles") if isinstance(settings, dict) else None
+        if not isinstance(profiles, dict):
+            return
+
+        for appid, profile in profiles.items():
+            if not str(appid).isdigit():
+                continue
+
+            if not isinstance(profile, dict):
+                continue
+
+            original_launch_options = profile.get("originalLaunchOptions")
+            if not original_launch_options:
+                continue
+
+            self._backup_original_launch_options(appid, original_launch_options)
+
+    async def backup_existing_original_launch_options(self):
+        try:
+            await asyncio.to_thread(self._backup_existing_original_launch_options)
+        except (OSError, IOError, TypeError, ValueError) as e:
+            log(f"Failed to backup existing original launch options: {e}")
 
     async def cleanup(self):
         pass
