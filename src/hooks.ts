@@ -207,6 +207,7 @@ export function useSettings() {
       path: string,
       value: any,
       syncCommonFields = true,
+      syncLaunchOptionIds?: string[],
     ) => {
       const commonFields = ["name", "group", "valueId", "priority"]
       setSettings((draft) => {
@@ -214,18 +215,24 @@ export function useSettings() {
           (item) => item.id === launchOption.id,
         )
         if (index === -1) return
+        const syncLaunchOptionIdSet = syncLaunchOptionIds
+          ? new Set(syncLaunchOptionIds)
+          : null
         set(draft, ["launchOptions", index, path], value)
 
-        // Propagate common field changes to all siblings sharing the same valueId
+        // Propagate common field changes to either a frozen caller-provided group
+        // or all siblings sharing the same valueId.
         if (
           syncCommonFields &&
-          launchOption.valueId &&
+          (syncLaunchOptionIdSet || launchOption.valueId) &&
           commonFields.includes(path)
         ) {
           for (let i = 0; i < draft.launchOptions.length; i++) {
             if (
               i !== index &&
-              draft.launchOptions[i].valueId === launchOption.valueId
+              (syncLaunchOptionIdSet
+                ? syncLaunchOptionIdSet.has(draft.launchOptions[i].id)
+                : draft.launchOptions[i].valueId === launchOption.valueId)
             ) {
               set(draft, ["launchOptions", i, path], value)
             }
@@ -247,10 +254,17 @@ export function useSettings() {
 
         // For valueId groups, global state is represented by exactly one sibling
         // having enableGlobally=true, or none (None).
-        if (path === "enableGlobally" && launchOption.valueId) {
-          const siblings = draft.launchOptions.filter(
-            (item) => item.valueId === launchOption.valueId,
-          )
+        if (
+          path === "enableGlobally" &&
+          (syncLaunchOptionIdSet || launchOption.valueId)
+        ) {
+          const siblings = syncLaunchOptionIdSet
+            ? draft.launchOptions.filter((item) =>
+                syncLaunchOptionIdSet.has(item.id),
+              )
+            : draft.launchOptions.filter(
+                (item) => item.valueId === launchOption.valueId,
+              )
           const siblingIds = siblings.map((item) => item.id)
 
           if (value) {
@@ -292,6 +306,23 @@ export function useSettings() {
             .filter((item) => item.valueId === valueId)
             .map((item) => item.id),
         )
+        if (idsToDelete.size === 0) return
+        draft.launchOptions = draft.launchOptions.filter(
+          (item) => !idsToDelete.has(item.id),
+        )
+        Object.values(draft.profiles).forEach((profile) => {
+          Object.keys(profile.state).forEach((id) => {
+            if (idsToDelete.has(id)) {
+              delete profile.state[id]
+            }
+          })
+        })
+        normalizeFallbackValues(draft)
+      })
+    },
+    deleteLaunchOptionsByIds: (ids: string[]) => {
+      setSettings((draft) => {
+        const idsToDelete = new Set(ids)
         if (idsToDelete.size === 0) return
         draft.launchOptions = draft.launchOptions.filter(
           (item) => !idsToDelete.has(item.id),
