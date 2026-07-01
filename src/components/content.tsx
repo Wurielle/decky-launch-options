@@ -90,6 +90,17 @@ export function Content() {
       <PanelSectionRow>
         <ButtonItem
           layout="below"
+          onClick={() => {
+            Navigation.Navigate(routes.envVariableMergesManagerItem("new"))
+            Navigation.CloseSideMenus()
+          }}
+        >
+          Manage env variable merges
+        </ButtonItem>
+      </PanelSectionRow>
+      <PanelSectionRow>
+        <ButtonItem
+          layout="below"
           disabled={!getInfoQuery.data?.COMMAND}
           onClick={() => {
             const command = getInfoQuery.data?.COMMAND

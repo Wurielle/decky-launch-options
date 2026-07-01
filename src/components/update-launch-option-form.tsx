@@ -1,7 +1,11 @@
 import { usePlugin } from "./plugin-provider"
-import { ConfirmModal, DialogButton, showModal } from "@decky/ui"
-import { useMemo } from "react"
+import { DialogButton } from "@decky/ui"
+import { useMemo, useRef } from "react"
 import { LaunchOptionFields } from "./launch-option-fields"
+import {
+  getDeleteLaunchOptionLabel,
+  showDeleteLaunchOptionModal,
+} from "./delete-launch-option-modal"
 
 export function UpdateLaunchOptionForm({
   id,
@@ -19,7 +23,7 @@ export function UpdateLaunchOptionForm({
   const {
     updateLaunchOption,
     deleteLaunchOption,
-    deleteLaunchOptionsByValueId,
+    deleteLaunchOptionsByIds,
     settings,
   } = usePlugin().settings
 
@@ -28,34 +32,37 @@ export function UpdateLaunchOptionForm({
     [settings.launchOptions, id],
   )
 
+  const syncedLaunchOptionIdsRef = useRef<string[] | null>(null)
+  const deleteGroupRef = useRef<boolean | null>(null)
+
+  if (data && syncedLaunchOptionIdsRef.current === null) {
+    // Freeze the modal's sibling list for its lifetime. Otherwise editing Value ID
+    // to match another group would make later synced edits/delete affect that group too.
+    deleteGroupRef.current = !!data.valueId
+    syncedLaunchOptionIdsRef.current = data.valueId
+      ? settings.launchOptions
+          .filter((launchOption) => launchOption.valueId === data.valueId)
+          .map((launchOption) => launchOption.id)
+      : [data.id]
+  }
+
   if (!data) return null
+  const deleteGroup = !!deleteGroupRef.current
 
   function remove() {
     if (!data) return null
-    return showModal(
-      <ConfirmModal
-        strTitle={
-          deleteByValueId && data.valueId
-            ? "Remove launch options"
-            : "Remove launch option"
+    return showDeleteLaunchOptionModal({
+      launchOption: data,
+      deleteGroup: deleteByValueId && deleteGroup,
+      onDelete: () => {
+        if (deleteByValueId && deleteGroup) {
+          deleteLaunchOptionsByIds(syncedLaunchOptionIdsRef.current || [])
+        } else {
+          deleteLaunchOption(data.id)
         }
-        strDescription={
-          deleteByValueId && data.valueId
-            ? `Do you want to remove all launch options with Value ID "${data.valueId}"?`
-            : `Do you want to remove the "${data.name || "Unnamed"}" launch option?`
-        }
-        strOKButtonText="Confirm"
-        strCancelButtonText="Cancel"
-        onOK={async () => {
-          if (deleteByValueId && data.valueId) {
-            deleteLaunchOptionsByValueId(data.valueId)
-          } else {
-            deleteLaunchOption(data.id)
-          }
-          onDelete?.()
-        }}
-      />,
-    )
+        onDelete?.()
+      },
+    })
   }
 
   return (
@@ -63,7 +70,13 @@ export function UpdateLaunchOptionForm({
       <LaunchOptionFields
         data={data}
         onChange={(field, value) =>
-          updateLaunchOption(data, field, value, syncCommonFields)
+          updateLaunchOption(
+            data,
+            field,
+            value,
+            syncCommonFields,
+            syncedLaunchOptionIdsRef.current || undefined,
+          )
         }
         commonOnly={commonOnly}
       />
@@ -74,9 +87,7 @@ export function UpdateLaunchOptionForm({
             fontWeight: "bold",
           }}
         >
-          {deleteByValueId && data.valueId
-            ? "Remove launch options"
-            : "Remove launch option"}
+          {getDeleteLaunchOptionLabel(deleteByValueId && deleteGroup)}
         </div>
       </DialogButton>
     </div>
