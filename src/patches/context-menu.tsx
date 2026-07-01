@@ -33,7 +33,7 @@ const spliceItem = (children: any[], appid: number) => {
           Navigation.Navigate(routes.appLaunchOptions(appid))
         }}
       >
-        {"Launch options"}
+        {"Launch Options"}
       </MenuItem>
     </ApplyLaunchOptions>,
   )
