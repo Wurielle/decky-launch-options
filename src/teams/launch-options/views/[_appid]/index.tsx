@@ -7,9 +7,12 @@ import {
   Field,
   findModule,
   Focusable,
+  Menu,
+  MenuItem,
   ModalRoot,
   NavEntryPositionPreferences,
   PanelSectionRow,
+  showContextMenu,
   showModal,
   Tabs,
   TextField,
@@ -20,8 +23,9 @@ import {
 import { SingleDropdownOption } from "@decky/ui/dist/components/Dropdown"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSettings } from "../../../../hooks"
-import { FaPen } from "react-icons/fa"
+import { FaEllipsisH } from "react-icons/fa"
 import { UpdateLaunchOptionForm } from "../../../../components/update-launch-option-form"
+import { showDeleteLaunchOptionModal } from "../../../../components/delete-launch-option-modal"
 import { PluginProvider } from "../../../../components/plugin-provider"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { queryClient } from "../../../../query"
@@ -303,6 +307,46 @@ interface LaunchOptionItemProps {
   setFocusTargetId: (id: string) => void
   onToggle: (value: boolean) => void
   onEdit: () => void
+  onDuplicate: () => void
+  onDelete: () => void
+}
+
+function LaunchOptionActionButton({
+  onEdit,
+  onDuplicate,
+  onDelete,
+}: {
+  onEdit: () => void
+  onDuplicate: () => void
+  onDelete: () => void
+}) {
+  const showActions = (event: any) => {
+    let menu: ReturnType<typeof showContextMenu>
+    const runAction = (action: () => void) => () => {
+      menu.Hide()
+      action()
+    }
+
+    menu = showContextMenu(
+      <Menu label="Launch option actions" onCancel={() => menu.Hide()}>
+        <MenuItem onSelected={runAction(onEdit)}>Edit</MenuItem>
+        <MenuItem onSelected={runAction(onDuplicate)}>Duplicate</MenuItem>
+        <MenuItem tone="destructive" onSelected={runAction(onDelete)}>
+          Remove
+        </MenuItem>
+      </Menu>,
+      event.currentTarget,
+    )
+  }
+
+  return (
+    <DialogButton
+      style={{ minWidth: 40, width: 40, height: 40, padding: 0 }}
+      onClick={showActions}
+    >
+      <FaEllipsisH />
+    </DialogButton>
+  )
 }
 
 function LaunchOptionItem({
@@ -315,6 +359,8 @@ function LaunchOptionItem({
   setFocusTargetId,
   onToggle,
   onEdit,
+  onDuplicate,
+  onDelete,
 }: LaunchOptionItemProps) {
   const activeColor = "oklch(80.9% 0.105 251.813)"
   const focusId = `launch-option:${launchOption.id}`
@@ -353,12 +399,11 @@ function LaunchOptionItem({
             onToggle(value)
           }}
         />
-        <DialogButton
-          style={{ minWidth: 40, width: 40, height: 40, padding: 0 }}
-          onClick={onEdit}
-        >
-          <FaPen />
-        </DialogButton>
+        <LaunchOptionActionButton
+          onEdit={onEdit}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
+        />
       </Focusable>
     </Field>
   )
@@ -382,6 +427,8 @@ interface ValueIdSelectItemProps {
   focusTargetId: string | null
   setFocusTargetId: (id: string) => void
   onEdit: (id: string) => void
+  onDuplicate: (id: string) => void
+  onDelete: (id: string) => void
 }
 
 function ValueIdSelectItem({
@@ -397,6 +444,8 @@ function ValueIdSelectItem({
   focusTargetId,
   setFocusTargetId,
   onEdit,
+  onDuplicate,
+  onDelete,
 }: ValueIdSelectItemProps) {
   const activeColor = "oklch(80.9% 0.105 251.813)"
   const focusId = `value-id:${valueId}`
@@ -463,12 +512,13 @@ function ValueIdSelectItem({
             />
           </div>
         </Focusable>
-        <DialogButton
-          style={{ minWidth: 40, width: 40, height: 40, padding: 0 }}
-          onClick={() => onEdit(selectedOption?.id ?? launchOptions[0].id)}
-        >
-          <FaPen />
-        </DialogButton>
+        <LaunchOptionActionButton
+          onEdit={() => onEdit(selectedOption?.id ?? launchOptions[0].id)}
+          onDuplicate={() =>
+            onDuplicate(selectedOption?.id ?? launchOptions[0].id)
+          }
+          onDelete={() => onDelete(selectedOption?.id ?? launchOptions[0].id)}
+        />
       </Focusable>
     </Field>
   )
@@ -494,6 +544,8 @@ interface RenderItemsParams {
   focusTargetId: string | null
   setFocusTargetId: (id: string) => void
   onEdit: (id: string) => void
+  onDuplicate: (id: string) => void
+  onDelete: (id: string) => void
 }
 
 function renderLaunchOptionItems({
@@ -507,6 +559,8 @@ function renderLaunchOptionItems({
   focusTargetId,
   setFocusTargetId,
   onEdit,
+  onDuplicate,
+  onDelete,
 }: RenderItemsParams) {
   const result: React.ReactNode[] = []
   const processedValueIds = new Set<string>()
@@ -539,6 +593,8 @@ function renderLaunchOptionItems({
           focusTargetId={focusTargetId}
           setFocusTargetId={setFocusTargetId}
           onEdit={onEdit}
+          onDuplicate={onDuplicate}
+          onDelete={onDelete}
         />,
       )
     } else {
@@ -557,6 +613,8 @@ function renderLaunchOptionItems({
             setAppLaunchOptionState(appid, launchOption.id, value)
           }
           onEdit={() => onEdit(launchOption.id)}
+          onDuplicate={() => onDuplicate(launchOption.id)}
+          onDelete={() => onDelete(launchOption.id)}
         />,
       )
     }
@@ -619,6 +677,9 @@ export function AppLaunchOptionsPage() {
     setAppOriginalLaunchOptions,
     getAppDisableAutoManageLaunchOptions,
     setAppDisableAutoManageLaunchOptions,
+    duplicateLaunchOption,
+    deleteLaunchOption,
+    deleteLaunchOptionsByValueId,
   } = useSettings()
   const globalValueIds = useMemo(() => {
     const valueIds = new Set<string>()
@@ -788,6 +849,26 @@ export function AppLaunchOptionsPage() {
     },
     [appid],
   )
+  const confirmDeleteLaunchOption = useCallback(
+    (id: string) => {
+      const launchOption = settings.launchOptions.find((item) => item.id === id)
+      if (!launchOption) return
+
+      const deleteGroup = !!launchOption.valueId
+      showDeleteLaunchOptionModal({
+        launchOption,
+        deleteGroup,
+        onDelete: () => {
+          if (deleteGroup) {
+            deleteLaunchOptionsByValueId(launchOption.valueId)
+          } else {
+            deleteLaunchOption(launchOption.id)
+          }
+        },
+      })
+    },
+    [deleteLaunchOption, deleteLaunchOptionsByValueId, settings.launchOptions],
+  )
   const handleShowTab = useCallback((nextTab: string) => {
     setFocusTarget(null)
     setTab(nextTab)
@@ -834,7 +915,6 @@ export function AppLaunchOptionsPage() {
                     description={getAppOriginalLaunchOptions(appid)}
                     indentLevel={1}
                     disabled={!getAppDisableAutoManageLaunchOptions(appid)}
-                    indentLevel={1}
                     onClick={() => {
                       SteamClient.Apps.SetAppLaunchOptions(
                         Number(appid),
@@ -898,6 +978,8 @@ export function AppLaunchOptionsPage() {
                   focusTargetId,
                   setFocusTargetId,
                   onEdit: showUpdateLaunchOptionFormModal,
+                  onDuplicate: duplicateLaunchOption,
+                  onDelete: confirmDeleteLaunchOption,
                 })}
               </Focusable>
             ),
@@ -947,6 +1029,8 @@ export function AppLaunchOptionsPage() {
                   focusTargetId,
                   setFocusTargetId,
                   onEdit: showUpdateLaunchOptionFormModal,
+                  onDuplicate: duplicateLaunchOption,
+                  onDelete: confirmDeleteLaunchOption,
                 })}
               </Focusable>
             ),
@@ -1003,6 +1087,8 @@ export function AppLaunchOptionsPage() {
                         focusTargetId,
                         setFocusTargetId,
                         onEdit: showUpdateLaunchOptionFormModal,
+                        onDuplicate: duplicateLaunchOption,
+                        onDelete: confirmDeleteLaunchOption,
                       })}
                     </div>
                   )

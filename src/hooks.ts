@@ -1,6 +1,7 @@
 import { set } from "es-toolkit/compat"
 import { useEffect, useRef, useState } from "react"
 import { produce, WritableDraft } from "immer"
+import { v4 as uuid } from "uuid"
 import {
   defaultEnvVariableMerges,
   EnvVariableMerge,
@@ -107,6 +108,41 @@ export function useSettings() {
     })
   }
 
+  const getCopyLabel = (label: string, existingLabels: Iterable<string>) => {
+    const baseLabel = label || "Unnamed"
+    const labels = new Set(existingLabels)
+    let nextLabel = `${baseLabel} (Copy)`
+    let index = 2
+
+    while (labels.has(nextLabel)) {
+      nextLabel = `${baseLabel} (Copy ${index})`
+      index++
+    }
+
+    return nextLabel
+  }
+
+  const getCopyValueId = (
+    valueId: string,
+    existingValueIds: Iterable<string>,
+  ) => {
+    const baseValueId =
+      valueId
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") || "unnamed"
+    const valueIds = new Set(existingValueIds)
+    let nextValueId = ""
+
+    do {
+      const suffix = uuid().replace(/-/g, "").slice(0, 4)
+      nextValueId = `${baseValueId}-copy-${suffix}`
+    } while (valueIds.has(nextValueId))
+
+    return nextValueId
+  }
+
   const getSelectedValueIdLaunchOptionId = (
     appid: string,
     valueId: string,
@@ -193,6 +229,7 @@ export function useSettings() {
       path: string,
       value: any,
       syncCommonFields = true,
+      syncLaunchOptionIds?: string[],
     ) => {
       const commonFields = ["name", "group", "valueId", "priority"]
       setSettings((draft) => {
@@ -200,18 +237,24 @@ export function useSettings() {
           (item) => item.id === launchOption.id,
         )
         if (index === -1) return
+        const syncLaunchOptionIdSet = syncLaunchOptionIds
+          ? new Set(syncLaunchOptionIds)
+          : null
         set(draft, ["launchOptions", index, path], value)
 
-        // Propagate common field changes to all siblings sharing the same valueId
+        // Propagate common field changes to either a frozen caller-provided group
+        // or all siblings sharing the same valueId.
         if (
           syncCommonFields &&
-          launchOption.valueId &&
+          (syncLaunchOptionIdSet || launchOption.valueId) &&
           commonFields.includes(path)
         ) {
           for (let i = 0; i < draft.launchOptions.length; i++) {
             if (
               i !== index &&
-              draft.launchOptions[i].valueId === launchOption.valueId
+              (syncLaunchOptionIdSet
+                ? syncLaunchOptionIdSet.has(draft.launchOptions[i].id)
+                : draft.launchOptions[i].valueId === launchOption.valueId)
             ) {
               set(draft, ["launchOptions", i, path], value)
             }
@@ -233,10 +276,17 @@ export function useSettings() {
 
         // For valueId groups, global state is represented by exactly one sibling
         // having enableGlobally=true, or none (None).
-        if (path === "enableGlobally" && launchOption.valueId) {
-          const siblings = draft.launchOptions.filter(
-            (item) => item.valueId === launchOption.valueId,
-          )
+        if (
+          path === "enableGlobally" &&
+          (syncLaunchOptionIdSet || launchOption.valueId)
+        ) {
+          const siblings = syncLaunchOptionIdSet
+            ? draft.launchOptions.filter((item) =>
+                syncLaunchOptionIdSet.has(item.id),
+              )
+            : draft.launchOptions.filter(
+                (item) => item.valueId === launchOption.valueId,
+              )
           const siblingIds = siblings.map((item) => item.id)
 
           if (value) {
@@ -289,6 +339,77 @@ export function useSettings() {
             }
           })
         })
+        normalizeFallbackValues(draft)
+      })
+    },
+    deleteLaunchOptionsByIds: (ids: string[]) => {
+      setSettings((draft) => {
+        const idsToDelete = new Set(ids)
+        if (idsToDelete.size === 0) return
+        draft.launchOptions = draft.launchOptions.filter(
+          (item) => !idsToDelete.has(item.id),
+        )
+        Object.values(draft.profiles).forEach((profile) => {
+          Object.keys(profile.state).forEach((id) => {
+            if (idsToDelete.has(id)) {
+              delete profile.state[id]
+            }
+          })
+        })
+        normalizeFallbackValues(draft)
+      })
+    },
+    duplicateLaunchOption: (id: LaunchOption["id"]) => {
+      setSettings((draft) => {
+        const launchOption = draft.launchOptions.find((item) => item.id === id)
+        if (!launchOption) return
+
+        if (!launchOption.valueId) {
+          const name = getCopyLabel(
+            launchOption.name,
+            draft.launchOptions.map((item) => item.name),
+          )
+          draft.launchOptions.unshift(
+            launchOptionFactory({
+              ...launchOption,
+              id: undefined,
+              name,
+            }),
+          )
+          normalizeFallbackValues(draft)
+          return
+        }
+
+        const siblings = draft.launchOptions.filter(
+          (item) => item.valueId === launchOption.valueId,
+        )
+        const valueId = getCopyValueId(
+          launchOption.valueId,
+          draft.launchOptions.map((item) => item.valueId).filter(Boolean),
+        )
+        const namesByOriginalName = new Map<string, string>()
+
+        ;[...siblings].reverse().forEach((sibling) => {
+          if (!namesByOriginalName.has(sibling.name)) {
+            namesByOriginalName.set(
+              sibling.name,
+              getCopyLabel(
+                sibling.name,
+                draft.launchOptions.map((item) => item.name),
+              ),
+            )
+          }
+
+          draft.launchOptions.unshift(
+            launchOptionFactory({
+              ...sibling,
+              id: undefined,
+              name: namesByOriginalName.get(sibling.name) || sibling.name,
+              valueId,
+            }),
+          )
+        })
+
         normalizeFallbackValues(draft)
       })
     },
