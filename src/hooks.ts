@@ -1,6 +1,7 @@
 import { set } from "es-toolkit/compat"
 import { useEffect, useRef, useState } from "react"
 import { produce, WritableDraft } from "immer"
+import { v4 as uuid } from "uuid"
 import {
   defaultEnvVariableMerges,
   EnvVariableMerge,
@@ -119,6 +120,27 @@ export function useSettings() {
     }
 
     return nextLabel
+  }
+
+  const getCopyValueId = (
+    valueId: string,
+    existingValueIds: Iterable<string>,
+  ) => {
+    const baseValueId =
+      valueId
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "") || "unnamed"
+    const valueIds = new Set(existingValueIds)
+    let nextValueId = ""
+
+    do {
+      const suffix = uuid().replace(/-/g, "").slice(0, 4)
+      nextValueId = `${baseValueId}-copy-${suffix}`
+    } while (valueIds.has(nextValueId))
+
+    return nextValueId
   }
 
   const getSelectedValueIdLaunchOptionId = (
@@ -361,7 +383,7 @@ export function useSettings() {
         const siblings = draft.launchOptions.filter(
           (item) => item.valueId === launchOption.valueId,
         )
-        const valueId = getCopyLabel(
+        const valueId = getCopyValueId(
           launchOption.valueId,
           draft.launchOptions.map((item) => item.valueId).filter(Boolean),
         )
