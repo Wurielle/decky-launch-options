@@ -341,7 +341,15 @@ function LaunchOptionActionButton({
 
   return (
     <DialogButton
-      style={{ minWidth: 40, width: 40, height: 40, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+      style={{
+        minWidth: 40,
+        width: 40,
+        height: 40,
+        padding: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
       onClick={showActions}
     >
       <FaEllipsisV />
