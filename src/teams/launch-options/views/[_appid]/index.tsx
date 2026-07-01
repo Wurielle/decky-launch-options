@@ -23,7 +23,7 @@ import {
 import { SingleDropdownOption } from "@decky/ui/dist/components/Dropdown"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSettings } from "../../../../hooks"
-import { FaEllipsisH } from "react-icons/fa"
+import { FaEllipsisV } from "react-icons/fa"
 import { UpdateLaunchOptionForm } from "../../../../components/update-launch-option-form"
 import { showDeleteLaunchOptionModal } from "../../../../components/delete-launch-option-modal"
 import { PluginProvider } from "../../../../components/plugin-provider"
@@ -341,10 +341,10 @@ function LaunchOptionActionButton({
 
   return (
     <DialogButton
-      style={{ minWidth: 40, width: 40, height: 40, padding: 0 }}
+      style={{ minWidth: 40, width: 40, height: 40, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       onClick={showActions}
     >
-      <FaEllipsisH />
+      <FaEllipsisV />
     </DialogButton>
   )
 }
