@@ -331,7 +331,9 @@ function LaunchOptionActionButton({
       <Menu label="Launch option actions" onCancel={() => menu.Hide()}>
         <MenuItem onSelected={runAction(onEdit)}>Edit</MenuItem>
         <MenuItem onSelected={runAction(onDuplicate)}>Duplicate</MenuItem>
-        <MenuItem tone="destructive" onSelected={runAction(onDelete)}>Remove</MenuItem>
+        <MenuItem tone="destructive" onSelected={runAction(onDelete)}>
+          Remove
+        </MenuItem>
       </Menu>,
       event.currentTarget,
     )
