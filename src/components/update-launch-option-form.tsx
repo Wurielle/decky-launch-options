@@ -1,7 +1,11 @@
 import { usePlugin } from "./plugin-provider"
-import { ConfirmModal, DialogButton, showModal } from "@decky/ui"
+import { DialogButton } from "@decky/ui"
 import { useMemo, useRef } from "react"
 import { LaunchOptionFields } from "./launch-option-fields"
+import {
+  getDeleteLaunchOptionLabel,
+  showDeleteLaunchOptionModal,
+} from "./delete-launch-option-modal"
 
 export function UpdateLaunchOptionForm({
   id,
@@ -47,30 +51,18 @@ export function UpdateLaunchOptionForm({
 
   function remove() {
     if (!data) return null
-    return showModal(
-      <ConfirmModal
-        strTitle={
-          deleteByValueId && deleteGroup
-            ? "Remove launch options"
-            : "Remove launch option"
+    return showDeleteLaunchOptionModal({
+      launchOption: data,
+      deleteGroup: deleteByValueId && deleteGroup,
+      onDelete: () => {
+        if (deleteByValueId && deleteGroup) {
+          deleteLaunchOptionsByIds(syncedLaunchOptionIdsRef.current || [])
+        } else {
+          deleteLaunchOption(data.id)
         }
-        strDescription={
-          deleteByValueId && deleteGroup
-            ? "Do you want to remove this launch option group?"
-            : `Do you want to remove the "${data.name || "Unnamed"}" launch option?`
-        }
-        strOKButtonText="Confirm"
-        strCancelButtonText="Cancel"
-        onOK={async () => {
-          if (deleteByValueId && deleteGroup) {
-            deleteLaunchOptionsByIds(syncedLaunchOptionIdsRef.current || [])
-          } else {
-            deleteLaunchOption(data.id)
-          }
-          onDelete?.()
-        }}
-      />,
-    )
+        onDelete?.()
+      },
+    })
   }
 
   return (
@@ -95,9 +87,7 @@ export function UpdateLaunchOptionForm({
             fontWeight: "bold",
           }}
         >
-          {deleteByValueId && deleteGroup
-            ? "Remove launch options"
-            : "Remove launch option"}
+          {getDeleteLaunchOptionLabel(deleteByValueId && deleteGroup)}
         </div>
       </DialogButton>
     </div>
