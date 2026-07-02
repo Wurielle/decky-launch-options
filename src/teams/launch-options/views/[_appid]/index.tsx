@@ -34,12 +34,14 @@ import {
   useDeleteOriginalLaunchOptionsBackupsMutation,
   useGetOriginalLaunchOptionsBackupsQuery,
 } from "../../../../query"
+import { AppDetails } from "@decky/ui/dist/globals/steam-client/App"
 import { CreateLaunchOptionForm } from "../../../../components/create-launch-option-form"
 import { LaunchOption } from "../../../../shared"
 import { settingsStore, type LaunchOptionSort } from "../../../../stores"
 import { useStore } from "@tanstack/react-store"
 import { LaunchOptionActionButton } from "../../../../components/launch-option-action-button"
 import { FaEllipsisV } from "react-icons/fa"
+import { copyTextToClipboard } from "../../../../utils"
 
 type LaunchOptionScope = "local" | "global"
 
@@ -420,6 +422,12 @@ function LaunchOptionsBackupsModal({
                 onSelected: () => onRestore(backup.command),
               },
               {
+                label: "Copy to clipboard",
+                onSelected: () => {
+                  copyTextToClipboard(backup.command)
+                },
+              },
+              {
                 label: "Delete",
                 tone: "destructive",
                 onSelected: () => confirmDeleteBackup(backup.id, backup.date),
@@ -751,6 +759,7 @@ export function AppLaunchOptionsPage() {
   const { appid } = useParams<{ appid: string }>()
   const [tab, setTab] = useState<string>("local")
   const [revertedLaunchOptions, setRevertedLaunchOptions] = useState(false)
+  const [currentLaunchOptions, setCurrentLaunchOptions] = useState("")
   const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy)
   const showCommands = useStore(settingsStore, (state) => state.showCommands)
   const launchOptionSort = useStore(
@@ -912,6 +921,16 @@ export function AppLaunchOptionsPage() {
     }, 100)
     setReadyToShow(false)
   }, [tab])
+  useEffect(() => {
+    const { unregister } = SteamClient.Apps.RegisterForAppDetails(
+      Number(appid),
+      (details: AppDetails) => {
+        setCurrentLaunchOptions(details.strLaunchOptions)
+      },
+    )
+
+    return unregister
+  }, [appid])
   const showCreateLaunchOptionFormModal = useCallback(() => {
     const isGroupTab =
       tab !== "local" && tab !== "global" && tab !== advancedTabId
@@ -1039,8 +1058,26 @@ export function AppLaunchOptionsPage() {
                 />
                 {getAppOriginalLaunchOptions(appid) && (
                   <ButtonItem
-                    label={"Revert to original launch options"}
-                    description={getAppOriginalLaunchOptions(appid)}
+                    label={"Revert app launch options to original value"}
+                    description={
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2,
+                        }}
+                      >
+                        <div>
+                          <strong>Current:</strong>{" "}
+                          {currentLaunchOptions.trim() || "(empy)"}
+                        </div>
+                        <div>
+                          <strong>Original:</strong>{" "}
+                          {getAppOriginalLaunchOptions(appid).trim() ||
+                            "(empy)"}
+                        </div>
+                      </div>
+                    }
                     indentLevel={1}
                     disabled={!getAppDisableAutoManageLaunchOptions(appid)}
                     onClick={() => {
@@ -1048,6 +1085,10 @@ export function AppLaunchOptionsPage() {
                         Number(appid),
                         getAppOriginalLaunchOptions(appid),
                       )
+                      setCurrentLaunchOptions(
+                        getAppOriginalLaunchOptions(appid),
+                      )
+                      setAppOriginalLaunchOptions(appid, "")
                       setRevertedLaunchOptions(true)
                       window.setTimeout(
                         () => setRevertedLaunchOptions(false),
@@ -1055,9 +1096,7 @@ export function AppLaunchOptionsPage() {
                       )
                     }}
                   >
-                    {revertedLaunchOptions
-                      ? "✅ Reverted to original launch options"
-                      : "Revert to original launch options"}
+                    {revertedLaunchOptions ? "✅ Reverted" : "Revert"}
                   </ButtonItem>
                 )}
                 <Field
