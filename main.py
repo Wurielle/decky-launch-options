@@ -162,7 +162,30 @@ class Plugin:
 
         return Path(BACKUPS_PATH) / appid
 
+    def _is_dlo_launch_options_command(self, command):
+        return (
+            COMMAND in command
+            or SHORT_SH_COMMAND_PATH in command
+            or FULL_SH_COMMAND_PATH in command
+        )
+
+    def _should_backup_original_launch_options(self, appid, command):
+        if not isinstance(command, str) or not command.strip():
+            return False
+
+        if self._is_dlo_launch_options_command(command):
+            return False
+
+        backup_folder_path = self._get_backup_folder_path(appid)
+        if not backup_folder_path.exists():
+            return True
+
+        return True
+
     def _backup_original_launch_options(self, appid, command):
+        if not self._should_backup_original_launch_options(appid, command):
+            return
+
         backup_folder_path = self._get_backup_folder_path(appid)
         backup_folder_path.mkdir(parents=True, exist_ok=True)
 
@@ -174,6 +197,25 @@ class Plugin:
         self._backup_existing_original_launch_options()
         self._backup_original_launch_options(appid, command)
 
+    def _get_original_launch_options_backups(self, appid):
+        backup_folder_path = self._get_backup_folder_path(appid)
+        if not backup_folder_path.exists():
+            return []
+
+        backups = []
+        for backup_path in backup_folder_path.glob("*.txt"):
+            try:
+                timestamp = datetime.fromisoformat(backup_path.stem)
+                backups.append({
+                    "date": timestamp.isoformat(),
+                    "command": backup_path.read_text(encoding='utf-8'),
+                })
+            except (OSError, IOError, ValueError):
+                continue
+
+        backups.sort(key=lambda backup: backup["date"], reverse=True)
+        return backups
+
     async def backup_original_launch_options(self, appid, command):
         try:
             await asyncio.to_thread(
@@ -183,6 +225,16 @@ class Plugin:
             )
         except (OSError, IOError, TypeError, ValueError) as e:
             log(f"Failed to backup original launch options for {appid}: {e}")
+
+    async def get_original_launch_options_backups(self, appid):
+        try:
+            return await asyncio.to_thread(
+                self._get_original_launch_options_backups,
+                appid,
+            )
+        except (OSError, IOError, TypeError, ValueError) as e:
+            log(f"Failed to get original launch options backups for {appid}: {e}")
+            return []
 
     def _backup_existing_original_launch_options(self):
         backups_path = Path(BACKUPS_PATH)

@@ -23,7 +23,10 @@ import { UpdateLaunchOptionForm } from "../../../../components/update-launch-opt
 import { showDeleteLaunchOptionModal } from "../../../../components/delete-launch-option-modal"
 import { PluginProvider } from "../../../../components/plugin-provider"
 import { QueryClientProvider } from "@tanstack/react-query"
-import { queryClient } from "../../../../query"
+import {
+  queryClient,
+  useGetOriginalLaunchOptionsBackupsQuery,
+} from "../../../../query"
 import { CreateLaunchOptionForm } from "../../../../components/create-launch-option-form"
 import { LaunchOption } from "../../../../shared"
 import { settingsStore, type LaunchOptionSort } from "../../../../stores"
@@ -290,6 +293,52 @@ function ModalWrapper({ title, children, onClose }: ModalWrapperProps) {
         </QueryClientProvider>
       </DialogBody>
     </ModalRoot>
+  )
+}
+
+interface LaunchOptionsBackupsModalProps {
+  appid: string
+  onRestore: (command: string) => void
+}
+
+function formatBackupDate(date: string): string {
+  const parsedDate = new Date(date)
+  if (Number.isNaN(parsedDate.getTime())) return date
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(parsedDate)
+}
+
+function LaunchOptionsBackupsModal({
+  appid,
+  onRestore,
+}: LaunchOptionsBackupsModalProps) {
+  const backupsQuery = useGetOriginalLaunchOptionsBackupsQuery(appid)
+  const backups = backupsQuery.data ?? []
+
+  if (backupsQuery.isLoading) {
+    return <div>Loading backups...</div>
+  }
+
+  if (!backups.length) {
+    return <div>No launch option backups found for this app.</div>
+  }
+
+  return (
+    <Focusable>
+      {backups.map((backup) => (
+        <ButtonItem
+          key={`${backup.date}:${backup.command}`}
+          label={formatBackupDate(backup.date)}
+          description={backup.command || "(empy)"}
+          onClick={() => onRestore(backup.command)}
+        >
+          Restore
+        </ButtonItem>
+      ))}
+    </Focusable>
   )
 }
 
@@ -807,6 +856,22 @@ export function AppLaunchOptionsPage() {
     },
     [appid],
   )
+  const showLaunchOptionsBackupsModal = useCallback(() => {
+    const modalResult = showModal(
+      <ModalWrapper
+        title="Launch option backups"
+        onClose={() => modalResult.Close()}
+      >
+        <LaunchOptionsBackupsModal
+          appid={appid}
+          onRestore={(command) => {
+            setAppOriginalLaunchOptions(appid, command)
+            modalResult.Close()
+          }}
+        />
+      </ModalWrapper>,
+    )
+  }, [appid, setAppOriginalLaunchOptions])
   const confirmDeleteLaunchOption = useCallback(
     (id: string) => {
       const launchOption = settings.launchOptions.find((item) => item.id === id)
@@ -890,6 +955,13 @@ export function AppLaunchOptionsPage() {
                       : "Revert to original launch options"}
                   </ButtonItem>
                 )}
+                <ButtonItem
+                  label={"Original launch option backups"}
+                  description={"Show backed up original launch options"}
+                  onClick={showLaunchOptionsBackupsModal}
+                >
+                  Show
+                </ButtonItem>
               </Focusable>
             ),
           },

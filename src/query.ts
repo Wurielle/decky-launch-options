@@ -16,6 +16,10 @@ export const queryClient = new QueryClient()
 export const keys = {
   settings: () => ["settings"],
   info: () => ["info"],
+  originalLaunchOptionsBackups: (appid: string) => [
+    "original-launch-options-backups",
+    appid,
+  ],
 }
 
 export const get_info = callable<
@@ -40,6 +44,15 @@ export const backup_original_launch_options = callable<
   [appid: string, command: string],
   void
 >("backup_original_launch_options")
+export const get_original_launch_options_backups = callable<
+  [appid: string],
+  OriginalLaunchOptionsBackup[]
+>("get_original_launch_options_backups")
+
+export interface OriginalLaunchOptionsBackup {
+  date: string
+  command: string
+}
 
 export const useGetInfoQuery = () =>
   useQuery({
@@ -74,6 +87,14 @@ export const useBackupOriginalLaunchOptionsMutation = () =>
   useMutation<void, Error, { appid: string; command: string }>({
     mutationFn(data) {
       return backup_original_launch_options(data.appid, data.command)
+    },
+  })
+
+export const useGetOriginalLaunchOptionsBackupsQuery = (appid: string) =>
+  useQuery({
+    queryKey: keys.originalLaunchOptionsBackups(appid),
+    queryFn() {
+      return get_original_launch_options_backups(appid)
     },
   })
 
@@ -130,7 +151,7 @@ export const useApplyLaunchOptionsMutation = () => {
           }),
           has_shell_script(),
         ]).then(([partialContext, hasShellScript]) => {
-          if (partialContext.originalLaunchOptions !== null) {
+          if (partialContext.originalLaunchOptions?.trim()) {
             backupOriginalLaunchOptionsMutation.mutate(
               {
                 appid: String(data.appid),
