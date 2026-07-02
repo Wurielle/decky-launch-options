@@ -9,7 +9,7 @@ import {
   showModal,
   Toggle,
 } from "@decky/ui"
-import { useMemo, useRef } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { LaunchOptionFields } from "./launch-option-fields"
 import {
   getDeleteLaunchOptionLabel,
@@ -41,7 +41,7 @@ function getCopyValueName(
   return nextLabel
 }
 
-function showIndividualLaunchOptionModal(id: string) {
+function showIndividualLaunchOptionModal(id: string, onUpdate: () => void) {
   const modalResult = showModal(
     <ModalRoot onCancel={() => modalResult.Close()}>
       <DialogHeader>Edit dropdown value</DialogHeader>
@@ -51,6 +51,7 @@ function showIndividualLaunchOptionModal(id: string) {
             <UpdateLaunchOptionForm
               id={id}
               onDelete={() => modalResult.Close()}
+              onUpdate={onUpdate}
               commonOnly={false}
               syncCommonFields={false}
             />
@@ -64,11 +65,15 @@ function showIndividualLaunchOptionModal(id: string) {
 function DropdownValueList({
   launchOption,
   siblingIds,
-  onDeleteCurrent,
+  onUpdate,
+  onDuplicate,
+  onDelete,
 }: {
   launchOption: LaunchOption
   siblingIds: string[]
-  onDeleteCurrent?: () => void
+  onUpdate: () => void
+  onDuplicate: () => void
+  onDelete: (id: string) => void
 }) {
   const {
     settings,
@@ -134,8 +139,10 @@ function DropdownValueList({
                   }
                 />
                 <LaunchOptionActionButton
-                  onEdit={() => showIndividualLaunchOptionModal(sibling.id)}
-                  onDuplicate={() =>
+                  onEdit={() =>
+                    showIndividualLaunchOptionModal(sibling.id, onUpdate)
+                  }
+                  onDuplicate={() => {
                     createLaunchOption(
                       launchOptionFactory({
                         ...sibling,
@@ -143,16 +150,15 @@ function DropdownValueList({
                         valueName: getCopyValueName(sibling, siblings),
                       }),
                     )
-                  }
+                    onDuplicate()
+                  }}
                   onDelete={() =>
                     showDeleteLaunchOptionModal({
                       launchOption: sibling,
                       deleteGroup: false,
                       onDelete: () => {
                         deleteLaunchOption(sibling.id)
-                        if (sibling.id === launchOption.id) {
-                          onDeleteCurrent?.()
-                        }
+                        onDelete(sibling.id)
                       },
                     })
                   }
@@ -169,12 +175,14 @@ function DropdownValueList({
 export function UpdateLaunchOptionForm({
   id,
   onDelete,
+  onUpdate,
   commonOnly = true,
   syncCommonFields = true,
   deleteByValueId = false,
 }: {
   id: string
   onDelete?: () => void
+  onUpdate?: () => void
   commonOnly?: boolean
   syncCommonFields?: boolean
   deleteByValueId?: boolean
@@ -193,6 +201,25 @@ export function UpdateLaunchOptionForm({
 
   const syncedLaunchOptionIdsRef = useRef<string[] | null>(null)
   const deleteGroupRef = useRef<boolean | null>(null)
+  const pendingSyncedLaunchOptionIdsRefreshRef = useRef(false)
+  const [, setSyncedLaunchOptionIdsVersion] = useState(0)
+
+  const refreshSyncedLaunchOptionIds = useCallback(
+    (launchOption: LaunchOption) => {
+      deleteGroupRef.current = !!launchOption.valueId
+      syncedLaunchOptionIdsRef.current = launchOption.valueId
+        ? settings.launchOptions
+            .filter((item) => item.valueId === launchOption.valueId)
+            .map((item) => item.id)
+        : [launchOption.id]
+      setSyncedLaunchOptionIdsVersion((version) => version + 1)
+    },
+    [settings.launchOptions],
+  )
+
+  const requestSyncedLaunchOptionIdsRefresh = useCallback(() => {
+    pendingSyncedLaunchOptionIdsRefreshRef.current = true
+  }, [])
 
   if (data && syncedLaunchOptionIdsRef.current === null) {
     // Freeze the modal's sibling list for its lifetime. Otherwise editing Value ID
@@ -204,6 +231,13 @@ export function UpdateLaunchOptionForm({
           .map((launchOption) => launchOption.id)
       : [data.id]
   }
+
+  useEffect(() => {
+    if (!data || !pendingSyncedLaunchOptionIdsRefreshRef.current) return
+
+    pendingSyncedLaunchOptionIdsRefreshRef.current = false
+    refreshSyncedLaunchOptionIds(data)
+  }, [data, refreshSyncedLaunchOptionIds])
 
   if (!data) return null
   const deleteGroup = !!deleteGroupRef.current
@@ -228,7 +262,7 @@ export function UpdateLaunchOptionForm({
     <div style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
       <LaunchOptionFields
         data={data}
-        onChange={(field, value) =>
+        onChange={(field, value) => {
           updateLaunchOption(
             data,
             field,
@@ -236,14 +270,22 @@ export function UpdateLaunchOptionForm({
             syncCommonFields,
             syncedLaunchOptionIdsRef.current || undefined,
           )
-        }
+          onUpdate?.()
+        }}
         commonOnly={commonOnly}
       />
       {commonOnly && data.valueId && (
         <DropdownValueList
           launchOption={data}
           siblingIds={syncedLaunchOptionIdsRef.current || [data.id]}
-          onDeleteCurrent={onDelete}
+          onUpdate={requestSyncedLaunchOptionIdsRefresh}
+          onDuplicate={requestSyncedLaunchOptionIdsRefresh}
+          onDelete={(deletedId) => {
+            requestSyncedLaunchOptionIdsRefresh()
+            if (deletedId === data.id) {
+              onDelete?.()
+            }
+          }}
         />
       )}
       <DialogButton style={{ flex: 1 }} onClick={remove}>
