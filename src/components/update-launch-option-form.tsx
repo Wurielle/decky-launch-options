@@ -73,7 +73,7 @@ function DropdownValueList({
   siblingIds: string[]
   onUpdate: () => void
   onDuplicate: () => void
-  onDelete: (id: string) => void
+  onDelete: (deletedId: string, siblings: LaunchOption[]) => void
 }) {
   const {
     settings,
@@ -158,7 +158,7 @@ function DropdownValueList({
                       deleteGroup: false,
                       onDelete: () => {
                         deleteLaunchOption(sibling.id)
-                        onDelete(sibling.id)
+                        onDelete(sibling.id, siblings)
                       },
                     })
                   }
@@ -193,10 +193,17 @@ export function UpdateLaunchOptionForm({
     deleteLaunchOptionsByIds,
     settings,
   } = usePlugin().settings
+  // The modal may be opened for the currently selected dropdown value, but that
+  // value can later be deleted from the in-modal list. Keep a mutable active ID
+  // so the modal can retarget another sibling instead of unmounting immediately.
+  const [activeId, setActiveId] = useState(id)
 
   const data = useMemo(
-    () => settings.launchOptions.find((launchOption) => launchOption.id === id),
-    [settings.launchOptions, id],
+    () =>
+      settings.launchOptions.find(
+        (launchOption) => launchOption.id === activeId,
+      ),
+    [settings.launchOptions, activeId],
   )
 
   const syncedLaunchOptionIdsRef = useRef<string[] | null>(null)
@@ -231,6 +238,13 @@ export function UpdateLaunchOptionForm({
           .map((launchOption) => launchOption.id)
       : [data.id]
   }
+
+  useEffect(() => {
+    setActiveId(id)
+    syncedLaunchOptionIdsRef.current = null
+    deleteGroupRef.current = null
+    pendingSyncedLaunchOptionIdsRefreshRef.current = false
+  }, [id])
 
   useEffect(() => {
     if (!data || !pendingSyncedLaunchOptionIdsRefreshRef.current) return
@@ -280,11 +294,26 @@ export function UpdateLaunchOptionForm({
           siblingIds={syncedLaunchOptionIdsRef.current || [data.id]}
           onUpdate={requestSyncedLaunchOptionIdsRefresh}
           onDuplicate={requestSyncedLaunchOptionIdsRefresh}
-          onDelete={(deletedId) => {
-            requestSyncedLaunchOptionIdsRefresh()
+          onDelete={(deletedId, siblings) => {
+            const remainingSiblings = siblings.filter(
+              (sibling) => sibling.id !== deletedId,
+            )
             if (deletedId === data.id) {
-              onDelete?.()
+              // If the form was showing the deleted value, keep editing the
+              // same dropdown group by switching to another remaining value.
+              const nextActiveSibling =
+                remainingSiblings.find((sibling) => sibling.fallbackValue) ||
+                remainingSiblings[0]
+
+              if (nextActiveSibling) {
+                setActiveId(nextActiveSibling.id)
+              } else {
+                onDelete?.()
+                return
+              }
             }
+
+            requestSyncedLaunchOptionIdsRefresh()
           }}
         />
       )}
