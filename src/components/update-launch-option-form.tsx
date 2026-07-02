@@ -21,6 +21,11 @@ import { queryClient } from "../query"
 import { PluginProvider } from "./plugin-provider"
 import { launchOptionFactory, type LaunchOption } from "../shared"
 
+interface FocusTarget {
+  id: string
+  version: number
+}
+
 function getCopyValueName(
   launchOption: LaunchOption,
   siblings: LaunchOption[],
@@ -82,6 +87,14 @@ function DropdownValueList({
     deleteLaunchOption,
   } = usePlugin().settings
   const activeColor = "oklch(80.9% 0.105 251.813)"
+  const [focusTarget, setFocusTarget] = useState<FocusTarget | null>(null)
+  const focusTargetId = focusTarget?.id ?? null
+  const setFocusTargetId = useCallback((id: string) => {
+    setFocusTarget((target) => ({
+      id,
+      version: (target?.version ?? 0) + 1,
+    }))
+  }, [])
   const siblings = useMemo(() => {
     const siblingIdSet = new Set(siblingIds)
     return settings.launchOptions
@@ -102,8 +115,9 @@ function DropdownValueList({
   return (
     <Focusable style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ fontWeight: "bold" }}>Dropdown values</div>
-      <div>
+      <div key={focusTarget?.version ?? 0}>
         {siblings.map((sibling) => {
+          const focusId = `dropdown-value:${sibling.id}`
           const label =
             sibling.valueName || sibling.on || sibling.name || "Unnamed"
           const description = (
@@ -129,14 +143,16 @@ function DropdownValueList({
               childrenLayout={"inline"}
             >
               <Focusable
+                autoFocus={focusTargetId === focusId}
                 style={{ display: "flex", gap: 10, alignItems: "center" }}
               >
                 {sibling.fallbackValue && <div>Default</div>}
                 <Toggle
                   value={sibling.fallbackValue}
-                  onChange={(value) =>
+                  onChange={(value) => {
+                    setFocusTargetId(focusId)
                     updateLaunchOption(sibling, "fallbackValue", value, false)
-                  }
+                  }}
                 />
                 <LaunchOptionActionButton
                   onEdit={() =>
