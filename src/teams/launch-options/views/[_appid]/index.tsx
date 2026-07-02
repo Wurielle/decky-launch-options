@@ -1,18 +1,14 @@
 import {
   ButtonItem,
   DialogBody,
-  DialogButton,
   DialogHeader,
   Dropdown,
   Field,
   findModule,
   Focusable,
-  Menu,
-  MenuItem,
   ModalRoot,
   NavEntryPositionPreferences,
   PanelSectionRow,
-  showContextMenu,
   showModal,
   Tabs,
   TextField,
@@ -23,7 +19,6 @@ import {
 import { SingleDropdownOption } from "@decky/ui/dist/components/Dropdown"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSettings } from "../../../../hooks"
-import { FaEllipsisV } from "react-icons/fa"
 import { UpdateLaunchOptionForm } from "../../../../components/update-launch-option-form"
 import { showDeleteLaunchOptionModal } from "../../../../components/delete-launch-option-modal"
 import { PluginProvider } from "../../../../components/plugin-provider"
@@ -33,6 +28,7 @@ import { CreateLaunchOptionForm } from "../../../../components/create-launch-opt
 import { LaunchOption } from "../../../../shared"
 import { settingsStore, type LaunchOptionSort } from "../../../../stores"
 import { useStore } from "@tanstack/react-store"
+import { LaunchOptionActionButton } from "../../../../components/launch-option-action-button"
 
 type LaunchOptionScope = "local" | "global"
 
@@ -309,52 +305,6 @@ interface LaunchOptionItemProps {
   onEdit: () => void
   onDuplicate: () => void
   onDelete: () => void
-}
-
-function LaunchOptionActionButton({
-  onEdit,
-  onDuplicate,
-  onDelete,
-}: {
-  onEdit: () => void
-  onDuplicate: () => void
-  onDelete: () => void
-}) {
-  const showActions = (event: any) => {
-    let menu: ReturnType<typeof showContextMenu>
-    const runAction = (action: () => void) => () => {
-      menu.Hide()
-      action()
-    }
-
-    menu = showContextMenu(
-      <Menu label="Launch option actions" onCancel={() => menu.Hide()}>
-        <MenuItem onSelected={runAction(onEdit)}>Edit</MenuItem>
-        <MenuItem onSelected={runAction(onDuplicate)}>Duplicate</MenuItem>
-        <MenuItem tone="destructive" onSelected={runAction(onDelete)}>
-          Remove
-        </MenuItem>
-      </Menu>,
-      event.currentTarget,
-    )
-  }
-
-  return (
-    <DialogButton
-      style={{
-        minWidth: 40,
-        width: 40,
-        height: 40,
-        padding: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-      onClick={showActions}
-    >
-      <FaEllipsisV />
-    </DialogButton>
-  )
 }
 
 function LaunchOptionItem({
