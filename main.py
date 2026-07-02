@@ -207,6 +207,7 @@ class Plugin:
             try:
                 timestamp = datetime.fromisoformat(backup_path.stem)
                 backups.append({
+                    "id": backup_path.name,
                     "date": timestamp.isoformat(),
                     "command": backup_path.read_text(encoding='utf-8'),
                 })
@@ -235,6 +236,48 @@ class Plugin:
         except (OSError, IOError, TypeError, ValueError) as e:
             log(f"Failed to get original launch options backups for {appid}: {e}")
             return []
+
+    def _delete_original_launch_options_backup(self, appid, backup_id):
+        backup_folder_path = self._get_backup_folder_path(appid)
+        backup_path = backup_folder_path / str(backup_id)
+        if (
+            backup_path.parent != backup_folder_path
+            or backup_path.suffix != ".txt"
+            or not backup_path.exists()
+        ):
+            return
+
+        backup_path.unlink()
+
+    async def delete_original_launch_options_backup(self, appid, backup_id):
+        try:
+            await asyncio.to_thread(
+                self._delete_original_launch_options_backup,
+                appid,
+                backup_id,
+            )
+        except (OSError, IOError, TypeError, ValueError) as e:
+            log(f"Failed to delete original launch options backup for {appid}: {e}")
+
+    def _delete_original_launch_options_backups(self, appid):
+        backup_folder_path = self._get_backup_folder_path(appid)
+        if not backup_folder_path.exists():
+            return
+
+        for backup_path in backup_folder_path.glob("*.txt"):
+            try:
+                backup_path.unlink()
+            except (OSError, IOError):
+                continue
+
+    async def delete_original_launch_options_backups(self, appid):
+        try:
+            await asyncio.to_thread(
+                self._delete_original_launch_options_backups,
+                appid,
+            )
+        except (OSError, IOError, TypeError, ValueError) as e:
+            log(f"Failed to delete original launch options backups for {appid}: {e}")
 
     def _backup_existing_original_launch_options(self):
         backups_path = Path(BACKUPS_PATH)

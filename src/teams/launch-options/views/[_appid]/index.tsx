@@ -1,14 +1,19 @@
 import {
   ButtonItem,
+  ConfirmModal,
   DialogBody,
+  DialogButton,
   DialogHeader,
   Dropdown,
   Field,
   findModule,
   Focusable,
+  Menu,
+  MenuItem,
   ModalRoot,
   NavEntryPositionPreferences,
   PanelSectionRow,
+  showContextMenu,
   showModal,
   Tabs,
   TextField,
@@ -25,6 +30,8 @@ import { PluginProvider } from "../../../../components/plugin-provider"
 import { QueryClientProvider } from "@tanstack/react-query"
 import {
   queryClient,
+  useDeleteOriginalLaunchOptionsBackupMutation,
+  useDeleteOriginalLaunchOptionsBackupsMutation,
   useGetOriginalLaunchOptionsBackupsQuery,
 } from "../../../../query"
 import { CreateLaunchOptionForm } from "../../../../components/create-launch-option-form"
@@ -32,6 +39,7 @@ import { LaunchOption } from "../../../../shared"
 import { settingsStore, type LaunchOptionSort } from "../../../../stores"
 import { useStore } from "@tanstack/react-store"
 import { LaunchOptionActionButton } from "../../../../components/launch-option-action-button"
+import { FaEllipsisV } from "react-icons/fa"
 
 type LaunchOptionScope = "local" | "global"
 
@@ -301,6 +309,60 @@ interface LaunchOptionsBackupsModalProps {
   onRestore: (command: string) => void
 }
 
+interface BackupAction {
+  label: string
+  tone?: "destructive"
+  onSelected: () => void
+}
+
+function BackupActionButton({
+  label,
+  actions,
+}: {
+  label: string
+  actions: BackupAction[]
+}) {
+  const showActions = (event: any) => {
+    let menu: ReturnType<typeof showContextMenu>
+    const runAction = (action: () => void) => () => {
+      menu.Hide()
+      action()
+    }
+
+    menu = showContextMenu(
+      <Menu label={label} onCancel={() => menu.Hide()}>
+        {actions.map((action) => (
+          <MenuItem
+            key={action.label}
+            tone={action.tone}
+            onSelected={runAction(action.onSelected)}
+          >
+            {action.label}
+          </MenuItem>
+        ))}
+      </Menu>,
+      event.currentTarget,
+    )
+  }
+
+  return (
+    <DialogButton
+      style={{
+        minWidth: 40,
+        width: 40,
+        height: 40,
+        padding: 0,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+      onClick={showActions}
+    >
+      <FaEllipsisV />
+    </DialogButton>
+  )
+}
+
 function formatBackupDate(date: string): string {
   const parsedDate = new Date(date)
   if (Number.isNaN(parsedDate.getTime())) return date
@@ -316,7 +378,22 @@ function LaunchOptionsBackupsModal({
   onRestore,
 }: LaunchOptionsBackupsModalProps) {
   const backupsQuery = useGetOriginalLaunchOptionsBackupsQuery(appid)
+  const deleteBackupMutation = useDeleteOriginalLaunchOptionsBackupMutation()
   const backups = backupsQuery.data ?? []
+
+  const confirmDeleteBackup = (backupId: string, date: string) => {
+    showModal(
+      <ConfirmModal
+        strTitle="Delete launch option backup"
+        strDescription={`Do you want to delete the backup from ${formatBackupDate(date)}?`}
+        strOKButtonText="Confirm"
+        strCancelButtonText="Cancel"
+        onOK={async () => {
+          deleteBackupMutation.mutate({ appid, backupId })
+        }}
+      />,
+    )
+  }
 
   if (backupsQuery.isLoading) {
     return <div>Loading backups...</div>
@@ -327,16 +404,29 @@ function LaunchOptionsBackupsModal({
   }
 
   return (
-    <Focusable>
+    <Focusable style={{ maxHeight: "55vh", overflowY: "auto" }}>
       {backups.map((backup) => (
-        <ButtonItem
+        <Field
           key={`${backup.date}:${backup.command}`}
           label={formatBackupDate(backup.date)}
           description={backup.command || "(empy)"}
-          onClick={() => onRestore(backup.command)}
+          childrenLayout={"inline"}
         >
-          Restore
-        </ButtonItem>
+          <BackupActionButton
+            label="Backup actions"
+            actions={[
+              {
+                label: "Restore",
+                onSelected: () => onRestore(backup.command),
+              },
+              {
+                label: "Delete",
+                tone: "destructive",
+                onSelected: () => confirmDeleteBackup(backup.id, backup.date),
+              },
+            ]}
+          />
+        </Field>
       ))}
     </Focusable>
   )
@@ -688,6 +778,8 @@ export function AppLaunchOptionsPage() {
     deleteLaunchOption,
     deleteLaunchOptionsByValueId,
   } = useSettings()
+  const deleteOriginalLaunchOptionsBackupsMutation =
+    useDeleteOriginalLaunchOptionsBackupsMutation()
   const globalValueIds = useMemo(() => {
     const valueIds = new Set<string>()
     settings.launchOptions.forEach((item) => {
@@ -872,6 +964,19 @@ export function AppLaunchOptionsPage() {
       </ModalWrapper>,
     )
   }, [appid, setAppOriginalLaunchOptions])
+  const confirmDeleteLaunchOptionsBackups = useCallback(() => {
+    showModal(
+      <ConfirmModal
+        strTitle="Delete launch option backups"
+        strDescription="Do you want to delete all original launch option backups for this app?"
+        strOKButtonText="Confirm"
+        strCancelButtonText="Cancel"
+        onOK={async () => {
+          deleteOriginalLaunchOptionsBackupsMutation.mutate({ appid })
+        }}
+      />,
+    )
+  }, [appid, deleteOriginalLaunchOptionsBackupsMutation])
   const confirmDeleteLaunchOption = useCallback(
     (id: string) => {
       const launchOption = settings.launchOptions.find((item) => item.id === id)
@@ -955,13 +1060,26 @@ export function AppLaunchOptionsPage() {
                       : "Revert to original launch options"}
                   </ButtonItem>
                 )}
-                <ButtonItem
+                <Field
                   label={"Original launch option backups"}
                   description={"Show backed up original launch options"}
-                  onClick={showLaunchOptionsBackupsModal}
+                  childrenLayout={"inline"}
                 >
-                  Show
-                </ButtonItem>
+                  <BackupActionButton
+                    label="Backup actions"
+                    actions={[
+                      {
+                        label: "Show",
+                        onSelected: showLaunchOptionsBackupsModal,
+                      },
+                      {
+                        label: "Delete all",
+                        tone: "destructive",
+                        onSelected: confirmDeleteLaunchOptionsBackups,
+                      },
+                    ]}
+                  />
+                </Field>
               </Focusable>
             ),
           },
