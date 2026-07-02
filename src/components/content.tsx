@@ -62,7 +62,9 @@ function DebugLogModal({ onClose }: { onClose: () => void }) {
 
 export function Content() {
   const [showMore, setShowMore] = useState(false)
-  const [copiedCommand, setCopiedCommand] = useState(false)
+  const [copyCommandStatus, setCopyCommandStatus] = useState<
+    "idle" | "success" | "error"
+  >("idle")
   const getInfoQuery = useGetInfoQuery()
   const autoManageLaunchOptions = useStore(
     settingsStore,
@@ -106,13 +108,23 @@ export function Content() {
             const command = getInfoQuery.data?.COMMAND
             if (!command) return
 
-            copyTextToClipboard(command).then(() => {
-              setCopiedCommand(true)
-              window.setTimeout(() => setCopiedCommand(false), 3000)
-            })
+            copyTextToClipboard(command).then(
+              () => {
+                setCopyCommandStatus("success")
+                window.setTimeout(() => setCopyCommandStatus("idle"), 3000)
+              },
+              () => {
+                setCopyCommandStatus("error")
+                window.setTimeout(() => setCopyCommandStatus("idle"), 3000)
+              },
+            )
           }}
         >
-          {copiedCommand ? "✅ Copied DLO command" : "Copy DLO command"}
+          {copyCommandStatus === "success"
+            ? "✅ Copied DLO command"
+            : copyCommandStatus === "error"
+              ? "Failed to copy DLO command"
+              : "Copy DLO command"}
         </ButtonItem>
       </PanelSectionRow>
       <PanelSectionRow>
