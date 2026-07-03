@@ -100,7 +100,7 @@ function sortLaunchOptions(
     return [...options].sort((a, b) => {
         if (sortActive) {
             const active =
-                Number(isLaunchOptionActive(b, appid, getAppLaunchOptionState)) -
+                Number(isLaunchOptionActive(b, appid, getAppLaunchOptionState))-
                 Number(isLaunchOptionActive(a, appid, getAppLaunchOptionState))
             if (active !== 0) return active
         }
@@ -135,13 +135,13 @@ function sortHierarchicalLaunchOptions(
 
         while (
             stack.length > 0 &&
-            stack[stack.length - 1].item.indentLevel >= item.indentLevel
-        ) {
+            stack[stack.length-1].item.indentLevel >= item.indentLevel
+            ) {
             stack.pop()
         }
 
         if (stack.length > 0) {
-            stack[stack.length - 1].children.push(node)
+            stack[stack.length-1].children.push(node)
         } else {
             roots.push(node)
         }
@@ -158,7 +158,7 @@ function sortHierarchicalLaunchOptions(
         }
 
         nodes.sort((a, b) => {
-            const active = Number(b.isActive) - Number(a.isActive)
+            const active = Number(b.isActive)-Number(a.isActive)
             if (active !== 0) return active
 
             const alphabetical = compareLaunchOptionsAlphabetically(
@@ -167,7 +167,7 @@ function sortHierarchicalLaunchOptions(
             )
             if (alphabetical !== 0) return alphabetical
 
-            return a.originalIndex - b.originalIndex
+            return a.originalIndex-b.originalIndex
         })
 
         return hasActiveNode
@@ -242,22 +242,22 @@ function buildHierarchy(options: LaunchOption[]): HierarchicalLaunchOption[] {
             if (processed.has(option.id) || option.id === parent.id) continue
 
             // Check if this option starts with the parent's name (plus a space)
-            if (option.name.startsWith(parentPrefix + " ")) {
+            if (option.name.startsWith(parentPrefix+" ")) {
                 processed.add(option.id)
                 const displayName = option.name
-                    .substring(parentPrefix.length + 1)
+                    .substring(parentPrefix.length+1)
                     .trim()
 
                 children.push({
                     launchOption: option,
                     displayName,
-                    indentLevel: parentIndent + 1,
+                    indentLevel: parentIndent+1,
                 })
 
                 // Recursively find children of this child
                 const grandchildren = findChildren(
                     option,
-                    parentIndent + 1,
+                    parentIndent+1,
                     option.name,
                 )
                 children.push(...grandchildren)
@@ -295,11 +295,11 @@ interface ModalWrapperProps {
 
 function ModalWrapper({ title, children, onClose }: ModalWrapperProps) {
     return (
-        <ModalRoot onCancel={onClose}>
-            <DialogHeader>{title}</DialogHeader>
+        <ModalRoot onCancel={ onClose }>
+            <DialogHeader>{ title }</DialogHeader>
             <DialogBody>
-                <QueryClientProvider client={queryClient}>
-                    <PluginProvider>{children}</PluginProvider>
+                <QueryClientProvider client={ queryClient }>
+                    <PluginProvider>{ children }</PluginProvider>
                 </QueryClientProvider>
             </DialogBody>
         </ModalRoot>
@@ -318,9 +318,9 @@ interface BackupAction {
 }
 
 function BackupActionButton({
-    label,
-    actions,
-}: {
+                                label,
+                                actions,
+                            }: {
     label: string
     actions: BackupAction[]
 }) {
@@ -332,16 +332,16 @@ function BackupActionButton({
         }
 
         menu = showContextMenu(
-            <Menu label={label} onCancel={() => menu.Hide()}>
-                {actions.map((action) => (
+            <Menu label={ label } onCancel={ () => menu.Hide() }>
+                { actions.map((action) => (
                     <MenuItem
-                        key={action.label}
-                        tone={action.tone}
-                        onSelected={runAction(action.onSelected)}
+                        key={ action.label }
+                        tone={ action.tone }
+                        onSelected={ runAction(action.onSelected) }
                     >
-                        {action.label}
+                        { action.label }
                     </MenuItem>
-                ))}
+                )) }
             </Menu>,
             event.currentTarget,
         )
@@ -349,7 +349,7 @@ function BackupActionButton({
 
     return (
         <DialogButton
-            style={{
+            style={ {
                 minWidth: 40,
                 width: 40,
                 height: 40,
@@ -357,10 +357,10 @@ function BackupActionButton({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-            }}
-            onClick={showActions}
+            } }
+            onClick={ showActions }
         >
-            <FaEllipsisV />
+            <FaEllipsisV/>
         </DialogButton>
     )
 }
@@ -376,9 +376,9 @@ function formatBackupDate(date: string): string {
 }
 
 function LaunchOptionsBackupsModal({
-    appid,
-    onRestore,
-}: LaunchOptionsBackupsModalProps) {
+                                       appid,
+                                       onRestore,
+                                   }: LaunchOptionsBackupsModalProps) {
     const backupsQuery = useGetOriginalLaunchOptionsBackupsQuery(appid)
     const deleteBackupMutation = useDeleteOriginalLaunchOptionsBackupMutation()
     const backups = backupsQuery.data ?? []
@@ -386,13 +386,13 @@ function LaunchOptionsBackupsModal({
     const confirmDeleteBackup = (backupId: string, date: string) => {
         showModal(
             <ConfirmModal
-                strTitle="Delete launch options backup"
-                strDescription={`Do you want to delete the backup from ${formatBackupDate(date)}?`}
+                strTitle="Delete original launch options backup"
+                strDescription={ `Do you want to delete the backup from ${ formatBackupDate(date) }?` }
                 strOKButtonText="Confirm"
                 strCancelButtonText="Cancel"
-                onOK={async () => {
+                onOK={ async () => {
                     deleteBackupMutation.mutate({ appid, backupId })
-                }}
+                } }
             />,
         )
     }
@@ -402,21 +402,21 @@ function LaunchOptionsBackupsModal({
     }
 
     if (!backups.length) {
-        return <div>No launch options backups found for this app.</div>
+        return <div>No original launch options backups found for this app.</div>
     }
 
     return (
-        <Focusable style={{ maxHeight: "55vh", overflowY: "auto" }}>
-            {backups.map((backup) => (
+        <Focusable style={ { maxHeight: "55vh", overflowY: "auto" } }>
+            { backups.map((backup) => (
                 <Field
-                    key={`${backup.date}:${backup.command}`}
-                    label={formatBackupDate(backup.date)}
-                    description={backup.command || "(empy)"}
-                    childrenLayout={"inline"}
+                    key={ `${ backup.date }:${ backup.command }` }
+                    label={ formatBackupDate(backup.date) }
+                    description={ backup.command || "(empy)" }
+                    childrenLayout={ "inline" }
                 >
                     <BackupActionButton
                         label="Backup actions"
-                        actions={[
+                        actions={ [
                             {
                                 label: "Restore",
                                 onSelected: () => onRestore(backup.command),
@@ -432,10 +432,10 @@ function LaunchOptionsBackupsModal({
                                 tone: "destructive",
                                 onSelected: () => confirmDeleteBackup(backup.id, backup.date),
                             },
-                        ]}
+                        ] }
                     />
                 </Field>
-            ))}
+            )) }
         </Focusable>
     )
 }
@@ -455,59 +455,59 @@ interface LaunchOptionItemProps {
 }
 
 function LaunchOptionItem({
-    launchOption,
-    displayName,
-    indentLevel,
-    isChecked,
-    showCommands,
-    focusTargetId,
-    setFocusTargetId,
-    onToggle,
-    onEdit,
-    onDuplicate,
-    onDelete,
-}: LaunchOptionItemProps) {
+                              launchOption,
+                              displayName,
+                              indentLevel,
+                              isChecked,
+                              showCommands,
+                              focusTargetId,
+                              setFocusTargetId,
+                              onToggle,
+                              onEdit,
+                              onDuplicate,
+                              onDelete,
+                          }: LaunchOptionItemProps) {
     const activeColor = "oklch(80.9% 0.105 251.813)"
-    const focusId = `launch-option:${launchOption.id}`
+    const focusId = `launch-option:${ launchOption.id }`
     const description = showCommands ? (
-        <span style={{ color: "oklch(55.4% 0.046 257.417)" }}>
-            {launchOption.on && (
-                <span style={{ color: isChecked ? activeColor : undefined }}>
-                    ON: {launchOption.on}
+        <span style={ { color: "oklch(55.4% 0.046 257.417)" } }>
+            { launchOption.on && (
+                <span style={ { color: isChecked ? activeColor : undefined } }>
+                    ON: { launchOption.on }
                 </span>
-            )}
-            {launchOption.on && launchOption.off && " | "}
-            {launchOption.off && (
-                <span style={{ color: !isChecked ? activeColor : undefined }}>
-                    OFF: {launchOption.off}
+            ) }
+            { launchOption.on && launchOption.off && " | " }
+            { launchOption.off && (
+                <span style={ { color: !isChecked ? activeColor : undefined } }>
+                    OFF: { launchOption.off }
                 </span>
-            )}
-            {!launchOption.on && !launchOption.off && "None"}
+            ) }
+            { !launchOption.on && !launchOption.off && "None" }
         </span>
     ) : undefined
 
     return (
         <Field
-            indentLevel={indentLevel}
-            label={displayName}
-            description={description}
-            childrenLayout={"inline"}
+            indentLevel={ indentLevel }
+            label={ displayName }
+            description={ description }
+            childrenLayout={ "inline" }
         >
             <Focusable
-                autoFocus={focusTargetId === focusId}
-                style={{ display: "flex", gap: 10, alignItems: "center" }}
+                autoFocus={ focusTargetId === focusId }
+                style={ { display: "flex", gap: 10, alignItems: "center" } }
             >
                 <Toggle
-                    value={isChecked}
-                    onChange={(value) => {
+                    value={ isChecked }
+                    onChange={ (value) => {
                         setFocusTargetId(focusId)
                         onToggle(value)
-                    }}
+                    } }
                 />
                 <LaunchOptionActionButton
-                    onEdit={onEdit}
-                    onDuplicate={onDuplicate}
-                    onDelete={onDelete}
+                    onEdit={ onEdit }
+                    onDuplicate={ onDuplicate }
+                    onDelete={ onDelete }
                 />
             </Focusable>
         </Field>
@@ -537,23 +537,23 @@ interface ValueIdSelectItemProps {
 }
 
 function ValueIdSelectItem({
-    valueId,
-    launchOptions,
-    displayName,
-    indentLevel,
-    appid,
-    showCommands,
-    getAppLaunchOptionState,
-    setAppValueIdState,
-    setValueAsDefault,
-    focusTargetId,
-    setFocusTargetId,
-    onEdit,
-    onDuplicate,
-    onDelete,
-}: ValueIdSelectItemProps) {
+                               valueId,
+                               launchOptions,
+                               displayName,
+                               indentLevel,
+                               appid,
+                               showCommands,
+                               getAppLaunchOptionState,
+                               setAppValueIdState,
+                               setValueAsDefault,
+                               focusTargetId,
+                               setFocusTargetId,
+                               onEdit,
+                               onDuplicate,
+                               onDelete,
+                           }: ValueIdSelectItemProps) {
     const activeColor = "oklch(80.9% 0.105 251.813)"
-    const focusId = `value-id:${valueId}`
+    const focusId = `value-id:${ valueId }`
 
     const selectedOption = launchOptions.find((lo) =>
         getAppLaunchOptionState(appid, lo.id),
@@ -563,42 +563,42 @@ function ValueIdSelectItem({
     const rgOptions = launchOptions
         .map((lo) => ({
             data: lo.id,
-            label: (lo.valueName || lo.on || lo.name) + "\u00A0\u00A0",
+            label: (lo.valueName || lo.on || lo.name)+"\u00A0\u00A0",
         }))
 
     const description = showCommands ? (
-        <span style={{ color: "oklch(55.4% 0.046 257.417)" }}>
-            {selectedOption?.on ? (
-                <span style={{ color: activeColor }}>ON: {selectedOption.on}</span>
+        <span style={ { color: "oklch(55.4% 0.046 257.417)" } }>
+            { selectedOption?.on ? (
+                <span style={ { color: activeColor } }>ON: { selectedOption.on }</span>
             ) : (
                 selectedOption?.valueName || selectedOption?.name || "None"
-            )}
+            ) }
         </span>
     ) : undefined
 
     return (
         <Field
-            indentLevel={indentLevel}
-            label={displayName}
-            description={description}
-            childrenLayout={"inline"}
+            indentLevel={ indentLevel }
+            label={ displayName }
+            description={ description }
+            childrenLayout={ "inline" }
         >
             <Focusable
-                autoFocus={focusTargetId === focusId}
-                style={{ display: "flex", gap: 10, alignItems: "center" }}
+                autoFocus={ focusTargetId === focusId }
+                style={ { display: "flex", gap: 10, alignItems: "center" } }
             >
-                <Focusable style={{ flex: 1 }}>
+                <Focusable style={ { flex: 1 } }>
                     <div
-                        style={{
+                        style={ {
                             display: "flex",
                             justifyContent: "stretch",
                             minWidth: 200,
-                        }}
+                        } }
                     >
                         <Dropdown
-                            rgOptions={rgOptions}
-                            selectedOption={selectedId}
-                            onChange={(option: SingleDropdownOption) => {
+                            rgOptions={ rgOptions }
+                            selectedOption={ selectedId }
+                            onChange={ (option: SingleDropdownOption) => {
                                 setFocusTargetId(focusId)
                                 setAppValueIdState(
                                     appid,
@@ -606,16 +606,16 @@ function ValueIdSelectItem({
                                     option.data,
                                     setValueAsDefault,
                                 )
-                            }}
+                            } }
                         />
                     </div>
                 </Focusable>
                 <LaunchOptionActionButton
-                    onEdit={() => onEdit(selectedOption?.id ?? launchOptions[0].id)}
-                    onDuplicate={() =>
+                    onEdit={ () => onEdit(selectedOption?.id ?? launchOptions[0].id) }
+                    onDuplicate={ () =>
                         onDuplicate(selectedOption?.id ?? launchOptions[0].id)
                     }
-                    onDelete={() => onDelete(selectedOption?.id ?? launchOptions[0].id)}
+                    onDelete={ () => onDelete(selectedOption?.id ?? launchOptions[0].id) }
                 />
             </Focusable>
         </Field>
@@ -648,20 +648,20 @@ interface RenderItemsParams {
 }
 
 function renderLaunchOptionItems({
-    items,
-    savedLaunchOptions,
-    appid,
-    showCommands,
-    getAppLaunchOptionState,
-    setAppLaunchOptionState,
-    setAppValueIdState,
-    setValueAsDefault,
-    focusTargetId,
-    setFocusTargetId,
-    onEdit,
-    onDuplicate,
-    onDelete,
-}: RenderItemsParams) {
+                                     items,
+                                     savedLaunchOptions,
+                                     appid,
+                                     showCommands,
+                                     getAppLaunchOptionState,
+                                     setAppLaunchOptionState,
+                                     setAppValueIdState,
+                                     setValueAsDefault,
+                                     focusTargetId,
+                                     setFocusTargetId,
+                                     onEdit,
+                                     onDuplicate,
+                                     onDelete,
+                                 }: RenderItemsParams) {
     const result: React.ReactNode[] = []
     const processedValueIds = new Set<string>()
 
@@ -692,41 +692,41 @@ function renderLaunchOptionItems({
 
             result.push(
                 <ValueIdSelectItem
-                    key={`valueId-${launchOption.valueId}`}
-                    valueId={launchOption.valueId}
-                    launchOptions={launchOptions}
-                    displayName={item.displayName}
-                    indentLevel={item.indentLevel}
-                    appid={appid}
-                    showCommands={showCommands}
-                    getAppLaunchOptionState={getAppLaunchOptionState}
-                    setAppValueIdState={setAppValueIdState}
-                    setValueAsDefault={setValueAsDefault}
-                    focusTargetId={focusTargetId}
-                    setFocusTargetId={setFocusTargetId}
-                    onEdit={onEdit}
-                    onDuplicate={onDuplicate}
-                    onDelete={onDelete}
+                    key={ `valueId-${ launchOption.valueId }` }
+                    valueId={ launchOption.valueId }
+                    launchOptions={ launchOptions }
+                    displayName={ item.displayName }
+                    indentLevel={ item.indentLevel }
+                    appid={ appid }
+                    showCommands={ showCommands }
+                    getAppLaunchOptionState={ getAppLaunchOptionState }
+                    setAppValueIdState={ setAppValueIdState }
+                    setValueAsDefault={ setValueAsDefault }
+                    focusTargetId={ focusTargetId }
+                    setFocusTargetId={ setFocusTargetId }
+                    onEdit={ onEdit }
+                    onDuplicate={ onDuplicate }
+                    onDelete={ onDelete }
                 />,
             )
         } else {
             // Normal toggle item
             result.push(
                 <LaunchOptionItem
-                    key={launchOption.id}
-                    launchOption={launchOption}
-                    displayName={item.displayName}
-                    indentLevel={item.indentLevel}
-                    isChecked={getAppLaunchOptionState(appid, launchOption.id)}
-                    showCommands={showCommands}
-                    focusTargetId={focusTargetId}
-                    setFocusTargetId={setFocusTargetId}
-                    onToggle={(value) =>
+                    key={ launchOption.id }
+                    launchOption={ launchOption }
+                    displayName={ item.displayName }
+                    indentLevel={ item.indentLevel }
+                    isChecked={ getAppLaunchOptionState(appid, launchOption.id) }
+                    showCommands={ showCommands }
+                    focusTargetId={ focusTargetId }
+                    setFocusTargetId={ setFocusTargetId }
+                    onToggle={ (value) =>
                         setAppLaunchOptionState(appid, launchOption.id, value)
                     }
-                    onEdit={() => onEdit(launchOption.id)}
-                    onDuplicate={() => onDuplicate(launchOption.id)}
-                    onDelete={() => onDelete(launchOption.id)}
+                    onEdit={ () => onEdit(launchOption.id) }
+                    onDuplicate={ () => onDuplicate(launchOption.id) }
+                    onDelete={ () => onDelete(launchOption.id) }
                 />,
             )
         }
@@ -778,7 +778,7 @@ export function AppLaunchOptionsPage() {
     const setFocusTargetId = useCallback((id: string) => {
         setFocusTarget((target) => ({
             id,
-            version: (target?.version ?? 0) + 1,
+            version: (target?.version ?? 0)+1,
         }))
     }, [])
     const {
@@ -944,14 +944,14 @@ export function AppLaunchOptionsPage() {
         const modalResult = showModal(
             <ModalWrapper
                 title="Add launch option"
-                onClose={() => modalResult.Close()}
+                onClose={ () => modalResult.Close() }
             >
                 <CreateLaunchOptionForm
-                    defaultValue={{
+                    defaultValue={ {
                         enableGlobally: tab === "global",
                         ...(isGroupTab ? { group: tab } : {}),
-                    }}
-                    onSubmit={() => modalResult.Close()}
+                    } }
+                    onSubmit={ () => modalResult.Close() }
                 />
             </ModalWrapper>,
         )
@@ -962,11 +962,11 @@ export function AppLaunchOptionsPage() {
             const modalResult = showModal(
                 <ModalWrapper
                     title="Edit launch option"
-                    onClose={() => modalResult.Close()}
+                    onClose={ () => modalResult.Close() }
                 >
                     <UpdateLaunchOptionForm
-                        id={id}
-                        onDelete={() => modalResult.Close()}
+                        id={ id }
+                        onDelete={ () => modalResult.Close() }
                         deleteByValueId
                     />
                 </ModalWrapper>,
@@ -977,15 +977,15 @@ export function AppLaunchOptionsPage() {
     const showLaunchOptionsBackupsModal = useCallback(() => {
         const modalResult = showModal(
             <ModalWrapper
-                title="Launch options backups"
-                onClose={() => modalResult.Close()}
+                title="Original launch options backups"
+                onClose={ () => modalResult.Close() }
             >
                 <LaunchOptionsBackupsModal
-                    appid={appid}
-                    onRestore={(command) => {
+                    appid={ appid }
+                    onRestore={ (command) => {
                         setAppOriginalLaunchOptions(appid, command)
                         modalResult.Close()
-                    }}
+                    } }
                 />
             </ModalWrapper>,
         )
@@ -993,13 +993,13 @@ export function AppLaunchOptionsPage() {
     const confirmDeleteLaunchOptionsBackups = useCallback(() => {
         showModal(
             <ConfirmModal
-                strTitle="Delete launch options backups"
+                strTitle="Delete original launch options backups"
                 strDescription="Do you want to delete all original launch options backups for this app?"
                 strOKButtonText="Confirm"
                 strCancelButtonText="Cancel"
-                onOK={async () => {
+                onOK={ async () => {
                     deleteOriginalLaunchOptionsBackupsMutation.mutate({ appid })
-                }}
+                } }
             />,
         )
     }, [appid, deleteOriginalLaunchOptionsBackupsMutation])
@@ -1009,9 +1009,15 @@ export function AppLaunchOptionsPage() {
             if (!launchOption) return
 
             const deleteGroup = !!launchOption.valueId
+            const deleteCount = deleteGroup
+                ? settings.launchOptions.filter(
+                    (item) => item.valueId === launchOption.valueId,
+                ).length
+                : undefined
             showDeleteLaunchOptionModal({
                 launchOption,
                 deleteGroup,
+                deleteCount,
                 onDelete: () => {
                     if (deleteGroup) {
                         deleteLaunchOptionsByValueId(launchOption.valueId)
@@ -1030,17 +1036,17 @@ export function AppLaunchOptionsPage() {
 
     return (
         <div
-            style={{
+            style={ {
                 marginTop: "40px",
                 height: "calc(100% - 40px - 42px)",
                 overflow: "hidden",
-            }}
+            } }
         >
             <Tabs
-                activeTab={tab}
-                onShowTab={handleShowTab}
+                activeTab={ tab }
+                onShowTab={ handleShowTab }
                 autoFocusContents
-                tabs={[
+                tabs={ [
                     {
                         id: advancedTabId,
                         title: "Advanced",
@@ -1050,44 +1056,44 @@ export function AppLaunchOptionsPage() {
                                 navEntryPreferPosition={
                                     NavEntryPositionPreferences.PREFERRED_CHILD
                                 }
-                                style={{ height: "100%" }}
+                                style={ { height: "100%" } }
                             >
                                 <ToggleField
-                                    checked={getAppDisableAutoManageLaunchOptions(appid)}
-                                    onChange={(value) =>
+                                    checked={ getAppDisableAutoManageLaunchOptions(appid) }
+                                    onChange={ (value) =>
                                         setAppDisableAutoManageLaunchOptions(appid, value)
                                     }
                                     description={
                                         'Decky Launch Options will not manage the "Launch Options" field for this app'
                                     }
-                                    label={'Disable "Auto-manage Launch Options" for this app'}
-                                    bottomSeparator={"none"}
+                                    label={ 'Disable "Auto-manage Launch Options" for this app' }
+                                    bottomSeparator={ "none" }
                                 />
-                                {getAppOriginalLaunchOptions(appid) && (
+                                { getAppOriginalLaunchOptions(appid) && (
                                     <ButtonItem
-                                        label={"Revert app launch options to original value"}
+                                        label={ "Revert app launch options to original value" }
                                         description={
                                             <div
-                                                style={{
+                                                style={ {
                                                     display: "flex",
                                                     flexDirection: "column",
                                                     gap: 2,
-                                                }}
+                                                } }
                                             >
                                                 <div>
-                                                    <strong>Current:</strong>{" "}
-                                                    {currentLaunchOptions.trim() || "(empy)"}
+                                                    <strong>Current:</strong>{ " " }
+                                                    { currentLaunchOptions.trim() || "(empy)" }
                                                 </div>
                                                 <div>
-                                                    <strong>Original:</strong>{" "}
-                                                    {getAppOriginalLaunchOptions(appid).trim() ||
-                                                        "(empy)"}
+                                                    <strong>Original:</strong>{ " " }
+                                                    { getAppOriginalLaunchOptions(appid).trim() ||
+                                                        "(empy)" }
                                                 </div>
                                             </div>
                                         }
-                                        indentLevel={1}
-                                        disabled={!getAppDisableAutoManageLaunchOptions(appid)}
-                                        onClick={() => {
+                                        indentLevel={ 1 }
+                                        disabled={ !getAppDisableAutoManageLaunchOptions(appid) }
+                                        onClick={ () => {
                                             SteamClient.Apps.SetAppLaunchOptions(
                                                 Number(appid),
                                                 getAppOriginalLaunchOptions(appid),
@@ -1101,19 +1107,19 @@ export function AppLaunchOptionsPage() {
                                                 () => setRevertedLaunchOptions(false),
                                                 3000,
                                             )
-                                        }}
+                                        } }
                                     >
-                                        {revertedLaunchOptions ? "✅ Reverted" : "Revert"}
+                                        { revertedLaunchOptions ? "✅ Reverted" : "Revert" }
                                     </ButtonItem>
-                                )}
+                                ) }
                                 <Field
-                                    label={"Original launch options backups"}
-                                    description={"Show backed up original launch options"}
-                                    childrenLayout={"inline"}
+                                    label={ "Original launch options backups" }
+                                    description={ "Show backed up original launch options" }
+                                    childrenLayout={ "inline" }
                                 >
                                     <BackupActionButton
                                         label="Backups actions"
-                                        actions={[
+                                        actions={ [
                                             {
                                                 label: "Show",
                                                 onSelected: showLaunchOptionsBackupsModal,
@@ -1123,7 +1129,7 @@ export function AppLaunchOptionsPage() {
                                                 tone: "destructive",
                                                 onSelected: confirmDeleteLaunchOptionsBackups,
                                             },
-                                        ]}
+                                        ] }
                                     />
                                 </Field>
                             </Focusable>
@@ -1134,34 +1140,34 @@ export function AppLaunchOptionsPage() {
                         title: "Local",
                         content: readyToShow && (
                             <Focusable
-                                key={`local-${focusTarget?.version ?? 0}`}
+                                key={ `local-${ focusTarget?.version ?? 0 }` }
                                 navEntryPreferPosition={
                                     NavEntryPositionPreferences.PREFERRED_CHILD
                                 }
-                                style={{ height: "100%" }}
+                                style={ { height: "100%" } }
                             >
                                 <PanelSectionRow>
                                     <ButtonItem
                                         layout="below"
-                                        onClick={() => {
+                                        onClick={ () => {
                                             showCreateLaunchOptionFormModal()
-                                        }}
+                                        } }
                                     >
                                         Add launch option
                                     </ButtonItem>
                                 </PanelSectionRow>
                                 <Field
-                                    childrenLayout={"below"}
-                                    label={"Original launch options"}
+                                    childrenLayout={ "below" }
+                                    label={ "Original launch options" }
                                 >
                                     <TextField
-                                        value={getAppOriginalLaunchOptions(appid)}
-                                        onChange={(e) =>
+                                        value={ getAppOriginalLaunchOptions(appid) }
+                                        onChange={ (e) =>
                                             setAppOriginalLaunchOptions(appid, e.target.value)
                                         }
                                     />
                                 </Field>
-                                {renderLaunchOptionItems({
+                                { renderLaunchOptionItems({
                                     items: localLaunchOptions,
                                     savedLaunchOptions: settings.launchOptions,
                                     appid,
@@ -1175,7 +1181,7 @@ export function AppLaunchOptionsPage() {
                                     onEdit: showUpdateLaunchOptionFormModal,
                                     onDuplicate: duplicateLaunchOption,
                                     onDelete: confirmDeleteLaunchOption,
-                                })}
+                                }) }
                             </Focusable>
                         ),
                         renderTabAddon: () => {
@@ -1186,8 +1192,8 @@ export function AppLaunchOptionsPage() {
                                 (item) => !isLaunchOptionGlobal(item) && !item.group,
                             )
                             return (
-                                <span className={TabCount}>
-                                    {count + Number(!!getAppOriginalLaunchOptions(appid))}
+                                <span className={ TabCount }>
+                                    { count+Number(!!getAppOriginalLaunchOptions(appid)) }
                                 </span>
                             )
                         },
@@ -1197,23 +1203,23 @@ export function AppLaunchOptionsPage() {
                         title: "Global",
                         content: readyToShow && (
                             <Focusable
-                                key={`global-${focusTarget?.version ?? 0}`}
+                                key={ `global-${ focusTarget?.version ?? 0 }` }
                                 navEntryPreferPosition={
                                     NavEntryPositionPreferences.PREFERRED_CHILD
                                 }
-                                style={{ height: "100%" }}
+                                style={ { height: "100%" } }
                             >
                                 <PanelSectionRow>
                                     <ButtonItem
                                         layout="below"
-                                        onClick={() => {
+                                        onClick={ () => {
                                             showCreateLaunchOptionFormModal()
-                                        }}
+                                        } }
                                     >
                                         Add launch option
                                     </ButtonItem>
                                 </PanelSectionRow>
-                                {renderLaunchOptionItems({
+                                { renderLaunchOptionItems({
                                     items: globalLaunchOptions,
                                     savedLaunchOptions: settings.launchOptions,
                                     appid,
@@ -1227,7 +1233,7 @@ export function AppLaunchOptionsPage() {
                                     onEdit: showUpdateLaunchOptionFormModal,
                                     onDuplicate: duplicateLaunchOption,
                                     onDelete: confirmDeleteLaunchOption,
-                                })}
+                                }) }
                             </Focusable>
                         ),
                         renderTabAddon: () => {
@@ -1237,7 +1243,7 @@ export function AppLaunchOptionsPage() {
                                 getAppLaunchOptionState,
                                 (item) => isLaunchOptionGlobal(item) && !item.group,
                             )
-                            return <span className={TabCount}>{count}</span>
+                            return <span className={ TabCount }>{ count }</span>
                         },
                     },
                     ...groups.map((group) => ({
@@ -1245,34 +1251,34 @@ export function AppLaunchOptionsPage() {
                         title: group,
                         content: readyToShow && (
                             <Focusable
-                                key={`group-${group}-${focusTarget?.version ?? 0}`}
+                                key={ `group-${ group }-${ focusTarget?.version ?? 0 }` }
                                 navEntryPreferPosition={
                                     NavEntryPositionPreferences.PREFERRED_CHILD
                                 }
-                                style={{ height: "100%" }}
+                                style={ { height: "100%" } }
                             >
                                 <PanelSectionRow>
                                     <ButtonItem
                                         layout="below"
-                                        onClick={() => {
+                                        onClick={ () => {
                                             showCreateLaunchOptionFormModal()
-                                        }}
+                                        } }
                                     >
                                         Add launch option
                                     </ButtonItem>
                                 </PanelSectionRow>
-                                {groupSectionOrder.map((scope) => {
+                                { groupSectionOrder.map((scope) => {
                                     const items = groupedLaunchOptions[group]?.[scope] ?? []
                                     if (items.length === 0) return null
 
                                     return (
-                                        <div key={scope}>
-                                            <div style={{ marginTop: "16px" }}>
+                                        <div key={ scope }>
+                                            <div style={ { marginTop: "16px" } }>
                                                 <strong>
-                                                    {scope === "local" ? "Local" : "Global"}
+                                                    { scope === "local" ? "Local" : "Global" }
                                                 </strong>
                                             </div>
-                                            {renderLaunchOptionItems({
+                                            { renderLaunchOptionItems({
                                                 items,
                                                 savedLaunchOptions: settings.launchOptions,
                                                 appid,
@@ -1286,10 +1292,10 @@ export function AppLaunchOptionsPage() {
                                                 onEdit: showUpdateLaunchOptionFormModal,
                                                 onDuplicate: duplicateLaunchOption,
                                                 onDelete: confirmDeleteLaunchOption,
-                                            })}
+                                            }) }
                                         </div>
                                     )
-                                })}
+                                }) }
                             </Focusable>
                         ),
                         renderTabAddon: () => {
@@ -1299,10 +1305,10 @@ export function AppLaunchOptionsPage() {
                                 getAppLaunchOptionState,
                                 (item) => item.group === group,
                             )
-                            return <span className={TabCount}>{count}</span>
+                            return <span className={ TabCount }>{ count }</span>
                         },
                     })),
-                ]}
+                ] }
             />
         </div>
     )

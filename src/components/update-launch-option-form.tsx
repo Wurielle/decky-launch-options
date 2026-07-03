@@ -277,6 +277,7 @@ export function UpdateLaunchOptionForm({
     return showDeleteLaunchOptionModal({
       launchOption: data,
       deleteGroup: deleteByValueId && deleteGroup,
+      deleteCount: syncedLaunchOptionIdsRef.current?.length,
       onDelete: () => {
         if (deleteByValueId && deleteGroup) {
           deleteLaunchOptionsByIds(syncedLaunchOptionIdsRef.current || [])
