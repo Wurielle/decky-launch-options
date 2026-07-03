@@ -21,6 +21,7 @@ import {
     ToggleField,
     useParams,
 } from "@decky/ui"
+import { toaster } from "@decky/api"
 import { SingleDropdownOption } from "@decky/ui/dist/components/Dropdown"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSettings } from "../../../../hooks"
@@ -411,7 +412,7 @@ function LaunchOptionsBackupsModal({
                 <Field
                     key={ `${ backup.date }:${ backup.command }` }
                     label={ formatBackupDate(backup.date) }
-                    description={ backup.command || "(empy)" }
+                    description={ backup.command || "(empty)" }
                     childrenLayout={ "inline" }
                 >
                     <BackupActionButton
@@ -419,12 +420,35 @@ function LaunchOptionsBackupsModal({
                         actions={ [
                             {
                                 label: "Restore",
-                                onSelected: () => onRestore(backup.command),
+                                onSelected: () => {
+                                    onRestore(backup.command)
+                                    toaster.toast({
+                                        title: "✅ Backup restored",
+                                        body: "Original value restored.",
+                                        duration: 5000,
+                                    })
+                                },
                             },
                             {
                                 label: "Copy to clipboard",
                                 onSelected: () => {
-                                    copyTextToClipboard(backup.command)
+                                    copyTextToClipboard(backup.command).then(
+                                        () => {
+                                            toaster.toast({
+                                                title: "✅ Copied to clipboard",
+                                                body: "Backup command copied.",
+                                                duration: 5000,
+                                            })
+                                        },
+                                        () => {
+                                            toaster.toast({
+                                                title: "⚠️ Copy failed",
+                                                body: "Clipboard unavailable.",
+                                                duration: 5000,
+                                                critical: true,
+                                            })
+                                        },
+                                    )
                                 },
                             },
                             {
@@ -765,7 +789,6 @@ function countActiveLaunchOptions(
 export function AppLaunchOptionsPage() {
     const { appid } = useParams<{ appid: string }>()
     const [tab, setTab] = useState<string>("local")
-    const [revertedLaunchOptions, setRevertedLaunchOptions] = useState(false)
     const [currentLaunchOptions, setCurrentLaunchOptions] = useState("")
     const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy)
     const showCommands = useStore(settingsStore, (state) => state.showCommands)
@@ -1082,12 +1105,12 @@ export function AppLaunchOptionsPage() {
                                             >
                                                 <div>
                                                     <strong>Current:</strong>{ " " }
-                                                    { currentLaunchOptions.trim() || "(empy)" }
+                                                    { currentLaunchOptions.trim() || "(empty)" }
                                                 </div>
                                                 <div>
                                                     <strong>Original:</strong>{ " " }
                                                     { getAppOriginalLaunchOptions(appid).trim() ||
-                                                        "(empy)" }
+                                                        "(empty)" }
                                                 </div>
                                             </div>
                                         }
@@ -1102,14 +1125,14 @@ export function AppLaunchOptionsPage() {
                                                 getAppOriginalLaunchOptions(appid),
                                             )
                                             setAppOriginalLaunchOptions(appid, "")
-                                            setRevertedLaunchOptions(true)
-                                            window.setTimeout(
-                                                () => setRevertedLaunchOptions(false),
-                                                3000,
-                                            )
+                                            toaster.toast({
+                                                title: "✅ Launch options reverted",
+                                                body: "Original value restored.",
+                                                duration: 5000,
+                                            })
                                         } }
                                     >
-                                        { revertedLaunchOptions ? "✅ Reverted" : "Revert" }
+                                        Revert
                                     </ButtonItem>
                                 ) }
                                 <Field
