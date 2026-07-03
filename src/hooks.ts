@@ -210,8 +210,31 @@ export function useSettings() {
     },
     batchCreateLaunchOptions: (launchOptions: LaunchOption[]) => {
       setSettings((draft) => {
-        launchOptions.forEach((launchOption) => {
-          const nextLaunchOption = launchOptionFactory(launchOption)
+        const nextLaunchOptions = launchOptions.map(launchOptionFactory)
+        const existingGlobalIds = new Set(
+          draft.launchOptions
+            .filter((item) => item.enableGlobally)
+            .map((item) => item.id),
+        )
+        // Keep the current global valueId choice during reimport. Apps without
+        // explicit profile state inherit enableGlobally, so replacing it would
+        // reset their visible selection.
+        const preservedGlobalIdByValueId = new Map(
+          nextLaunchOptions
+            .filter((item) => item.valueId && existingGlobalIds.has(item.id))
+            .map((item) => [item.valueId, item.id]),
+        )
+
+        nextLaunchOptions.forEach((nextLaunchOption) => {
+          if (existingGlobalIds.has(nextLaunchOption.id)) {
+            nextLaunchOption.enableGlobally = true
+          } else if (
+            nextLaunchOption.valueId &&
+            preservedGlobalIdByValueId.has(nextLaunchOption.valueId)
+          ) {
+            nextLaunchOption.enableGlobally = false
+          }
+
           const existingLaunchOptionIndex = draft.launchOptions.findIndex(
             (item) => item.id === nextLaunchOption.id,
           )
@@ -219,6 +242,12 @@ export function useSettings() {
             draft.launchOptions[existingLaunchOptionIndex] = nextLaunchOption
           } else {
             draft.launchOptions.unshift(nextLaunchOption)
+          }
+        })
+        draft.launchOptions.forEach((item) => {
+          const preservedGlobalId = preservedGlobalIdByValueId.get(item.valueId)
+          if (preservedGlobalId) {
+            item.enableGlobally = item.id === preservedGlobalId
           }
         })
         normalizeFallbackValues(draft)
