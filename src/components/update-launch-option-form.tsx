@@ -97,17 +97,17 @@ function DropdownValueList({
   }, [])
   const siblings = useMemo(() => {
     const siblingIdSet = new Set(siblingIds)
-    return settings.launchOptions
+    const sortedSiblings = settings.launchOptions
       .filter((item) => siblingIdSet.has(item.id))
-      .sort((a, b) => {
-        if (!!a.fallbackValue !== !!b.fallbackValue) {
-          return a.fallbackValue ? -1 : 1
-        }
+      .reverse()
+    const defaultSibling = sortedSiblings.find((item) => item.fallbackValue)
 
-        const aLabel = a.valueName || a.on || a.name
-        const bLabel = b.valueName || b.on || b.name
-        return aLabel.localeCompare(bLabel)
-      })
+    return defaultSibling
+      ? [
+          defaultSibling,
+          ...sortedSiblings.filter((item) => item.id !== defaultSibling.id),
+        ]
+      : sortedSiblings
   }, [settings.launchOptions, siblingIds])
 
   if (!launchOption.valueId || siblings.length <= 1) return null
