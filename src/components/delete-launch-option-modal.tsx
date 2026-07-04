@@ -7,18 +7,25 @@ export const getDeleteLaunchOptionLabel = (deleteGroup: boolean) =>
 export function showDeleteLaunchOptionModal({
   launchOption,
   deleteGroup,
+  deleteCount,
   onDelete,
 }: {
   launchOption: LaunchOption
   deleteGroup: boolean
+  deleteCount?: number
   onDelete: () => void
 }) {
+  const deleteGroupDescription =
+    typeof deleteCount === "number"
+      ? `Do you want to remove ${deleteCount} launch option${deleteCount === 1 ? "" : "s"}?`
+      : "Do you want to remove these launch options?"
+
   return showModal(
     <ConfirmModal
       strTitle={getDeleteLaunchOptionLabel(deleteGroup)}
       strDescription={
         deleteGroup
-          ? "Do you want to remove this launch option group?"
+          ? deleteGroupDescription
           : `Do you want to remove the "${launchOption.name || "Unnamed"}" launch option?`
       }
       strOKButtonText="Confirm"
