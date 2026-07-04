@@ -814,8 +814,8 @@ function InactiveAutoManageWarning() {
         background: "rgba(120, 53, 15, 0.35)",
         color: "rgb(253, 230, 138)",
         lineHeight: 1.35,
-        display: 'flex',
-        flexDirection: 'column',
+        display: "flex",
+        flexDirection: "column",
         gap: 6,
       }}
     >
@@ -823,8 +823,8 @@ function InactiveAutoManageWarning() {
         <strong>Inactive</strong>
       </div>
       <div>
-        Auto-manage Launch Options is off and the DLO command is not
-        present in the app's launch options.
+        Auto-manage Launch Options is off and the DLO command is not present in
+        the app's launch options.
       </div>
     </div>
   )
@@ -1224,7 +1224,9 @@ export function AppLaunchOptionsPage() {
                   }
                   style={{ height: "100%" }}
                 >
-                  {showInactiveAutoManageWarning && <InactiveAutoManageWarning />}
+                  {showInactiveAutoManageWarning && (
+                    <InactiveAutoManageWarning />
+                  )}
                   <PanelSectionRow>
                     <ButtonItem
                       layout="below"
@@ -1288,7 +1290,9 @@ export function AppLaunchOptionsPage() {
                   }
                   style={{ height: "100%" }}
                 >
-                  {showInactiveAutoManageWarning && <InactiveAutoManageWarning />}
+                  {showInactiveAutoManageWarning && (
+                    <InactiveAutoManageWarning />
+                  )}
                   <PanelSectionRow>
                     <ButtonItem
                       layout="below"
@@ -1337,7 +1341,9 @@ export function AppLaunchOptionsPage() {
                   }
                   style={{ height: "100%" }}
                 >
-                  {showInactiveAutoManageWarning && <InactiveAutoManageWarning />}
+                  {showInactiveAutoManageWarning && (
+                    <InactiveAutoManageWarning />
+                  )}
                   <PanelSectionRow>
                     <ButtonItem
                       layout="below"
