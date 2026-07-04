@@ -10,7 +10,6 @@ import {
 } from "@decky/ui"
 import { SingleDropdownOption } from "@decky/ui/dist/components/Dropdown"
 import { LaunchOption } from "../shared"
-import { ScrollIntoView } from "./scroll-into-view"
 import { useMemo, useState } from "react"
 import { FaChevronDown, FaChevronUp } from "react-icons/fa"
 import { usePlugin } from "./plugin-provider"
@@ -90,81 +89,45 @@ export function LaunchOptionFields({
           }}
         />
       </Focusable>
-      <ScrollIntoView>
-        {({ scrollIntoView }) => (
-          <Focusable>
-            <Field childrenLayout={"below"} label={"Name"}>
-              <TextField
-                {...{ placeholder: "E.g.: Steam Deck Mode" }}
-                style={{ width: "100%" }}
-                value={data.name}
-                onChange={(e) => {
-                  scrollIntoView(e)
-                  onChange("name", e.target.value)
-                }}
-                onKeyDown={scrollIntoView}
-                onKeyUp={scrollIntoView}
-                onInput={scrollIntoView}
-                onSelect={scrollIntoView}
-                onFocus={scrollIntoView}
-              />
-            </Field>
-          </Focusable>
-        )}
-      </ScrollIntoView>
+      <Focusable>
+        <Field childrenLayout={"below"} label={"Name"}>
+          <TextField
+            {...{ placeholder: "E.g.: Steam Deck Mode" }}
+            style={{ width: "100%" }}
+            value={data.name}
+            onChange={(e) => onChange("name", e.target.value)}
+          />
+        </Field>
+      </Focusable>
       {!hidePerValue && (
-        <ScrollIntoView>
-          {({ scrollIntoView }) => (
-            <Focusable>
-              <Field childrenLayout={"below"} label={"On command"}>
-                <TextField
-                  {...{
-                    placeholder:
-                      "E.g.: SteamDeck=1 ~/script/install %command% -novid",
-                  }}
-                  style={{ width: "100%" }}
-                  value={data.on}
-                  onChange={(e) => {
-                    scrollIntoView(e)
-                    onChange("on", e.target.value)
-                  }}
-                  onKeyDown={scrollIntoView}
-                  onKeyUp={scrollIntoView}
-                  onInput={scrollIntoView}
-                  onSelect={scrollIntoView}
-                  onFocus={scrollIntoView}
-                />
-              </Field>
-            </Focusable>
-          )}
-        </ScrollIntoView>
+        <Focusable>
+          <Field childrenLayout={"below"} label={"On command"}>
+            <TextField
+              {...{
+                placeholder:
+                  "E.g.: SteamDeck=1 ~/script/install %command% -novid",
+              }}
+              style={{ width: "100%" }}
+              value={data.on}
+              onChange={(e) => onChange("on", e.target.value)}
+            />
+          </Field>
+        </Focusable>
       )}
       {!hidePerValue && (
-        <ScrollIntoView>
-          {({ scrollIntoView }) => (
-            <Focusable>
-              <Field childrenLayout={"below"} label={"Off command"}>
-                <TextField
-                  {...{
-                    placeholder:
-                      "E.g.: SteamDeck=0 ~/script/uninstall %command% -novid",
-                  }}
-                  style={{ width: "100%" }}
-                  value={data.off}
-                  onChange={(e) => {
-                    scrollIntoView(e)
-                    onChange("off", e.target.value)
-                  }}
-                  onKeyDown={scrollIntoView}
-                  onKeyUp={scrollIntoView}
-                  onInput={scrollIntoView}
-                  onSelect={scrollIntoView}
-                  onFocus={scrollIntoView}
-                />
-              </Field>
-            </Focusable>
-          )}
-        </ScrollIntoView>
+        <Focusable>
+          <Field childrenLayout={"below"} label={"Off command"}>
+            <TextField
+              {...{
+                placeholder:
+                  "E.g.: SteamDeck=0 ~/script/uninstall %command% -novid",
+              }}
+              style={{ width: "100%" }}
+              value={data.off}
+              onChange={(e) => onChange("off", e.target.value)}
+            />
+          </Field>
+        </Focusable>
       )}
       <DialogButton
         onClick={() => {
@@ -184,133 +147,97 @@ export function LaunchOptionFields({
         </div>
       </DialogButton>
       {showAdvanced && (
-        <ScrollIntoView>
-          {({ scrollIntoView }) => (
-            <Focusable style={{ minWidth: 240 }}>
-              <Field
-                childrenLayout={"below"}
-                label={"Group"}
-                description={
-                  <div style={{ textAlign: "left" }}>
-                    Groups this launch option under a named tab
-                  </div>
-                }
-              >
-                <div style={{ display: "flex", gap: 10 }}>
-                  <div style={{ flex: "0 0 calc(70% - 5px)" }}>
-                    <TextField
-                      {...{ placeholder: "E.g.: Favorites" }}
-                      style={{ width: "100%" }}
-                      value={data.group}
-                      onChange={(e) => {
-                        scrollIntoView(e)
-                        onChange("group", e.target.value)
-                      }}
-                      onKeyDown={scrollIntoView}
-                      onKeyUp={scrollIntoView}
-                      onInput={scrollIntoView}
-                      onSelect={scrollIntoView}
-                      onFocus={scrollIntoView}
-                    />
-                  </div>
-                  <div style={{ flex: "0 0 calc(30% - 5px)" }}>
-                    <Dropdown
-                      key={`group-${quickSelectKey}`}
-                      rgOptions={groupQuickSelectOptions}
-                      selectedOption={undefined}
-                      strDefaultLabel={quickSelectLabel}
-                      onChange={(option: SingleDropdownOption) => {
-                        onChange("group", option.data)
-                        setQuickSelectKey((key) => key + 1)
-                      }}
-                    />
-                  </div>
-                </div>
-              </Field>
-            </Focusable>
-          )}
-        </ScrollIntoView>
+        <Focusable style={{ minWidth: 240 }}>
+          <Field
+            childrenLayout={"below"}
+            label={"Group"}
+            description={
+              <div style={{ textAlign: "left" }}>
+                Groups this launch option under a named tab
+              </div>
+            }
+          >
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ flex: "0 0 calc(70% - 5px)" }}>
+                <TextField
+                  {...{ placeholder: "E.g.: Favorites" }}
+                  style={{ width: "100%" }}
+                  value={data.group}
+                  onChange={(e) => onChange("group", e.target.value)}
+                />
+              </div>
+              <div style={{ flex: "0 0 calc(30% - 5px)" }}>
+                <Dropdown
+                  key={`group-${quickSelectKey}`}
+                  rgOptions={groupQuickSelectOptions}
+                  selectedOption={undefined}
+                  strDefaultLabel={quickSelectLabel}
+                  onChange={(option: SingleDropdownOption) => {
+                    onChange("group", option.data)
+                    setQuickSelectKey((key) => key + 1)
+                  }}
+                />
+              </div>
+            </div>
+          </Field>
+        </Focusable>
       )}
       {showAdvanced && (
-        <ScrollIntoView>
-          {({ scrollIntoView }) => (
-            <Focusable style={{ minWidth: 240 }}>
-              <Field
-                childrenLayout={"below"}
-                label={"Value ID"}
-                description={
-                  <div style={{ textAlign: "left" }}>
-                    Launch options sharing the same Value ID are displayed as a
-                    dropdown
-                  </div>
-                }
-              >
-                <div style={{ display: "flex", gap: 10 }}>
-                  <div style={{ flex: "0 0 calc(70% - 5px)" }}>
-                    <TextField
-                      {...{ placeholder: "E.g.: proton-version" }}
-                      style={{ width: "100%" }}
-                      value={data.valueId}
-                      onChange={(e) => {
-                        scrollIntoView(e)
-                        onChange("valueId", e.target.value)
-                      }}
-                      onKeyDown={scrollIntoView}
-                      onKeyUp={scrollIntoView}
-                      onInput={scrollIntoView}
-                      onSelect={scrollIntoView}
-                      onFocus={scrollIntoView}
-                    />
-                  </div>
-                  <div style={{ flex: "0 0 calc(30% - 5px)" }}>
-                    <Dropdown
-                      key={`valueId-${quickSelectKey}`}
-                      rgOptions={valueIdQuickSelectOptions}
-                      selectedOption={undefined}
-                      strDefaultLabel={quickSelectLabel}
-                      onChange={(option: SingleDropdownOption) => {
-                        onChange("valueId", option.data)
-                        setQuickSelectKey((key) => key + 1)
-                      }}
-                    />
-                  </div>
-                </div>
-              </Field>
-            </Focusable>
-          )}
-        </ScrollIntoView>
+        <Focusable style={{ minWidth: 240 }}>
+          <Field
+            childrenLayout={"below"}
+            label={"Value ID"}
+            description={
+              <div style={{ textAlign: "left" }}>
+                Launch options sharing the same Value ID are displayed as a
+                dropdown
+              </div>
+            }
+          >
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ flex: "0 0 calc(70% - 5px)" }}>
+                <TextField
+                  {...{ placeholder: "E.g.: proton-version" }}
+                  style={{ width: "100%" }}
+                  value={data.valueId}
+                  onChange={(e) => onChange("valueId", e.target.value)}
+                />
+              </div>
+              <div style={{ flex: "0 0 calc(30% - 5px)" }}>
+                <Dropdown
+                  key={`valueId-${quickSelectKey}`}
+                  rgOptions={valueIdQuickSelectOptions}
+                  selectedOption={undefined}
+                  strDefaultLabel={quickSelectLabel}
+                  onChange={(option: SingleDropdownOption) => {
+                    onChange("valueId", option.data)
+                    setQuickSelectKey((key) => key + 1)
+                  }}
+                />
+              </div>
+            </div>
+          </Field>
+        </Focusable>
       )}
       {showAdvanced && !hidePerValue && (
-        <ScrollIntoView>
-          {({ scrollIntoView }) => (
-            <Focusable>
-              <Field
-                childrenLayout={"below"}
-                label={"Value Name"}
-                description={
-                  <div style={{ textAlign: "left" }}>
-                    Display name shown in the dropdown
-                  </div>
-                }
-              >
-                <TextField
-                  {...{ placeholder: "E.g.: Version 7" }}
-                  style={{ width: "100%" }}
-                  value={data.valueName}
-                  onChange={(e) => {
-                    scrollIntoView(e)
-                    onChange("valueName", e.target.value)
-                  }}
-                  onKeyDown={scrollIntoView}
-                  onKeyUp={scrollIntoView}
-                  onInput={scrollIntoView}
-                  onSelect={scrollIntoView}
-                  onFocus={scrollIntoView}
-                />
-              </Field>
-            </Focusable>
-          )}
-        </ScrollIntoView>
+        <Focusable>
+          <Field
+            childrenLayout={"below"}
+            label={"Value Name"}
+            description={
+              <div style={{ textAlign: "left" }}>
+                Display name shown in the dropdown
+              </div>
+            }
+          >
+            <TextField
+              {...{ placeholder: "E.g.: Version 7" }}
+              style={{ width: "100%" }}
+              value={data.valueName}
+              onChange={(e) => onChange("valueName", e.target.value)}
+            />
+          </Field>
+        </Focusable>
       )}
       {showAdvanced && !hidePerValue && (
         <Focusable>
@@ -326,37 +253,27 @@ export function LaunchOptionFields({
         </Focusable>
       )}
       {showAdvanced && (
-        <ScrollIntoView>
-          {({ scrollIntoView }) => (
-            <Focusable>
-              <Field
-                childrenLayout={"below"}
-                label={"Priority"}
-                description={
-                  <div style={{ textAlign: "left" }}>
-                    Higher priority launch options run first
-                  </div>
-                }
-              >
-                <TextField
-                  {...{ placeholder: "0" }}
-                  style={{ width: "100%" }}
-                  value={data.priority ? String(data.priority) : ""}
-                  onChange={(e) => {
-                    scrollIntoView(e)
-                    const num = Number(e.target.value)
-                    onChange("priority", Number.isFinite(num) ? num : 0)
-                  }}
-                  onKeyDown={scrollIntoView}
-                  onKeyUp={scrollIntoView}
-                  onInput={scrollIntoView}
-                  onSelect={scrollIntoView}
-                  onFocus={scrollIntoView}
-                />
-              </Field>
-            </Focusable>
-          )}
-        </ScrollIntoView>
+        <Focusable>
+          <Field
+            childrenLayout={"below"}
+            label={"Priority"}
+            description={
+              <div style={{ textAlign: "left" }}>
+                Higher priority launch options run first
+              </div>
+            }
+          >
+            <TextField
+              {...{ placeholder: "0" }}
+              style={{ width: "100%" }}
+              value={data.priority ? String(data.priority) : ""}
+              onChange={(e) => {
+                const num = Number(e.target.value)
+                onChange("priority", Number.isFinite(num) ? num : 0)
+              }}
+            />
+          </Field>
+        </Focusable>
       )}
     </Focusable>
   )

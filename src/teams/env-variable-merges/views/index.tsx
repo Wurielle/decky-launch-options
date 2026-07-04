@@ -1,4 +1,4 @@
-import { SidebarNavigation, SteamSpinner } from "@decky/ui"
+import { DialogBody, SidebarNavigation, SteamSpinner } from "@decky/ui"
 import { useEffect, useMemo, useState } from "react"
 import { FaPlus, FaCodeBranch } from "react-icons/fa"
 import { PluginProvider } from "../../../components/plugin-provider"
@@ -36,41 +36,42 @@ export function EnvVariableMergesPage() {
 
   return (
     <PluginProvider>
-      <div
-        style={{
-          marginTop: "40px",
-          height: "calc(100% - 40px)",
-        }}
-      >
-        {loading ? (
-          <SteamSpinner width={"100%"} height={"100%"} />
-        ) : (
-          <SidebarNavigation
-            key={navKey}
-            title={"Environment variable merges"}
-            showTitle={true}
-            disableRouteReporting={true}
-            page={activePage}
-            onPageRequested={setActivePage}
-            pages={[
-              {
-                icon: <FaPlus />,
-                title: "New merge",
-                identifier: "new-env-variable-merge",
-                route: routes.envVariableMergesManagerItem("new"),
-                content: <CreateEnvVariableMergeForm />,
-              },
-              ...settings.envVariableMerges.map(({ id, name }) => ({
-                icon: <FaCodeBranch />,
-                title: name || "Unnamed",
-                identifier: id,
-                route: routes.envVariableMergesManagerItem(id),
-                content: <UpdateEnvVariableMergeForm key={id || ""} id={id} />,
-              })),
-            ]}
-          />
-        )}
-      </div>
+      {loading ? (
+        <SteamSpinner width={"100%"} height={"100%"} />
+      ) : (
+        <SidebarNavigation
+          key={navKey}
+          title={"Environment variable merges"}
+          showTitle={true}
+          disableRouteReporting={true}
+          page={activePage}
+          onPageRequested={setActivePage}
+          pages={[
+            {
+              icon: <FaPlus />,
+              title: "New merge",
+              identifier: "new-env-variable-merge",
+              route: routes.envVariableMergesManagerItem("new"),
+              content: (
+                <DialogBody>
+                  <CreateEnvVariableMergeForm />
+                </DialogBody>
+              ),
+            },
+            ...settings.envVariableMerges.map(({ id, name }) => ({
+              icon: <FaCodeBranch />,
+              title: name || "Unnamed",
+              identifier: id,
+              route: routes.envVariableMergesManagerItem(id),
+              content: (
+                <DialogBody>
+                  <UpdateEnvVariableMergeForm key={id || ""} id={id} />
+                </DialogBody>
+              ),
+            })),
+          ]}
+        />
+      )}
     </PluginProvider>
   )
 }
