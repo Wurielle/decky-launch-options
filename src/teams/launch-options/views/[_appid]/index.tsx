@@ -814,11 +814,7 @@ function appLaunchOptionsIsDloCommand(
   if (!info) return false
 
   const command = appLaunchOptions.trim()
-  return [
-    info.COMMAND,
-    `${info.SHORT_SH_COMMAND_PATH} %command%`,
-    `${info.FULL_SH_COMMAND_PATH} %command%`,
-  ].some((dloCommand) => command === dloCommand)
+  return command === info.COMMAND
 }
 
 function InactiveAutoManageWarning() {
