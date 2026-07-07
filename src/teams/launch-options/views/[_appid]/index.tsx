@@ -30,6 +30,7 @@ import { showDeleteLaunchOptionModal } from "../../../../components/delete-launc
 import { PluginProvider } from "../../../../components/plugin-provider"
 import { QueryClientProvider } from "@tanstack/react-query"
 import {
+  get_shortcut_launch_options,
   queryClient,
   useDeleteOriginalLaunchOptionsBackupMutation,
   useDeleteOriginalLaunchOptionsBackupsMutation,
@@ -1004,14 +1005,35 @@ export function AppLaunchOptionsPage() {
     setReadyToShow(false)
   }, [tab])
   useEffect(() => {
+    let cancelled = false
     const { unregister } = SteamClient.Apps.RegisterForAppDetails(
       Number(appid),
       (details: AppDetails) => {
-        setCurrentLaunchOptions(details.strLaunchOptions)
+        const appDetails = details as AppDetails & {
+          strLaunchOptions?: string
+          strShortcutExe?: unknown
+        }
+        const currentSteamLaunchOptions = appDetails.strLaunchOptions ?? ""
+        const setLaunchOptions = (launchOptions: string) => {
+          if (!cancelled) setCurrentLaunchOptions(launchOptions)
+        }
+
+        if (typeof appDetails.strShortcutExe !== "undefined") {
+          get_shortcut_launch_options(appid).then(
+            (launchOptions) =>
+              setLaunchOptions(launchOptions ?? currentSteamLaunchOptions),
+            () => setLaunchOptions(currentSteamLaunchOptions),
+          )
+        } else {
+          setLaunchOptions(currentSteamLaunchOptions)
+        }
       },
     )
 
-    return unregister
+    return () => {
+      cancelled = true
+      unregister()
+    }
   }, [appid])
   const showCreateLaunchOptionFormModal = useCallback(() => {
     const isGroupTab =

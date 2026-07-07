@@ -40,6 +40,10 @@ export const get_settings = callable<[], Settings | null>("get_settings")
 export const set_settings = callable<[Settings], void>("set_settings")
 export const has_shell_script = callable<[], boolean>("has_shell_script")
 export const get_debug_log = callable<[], string | null>("get_debug_log")
+export const get_shortcut_launch_options = callable<
+  [appid: string],
+  string | null
+>("get_shortcut_launch_options")
 export const backup_original_launch_options = callable<
   [appid: string, command: string],
   void
@@ -156,34 +160,59 @@ export const useApplyLaunchOptionsMutation = () => {
           return Promise.resolve()
 
         return Promise.all([
-          new Promise<
-            Pick<Context, "currentLaunchOptions" | "originalLaunchOptions">
-          >((resolve) => {
+          new Promise<Pick<
+            Context,
+            "currentLaunchOptions" | "originalLaunchOptions"
+          > | null>((resolve) => {
+            const resolveLaunchOptions = (currentLaunchOptions: string) => {
+              if (currentLaunchOptions.includes(data.command)) {
+                resolve({
+                  currentLaunchOptions,
+                  originalLaunchOptions: null,
+                })
+              } else {
+                resolve({
+                  currentLaunchOptions: data.command,
+                  originalLaunchOptions: currentLaunchOptions,
+                })
+              }
+            }
+
             const { unregister } = SteamClient.Apps.RegisterForAppDetails(
               data.appid,
               (details: AppDetails) => {
-                const currentLaunchOptions = details.strLaunchOptions
-                const isNonSteamApp = "strShortcutExe" in details
-                if (
-                  isNonSteamApp ||
-                  currentLaunchOptions.includes(data.command)
-                ) {
-                  resolve({
-                    currentLaunchOptions: currentLaunchOptions,
-                    originalLaunchOptions: null,
-                  })
-                } else {
-                  resolve({
-                    currentLaunchOptions: data.command,
-                    originalLaunchOptions: currentLaunchOptions,
-                  })
+                const appDetails = details as AppDetails & {
+                  strLaunchOptions?: string
+                  strShortcutExe?: unknown
                 }
+                const currentLaunchOptions = appDetails.strLaunchOptions ?? ""
+                const isNonSteamApp =
+                  typeof appDetails.strShortcutExe !== "undefined"
+
+                if (isNonSteamApp) {
+                  get_shortcut_launch_options(String(data.appid)).then(
+                    (launchOptions) => {
+                      if (launchOptions === null) {
+                        resolve(null)
+                        return
+                      }
+
+                      resolveLaunchOptions(launchOptions)
+                    },
+                    () => resolve(null),
+                  )
+                } else {
+                  resolveLaunchOptions(currentLaunchOptions)
+                }
+
                 unregister()
               },
             )
           }),
           has_shell_script(),
         ]).then(([partialContext, hasShellScript]) => {
+          if (!partialContext) return
+
           if (partialContext.originalLaunchOptions?.trim()) {
             backupOriginalLaunchOptionsMutation.mutate(
               {
