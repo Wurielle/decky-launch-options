@@ -804,6 +804,20 @@ function appLaunchOptionsIncludesDloCommand(
   ].some((command) => command && appLaunchOptions.includes(command))
 }
 
+function appLaunchOptionsIsDloCommand(
+  appLaunchOptions: string,
+  info?: {
+    COMMAND: string
+    SHORT_SH_COMMAND_PATH: string
+    FULL_SH_COMMAND_PATH: string
+  },
+): boolean {
+  if (!info) return false
+
+  const command = appLaunchOptions.trim()
+  return command === info.COMMAND
+}
+
 function InactiveAutoManageWarning() {
   return (
     <div
@@ -872,6 +886,11 @@ export function AppLaunchOptionsPage() {
   const showInactiveAutoManageWarning =
     (!autoManageLaunchOptions || getAppDisableAutoManageLaunchOptions(appid)) &&
     !appLaunchOptionsIncludesDloCommand(currentLaunchOptions, getInfoQuery.data)
+  const canManuallyChangeAppLaunchOptions =
+    !autoManageLaunchOptions || getAppDisableAutoManageLaunchOptions(appid)
+  const showResetAppLaunchOptions =
+    !getAppOriginalLaunchOptions(appid).trim() &&
+    appLaunchOptionsIsDloCommand(currentLaunchOptions, getInfoQuery.data)
   const globalValueIds = useMemo(() => {
     const valueIds = new Set<string>()
     settings.launchOptions.forEach((item) => {
@@ -1192,7 +1211,7 @@ export function AppLaunchOptionsPage() {
                         </div>
                       }
                       indentLevel={1}
-                      disabled={!getAppDisableAutoManageLaunchOptions(appid)}
+                      disabled={!canManuallyChangeAppLaunchOptions}
                       onClick={() => {
                         SteamClient.Apps.SetAppLaunchOptions(
                           Number(appid),
@@ -1210,6 +1229,42 @@ export function AppLaunchOptionsPage() {
                       }}
                     >
                       Revert
+                    </ButtonItem>
+                  )}
+                  {showResetAppLaunchOptions && (
+                    <ButtonItem
+                      label={"Reset app launch options to empty value"}
+                      description={
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 2,
+                          }}
+                        >
+                          <div>
+                            <strong>Current:</strong>{" "}
+                            {currentLaunchOptions.trim() || "(empty)"}
+                          </div>
+                          <div>
+                            <strong>Original:</strong> (empty)
+                          </div>
+                        </div>
+                      }
+                      indentLevel={1}
+                      disabled={!canManuallyChangeAppLaunchOptions}
+                      onClick={() => {
+                        SteamClient.Apps.SetAppLaunchOptions(Number(appid), "")
+                        setCurrentLaunchOptions("")
+                        setAppOriginalLaunchOptions(appid, "")
+                        toaster.toast({
+                          title: "App launch options reset",
+                          body: "(empty)",
+                          duration: 5000,
+                        })
+                      }}
+                    >
+                      Reset
                     </ButtonItem>
                   )}
                   <Field
