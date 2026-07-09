@@ -58,6 +58,14 @@ def get_steam_appid():
     return None
 
 
+def split_command_args(raw_command):
+    try:
+        import shlex
+        return shlex.split(raw_command)
+    except ValueError:
+        return raw_command.split()
+
+
 def parse_launch_option(raw_command):
     """
     Parse a launch option string into its components.
@@ -176,6 +184,8 @@ def get_final_args_details(settings, appid):
     profile = settings["profiles"].get(str(appid), {})
     profile_state = profile.get("state", {})
     profile_original_launch_options = profile.get("originalLaunchOptions", "")
+    is_non_steam_app = True
+    protected_original_args = []
 
     # Collections for all launch option components
     env_merge_rules = get_env_variable_merge_rules(settings)
@@ -185,11 +195,14 @@ def get_final_args_details(settings, appid):
 
     # Parse original launch options first
     if profile_original_launch_options:
-        parsed = parse_launch_option(profile_original_launch_options)
-        add_env_vars(all_env_var_values, env_merge_rules, parsed['env_vars'])
-        if parsed['prefix']:
-            all_prefixes.append(parsed['prefix'])
-        all_suffixes.extend(parsed['suffix'])
+        if is_non_steam_app:
+            protected_original_args = split_command_args(profile_original_launch_options)
+        else:
+            parsed = parse_launch_option(profile_original_launch_options)
+            add_env_vars(all_env_var_values, env_merge_rules, parsed['env_vars'])
+            if parsed['prefix']:
+                all_prefixes.append(parsed['prefix'])
+            all_suffixes.extend(parsed['suffix'])
 
     # Resolve selected option per valueId group.
     value_id_groups = {}
@@ -275,6 +288,10 @@ def get_final_args_details(settings, appid):
 
     # Add base game command
     final_args.extend(base_args)
+
+    # Add protected original launch options for non-Steam apps after the base
+    # command so runner arguments like Flatpak's @@u/@@ stay intact.
+    final_args.extend(protected_original_args)
 
     # Add all suffix args at the end
     final_args.extend(all_suffixes)
