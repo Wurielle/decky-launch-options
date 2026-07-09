@@ -58,6 +58,17 @@ def get_steam_appid():
     return None
 
 
+def _to_uint32(value):
+    return int(value) & 0xFFFFFFFF
+
+
+def is_non_steam_appid(appid):
+    try:
+        return _to_uint32(appid) >= 0x80000000
+    except (TypeError, ValueError):
+        return False
+
+
 def split_command_args(raw_command):
     try:
         import shlex
@@ -184,7 +195,7 @@ def get_final_args_details(settings, appid):
     profile = settings["profiles"].get(str(appid), {})
     profile_state = profile.get("state", {})
     profile_original_launch_options = profile.get("originalLaunchOptions", "")
-    is_non_steam_app = True
+    is_non_steam_app = is_non_steam_appid(appid)
     protected_original_args = []
 
     # Collections for all launch option components

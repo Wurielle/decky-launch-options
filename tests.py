@@ -14,7 +14,7 @@ if hasattr(sys.stdout, "reconfigure"):
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from unittest.mock import patch
-from run import parse_launch_option, get_final_args_details
+from run import parse_launch_option, get_final_args_details, is_non_steam_appid
 
 def test_case(name, raw_command, expected=None):
     print(f"\n{'='*60}")
@@ -513,6 +513,59 @@ if __name__ == "__main__":
         print(f"Result:   {env_vars_h}")
         print(f"Expected: {expected_h}")
         print(f"\n{'PASS' if match_h else 'FAIL'}")
+
+        # Test H2: Non-Steam app ids protect original launch options as args
+        print(f"\n{'='*60}")
+        print("Test: Non-Steam original launch options stay protected")
+        print(f"{'='*60}")
+        non_steam_appid = "3221225472"
+        settings_h2 = make_settings(
+            [
+                make_opt("wine-a", 'WINEDLLOVERRIDES="dxgi=n,b"', priority=0),
+            ],
+            appid=non_steam_appid,
+            original_launch_options='WINEDLLOVERRIDES="dinput8=n,b"',
+            env_variable_merges=[
+                {
+                    "id": "winedlloverrides",
+                    "name": "WINEDLLOVERRIDES",
+                    "delimiter": ";",
+                }
+            ],
+        )
+        final_args_h2, env_vars_h2 = get_final_args_details(
+            settings_h2,
+            non_steam_appid,
+        )
+        expected_args_h2 = ["/path/to/game", "WINEDLLOVERRIDES=dinput8=n,b"]
+        expected_env_h2 = {"WINEDLLOVERRIDES": "dxgi=n,b"}
+        match_h2 = final_args_h2 == expected_args_h2 and env_vars_h2 == expected_env_h2
+        print(f"Args:     {final_args_h2}")
+        print(f"Expected: {expected_args_h2}")
+        print(f"Env:      {env_vars_h2}")
+        print(f"Expected: {expected_env_h2}")
+        print(f"\n{'PASS' if match_h2 else 'FAIL'}")
+
+        # Test H3: App id range detection
+        print(f"\n{'='*60}")
+        print("Test: App id range detection")
+        print(f"{'='*60}")
+        detection_cases = [
+            ("123", False),
+            ("2147483647", False),
+            ("2147483648", True),
+            ("3221225472", True),
+            ("-1073741824", True),
+            (None, False),
+        ]
+        detection_results = [
+            (appid, is_non_steam_appid(appid), expected)
+            for appid, expected in detection_cases
+        ]
+        match_h3 = all(actual == expected for _, actual, expected in detection_results)
+        for appid, actual, expected in detection_results:
+            print(f"{appid}: {actual} (expected {expected})")
+        print(f"\n{'PASS' if match_h3 else 'FAIL'}")
 
         # Test I: Default merge rules apply when older settings omit envVariableMerges
         print(f"\n{'='*60}")
