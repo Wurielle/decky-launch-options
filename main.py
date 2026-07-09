@@ -4,7 +4,12 @@ import json
 import os
 import stat
 import struct
+import sys
 from pathlib import Path
+
+PLUGIN_DIR = Path(__file__).resolve().parent
+if str(PLUGIN_DIR) not in sys.path:
+    sys.path.insert(0, str(PLUGIN_DIR))
 
 # The decky plugin module is located at decky-loader/plugin
 # For easy intellisense checkout the decky-loader code repo
