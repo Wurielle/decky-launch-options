@@ -10,6 +10,7 @@ import { useSettings } from "./hooks"
 import { AppDetails } from "@decky/ui/dist/globals/steam-client/App"
 import { useStore } from "@tanstack/react-store"
 import { settingsStore } from "./stores"
+import { setAppLaunchOptions } from "./utils"
 
 export const queryClient = new QueryClient()
 
@@ -249,9 +250,9 @@ export const useApplyLaunchOptionsMutation = () => {
 
         const { hasShellScript, currentLaunchOptions } = context
         if (hasShellScript) {
-          SteamClient.Apps.SetAppLaunchOptions(data.appid, currentLaunchOptions)
+          setAppLaunchOptions(data.appid, currentLaunchOptions)
         } else {
-          SteamClient.Apps.SetAppLaunchOptions(
+          setAppLaunchOptions(
             data.appid,
             getAppOriginalLaunchOptions(String(data.appid)),
           )

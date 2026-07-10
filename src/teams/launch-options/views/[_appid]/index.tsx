@@ -44,7 +44,12 @@ import { type LaunchOptionSort, settingsStore } from "../../../../stores"
 import { useStore } from "@tanstack/react-store"
 import { LaunchOptionActionButton } from "../../../../components/launch-option-action-button"
 import { FaEllipsisV } from "react-icons/fa"
-import { copyTextToClipboard } from "../../../../utils"
+import {
+  appLaunchOptionsUpdatedEventType,
+  AppLaunchOptionsUpdatedEvent,
+  copyTextToClipboard,
+  setAppLaunchOptions,
+} from "../../../../utils"
 
 type LaunchOptionScope = "local" | "global"
 
@@ -855,6 +860,7 @@ export function AppLaunchOptionsPage() {
   const { appid } = useParams<{ appid: string }>()
   const [tab, setTab] = useState<string>("local")
   const [currentLaunchOptions, setCurrentLaunchOptions] = useState("")
+  const locallySetLaunchOptionsRef = useRef<string | undefined>(undefined)
   const [isNonSteamApp, setIsNonSteamApp] = useState(false)
   const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy)
   const autoManageLaunchOptions = useStore(
@@ -1038,6 +1044,32 @@ export function AppLaunchOptionsPage() {
     setReadyToShow(false)
   }, [tab])
   useEffect(() => {
+    locallySetLaunchOptionsRef.current = undefined
+    setCurrentLaunchOptions("")
+    setIsNonSteamApp(false)
+  }, [appid])
+  useEffect(() => {
+    const handleAppLaunchOptionsUpdated = (event: Event) => {
+      const { detail } = event as AppLaunchOptionsUpdatedEvent
+      if (detail.appid >>> 0 !== Number(appid) >>> 0) return
+
+      locallySetLaunchOptionsRef.current = detail.launchOptions
+      setCurrentLaunchOptions(detail.launchOptions)
+    }
+
+    window.addEventListener(
+      appLaunchOptionsUpdatedEventType,
+      handleAppLaunchOptionsUpdated,
+    )
+
+    return () => {
+      window.removeEventListener(
+        appLaunchOptionsUpdatedEventType,
+        handleAppLaunchOptionsUpdated,
+      )
+    }
+  }, [appid])
+  useEffect(() => {
     let cancelled = false
     const { unregister } = SteamClient.Apps.RegisterForAppDetails(
       Number(appid),
@@ -1050,7 +1082,13 @@ export function AppLaunchOptionsPage() {
         const isNonSteam = typeof appDetails.strShortcutExe !== "undefined"
         if (!cancelled) setIsNonSteamApp(isNonSteam)
         const setLaunchOptions = (launchOptions: string) => {
-          if (!cancelled) setCurrentLaunchOptions(launchOptions)
+          if (!cancelled) {
+            setCurrentLaunchOptions(
+              isNonSteam
+                ? (locallySetLaunchOptionsRef.current ?? launchOptions)
+                : launchOptions,
+            )
+          }
         }
 
         if (isNonSteam) {
@@ -1229,11 +1267,8 @@ export function AppLaunchOptionsPage() {
                       indentLevel={1}
                       disabled={!canManuallyChangeAppLaunchOptions}
                       onClick={() => {
-                        SteamClient.Apps.SetAppLaunchOptions(
+                        setAppLaunchOptions(
                           Number(appid),
-                          getAppOriginalLaunchOptions(appid),
-                        )
-                        setCurrentLaunchOptions(
                           getAppOriginalLaunchOptions(appid),
                         )
                         setAppOriginalLaunchOptions(appid, "")
@@ -1270,8 +1305,7 @@ export function AppLaunchOptionsPage() {
                       indentLevel={1}
                       disabled={!canManuallyChangeAppLaunchOptions}
                       onClick={() => {
-                        SteamClient.Apps.SetAppLaunchOptions(Number(appid), "")
-                        setCurrentLaunchOptions("")
+                        setAppLaunchOptions(Number(appid), "")
                         setAppOriginalLaunchOptions(appid, "")
                         toaster.toast({
                           title: "App launch options reset",

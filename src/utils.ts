@@ -1,3 +1,19 @@
+export const appLaunchOptionsUpdatedEventType = "dlo-app-launch-options-updated"
+
+export type AppLaunchOptionsUpdatedEvent = CustomEvent<{
+  appid: number
+  launchOptions: string
+}>
+
+export function setAppLaunchOptions(appid: number, launchOptions: string) {
+  SteamClient.Apps.SetAppLaunchOptions(appid, launchOptions)
+  window.dispatchEvent(
+    new CustomEvent(appLaunchOptionsUpdatedEventType, {
+      detail: { appid, launchOptions },
+    }),
+  )
+}
+
 export function copyTextToClipboard(text: string) {
   if (navigator.clipboard?.writeText) {
     return navigator.clipboard

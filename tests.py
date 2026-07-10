@@ -516,7 +516,7 @@ if __name__ == "__main__":
 
         # Test H2: Non-Steam app ids protect original launch options as args
         print(f"\n{'='*60}")
-        print("Test: Non-Steam original launch options stay protected")
+        print("Test: Non-Steam app original launch options stay protected")
         print(f"{'='*60}")
         non_steam_appid = "3221225472"
         settings_h2 = make_settings(

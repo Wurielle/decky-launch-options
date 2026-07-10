@@ -15,6 +15,7 @@ import { getSettingsQueryOptions, queryClient } from "./query"
 import { libraryAppPatch } from "./patches/library-app"
 import { Content } from "./components/content"
 import { batchCreateLaunchOptions } from "./components/batch-add-launch-options"
+import { setAppLaunchOptions } from "./utils"
 
 export default definePlugin(() => {
   routerHook.addRoute(routes.appLaunchOptions(), () => {
@@ -74,10 +75,7 @@ export default definePlugin(() => {
       )
       if (settings) {
         Object.entries(settings.profiles).forEach(([appid, profile]) => {
-          SteamClient.Apps.SetAppLaunchOptions(
-            Number(appid),
-            profile.originalLaunchOptions,
-          )
+          setAppLaunchOptions(Number(appid), profile.originalLaunchOptions)
         })
       }
       window.removeEventListener(
