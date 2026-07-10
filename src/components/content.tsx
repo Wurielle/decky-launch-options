@@ -158,6 +158,16 @@ export function Content() {
                     </ButtonItem>
                 </PanelSectionRow>
                 <PanelSectionRow>
+                    <ButtonItem
+                        layout="below"
+                        onClick={ () => {
+                            window.open(process.env.HOMEPAGE, "_blank")
+                        } }
+                    >
+                        README.md
+                    </ButtonItem>
+                </PanelSectionRow>
+                <PanelSectionRow>
                     <Field childrenLayout={ "below" } label={ "Sort launch options" }>
                         <Dropdown
                             rgOptions={ launchOptionSortOptions }
@@ -227,16 +237,6 @@ export function Content() {
                         label={ "Show commands" }
                         bottomSeparator={ "none" }
                     />
-                </PanelSectionRow>
-                <PanelSectionRow>
-                    <ButtonItem
-                        layout="below"
-                        onClick={ () => {
-                            window.open(process.env.HOMEPAGE, "_blank")
-                        } }
-                    >
-                        README.md
-                    </ButtonItem>
                 </PanelSectionRow>
                 <PanelSectionRow>
                     <ButtonItem
