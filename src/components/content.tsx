@@ -200,7 +200,7 @@ export function Content() {
             description={
               'Let Decky Launch Options manage the "Launch Options" field for non-Steam apps automatically'
             }
-            label={"Auto-manage Non-Steam App Launch Options"}
+            label={"Auto-manage Non-Steam Apps Launch Options"}
             bottomSeparator={"none"}
           />
         </PanelSectionRow>
