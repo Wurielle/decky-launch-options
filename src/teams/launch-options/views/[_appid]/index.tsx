@@ -818,7 +818,11 @@ function appLaunchOptionsIsDloCommand(
   return command === info.COMMAND
 }
 
-function InactiveAutoManageWarning() {
+function InactiveAutoManageWarning({
+  isNonSteamApp,
+}: {
+  isNonSteamApp: boolean
+}) {
   return (
     <div
       style={{
@@ -838,8 +842,10 @@ function InactiveAutoManageWarning() {
         <strong>Inactive</strong>
       </div>
       <div>
-        Auto-manage Launch Options is off and the DLO command is not present in
-        the app's launch options.
+        {isNonSteamApp
+          ? "Auto-manage Non-Steam App Launch Options"
+          : "Auto-manage Launch Options"}{" "}
+        is off and the DLO command is not present in the app's launch options.
       </div>
     </div>
   )
@@ -849,10 +855,15 @@ export function AppLaunchOptionsPage() {
   const { appid } = useParams<{ appid: string }>()
   const [tab, setTab] = useState<string>("local")
   const [currentLaunchOptions, setCurrentLaunchOptions] = useState("")
+  const [isNonSteamApp, setIsNonSteamApp] = useState(false)
   const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy)
   const autoManageLaunchOptions = useStore(
     settingsStore,
     (state) => state.autoManageLaunchOptions,
+  )
+  const autoManageNonSteamLaunchOptions = useStore(
+    settingsStore,
+    (state) => state.autoManageNonSteamLaunchOptions,
   )
   const showCommands = useStore(settingsStore, (state) => state.showCommands)
   const launchOptionSort = useStore(
@@ -883,11 +894,14 @@ export function AppLaunchOptionsPage() {
   const getInfoQuery = useGetInfoQuery()
   const deleteOriginalLaunchOptionsBackupsMutation =
     useDeleteOriginalLaunchOptionsBackupsMutation()
+  const autoManageCurrentApp = isNonSteamApp
+    ? autoManageNonSteamLaunchOptions
+    : autoManageLaunchOptions
   const showInactiveAutoManageWarning =
-    (!autoManageLaunchOptions || getAppDisableAutoManageLaunchOptions(appid)) &&
+    (!autoManageCurrentApp || getAppDisableAutoManageLaunchOptions(appid)) &&
     !appLaunchOptionsIncludesDloCommand(currentLaunchOptions, getInfoQuery.data)
   const canManuallyChangeAppLaunchOptions =
-    !autoManageLaunchOptions || getAppDisableAutoManageLaunchOptions(appid)
+    !autoManageCurrentApp || getAppDisableAutoManageLaunchOptions(appid)
   const showResetAppLaunchOptions =
     !getAppOriginalLaunchOptions(appid).trim() &&
     appLaunchOptionsIsDloCommand(currentLaunchOptions, getInfoQuery.data)
@@ -1033,11 +1047,13 @@ export function AppLaunchOptionsPage() {
           strShortcutExe?: unknown
         }
         const currentSteamLaunchOptions = appDetails.strLaunchOptions ?? ""
+        const isNonSteam = typeof appDetails.strShortcutExe !== "undefined"
+        if (!cancelled) setIsNonSteamApp(isNonSteam)
         const setLaunchOptions = (launchOptions: string) => {
           if (!cancelled) setCurrentLaunchOptions(launchOptions)
         }
 
-        if (typeof appDetails.strShortcutExe !== "undefined") {
+        if (isNonSteam) {
           get_shortcut_launch_options(appid).then(
             (launchOptions) =>
               setLaunchOptions(launchOptions ?? currentSteamLaunchOptions),
@@ -1302,7 +1318,7 @@ export function AppLaunchOptionsPage() {
                   style={{ height: "100%" }}
                 >
                   {showInactiveAutoManageWarning && (
-                    <InactiveAutoManageWarning />
+                    <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
                   )}
                   <PanelSectionRow>
                     <ButtonItem
@@ -1368,7 +1384,7 @@ export function AppLaunchOptionsPage() {
                   style={{ height: "100%" }}
                 >
                   {showInactiveAutoManageWarning && (
-                    <InactiveAutoManageWarning />
+                    <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
                   )}
                   <PanelSectionRow>
                     <ButtonItem
@@ -1419,7 +1435,7 @@ export function AppLaunchOptionsPage() {
                   style={{ height: "100%" }}
                 >
                   {showInactiveAutoManageWarning && (
-                    <InactiveAutoManageWarning />
+                    <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
                   )}
                   <PanelSectionRow>
                     <ButtonItem

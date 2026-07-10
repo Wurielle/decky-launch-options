@@ -147,6 +147,10 @@ export const useApplyLaunchOptionsMutation = () => {
     settingsStore,
     (state) => state.autoManageLaunchOptions,
   )
+  const autoManageNonSteamLaunchOptions = useStore(
+    settingsStore,
+    (state) => state.autoManageNonSteamLaunchOptions,
+  )
   type Context = {
     currentLaunchOptions: string
     originalLaunchOptions: string | null
@@ -155,7 +159,6 @@ export const useApplyLaunchOptionsMutation = () => {
   return useMutation<Context | void, Error, { appid: number; command: string }>(
     {
       mutationFn(data) {
-        if (!autoManageLaunchOptions) return Promise.resolve()
         if (getAppDisableAutoManageLaunchOptions(String(data.appid)))
           return Promise.resolve()
 
@@ -188,6 +191,15 @@ export const useApplyLaunchOptionsMutation = () => {
                 const currentLaunchOptions = appDetails.strLaunchOptions ?? ""
                 const isNonSteamApp =
                   typeof appDetails.strShortcutExe !== "undefined"
+                const shouldAutoManage = isNonSteamApp
+                  ? autoManageNonSteamLaunchOptions
+                  : autoManageLaunchOptions
+
+                if (!shouldAutoManage) {
+                  resolve(null)
+                  unregister()
+                  return
+                }
 
                 if (isNonSteamApp) {
                   get_shortcut_launch_options(String(data.appid)).then(

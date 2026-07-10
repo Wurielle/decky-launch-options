@@ -25,6 +25,7 @@ export type LaunchOptionSort =
 
 interface SettingsStoreState {
   autoManageLaunchOptions: boolean
+  autoManageNonSteamLaunchOptions: boolean
   useHierarchy: boolean
   showCommands: boolean
   launchOptionSort: LaunchOptionSort
@@ -42,6 +43,7 @@ export const launchOptionSortOptions: Array<{
 
 const defaultSettingsStoreState: SettingsStoreState = {
   autoManageLaunchOptions: true,
+  autoManageNonSteamLaunchOptions: false,
   useHierarchy: true,
   showCommands: false,
   launchOptionSort: "global-active",
