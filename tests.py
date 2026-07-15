@@ -625,6 +625,51 @@ if __name__ == "__main__":
         print(f"\n{'PASS' if match_h5 else 'FAIL'}")
         assert match_h5
 
+        # Test H6: First -- from each suffix group shares one boundary
+        print(f"\n{'='*60}")
+        print("Test: Multiple suffix separators merge into one boundary")
+        print(f"{'='*60}")
+        settings_h6 = make_settings([
+            make_opt("gamescope", "gamescope -f -- %command%"),
+            make_opt("portal-args", "-novid +cl_showfps 3"),
+            make_opt("output-args", "-- -o -p"),
+            make_opt("fullscreen", "%command% -- --fullscreen"),
+        ])
+        final_args_h6, _ = get_final_args_details(settings_h6, "123")
+        expected_args_h6 = [
+            "gamescope",
+            "-f",
+            "--",
+            "/path/to/game",
+            "-novid",
+            "+cl_showfps",
+            "3",
+            "--",
+            "-o",
+            "-p",
+            "--fullscreen",
+        ]
+        match_h6 = final_args_h6 == expected_args_h6
+        print(f"Result:   {final_args_h6}")
+        print(f"Expected: {expected_args_h6}")
+        print(f"\n{'PASS' if match_h6 else 'FAIL'}")
+        assert match_h6
+
+        # Test H7: A later -- within one group remains a literal argument
+        print(f"\n{'='*60}")
+        print("Test: Additional separator within one suffix group is preserved")
+        print(f"{'='*60}")
+        settings_h7 = make_settings([
+            make_opt("nested-args", "%command% -- -o -- -p"),
+        ])
+        final_args_h7, _ = get_final_args_details(settings_h7, "123")
+        expected_args_h7 = ["/path/to/game", "--", "-o", "--", "-p"]
+        match_h7 = final_args_h7 == expected_args_h7
+        print(f"Result:   {final_args_h7}")
+        print(f"Expected: {expected_args_h7}")
+        print(f"\n{'PASS' if match_h7 else 'FAIL'}")
+        assert match_h7
+
         # Test I: Default merge rules apply when older settings omit envVariableMerges
         print(f"\n{'='*60}")
         print("Test: Env variable merge - defaults apply to older settings")

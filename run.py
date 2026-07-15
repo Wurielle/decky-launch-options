@@ -186,7 +186,7 @@ def finalize_env_vars(env_var_values, merge_rules):
 
 
 def merge_suffix_args(suffix_groups):
-    """Merge suffix token groups around their first bare -- boundary."""
+    """Merge suffix token groups around a shared first bare -- boundary."""
     before_separator = []
     after_separator = []
     has_separator = False
@@ -200,13 +200,9 @@ def merge_suffix_args(suffix_groups):
 
         before_separator.extend(suffix[:separator_idx])
 
-        # The first separator becomes the shared boundary. Preserve any later
-        # separators as arguments on the far side of that boundary.
-        if has_separator:
-            after_separator.append('--')
-        else:
-            has_separator = True
-
+        # Each group's first separator denotes the same shared boundary. Any
+        # later separators in this group remain in the sliced arguments below.
+        has_separator = True
         after_separator.extend(suffix[separator_idx + 1:])
 
     if not has_separator:
