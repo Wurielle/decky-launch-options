@@ -30,6 +30,7 @@ import { showDeleteLaunchOptionModal } from "../../../../components/delete-launc
 import { PluginProvider } from "../../../../components/plugin-provider"
 import { QueryClientProvider } from "@tanstack/react-query"
 import {
+  get_shortcut_launch_options,
   queryClient,
   useDeleteOriginalLaunchOptionsBackupMutation,
   useDeleteOriginalLaunchOptionsBackupsMutation,
@@ -43,7 +44,12 @@ import { type LaunchOptionSort, settingsStore } from "../../../../stores"
 import { useStore } from "@tanstack/react-store"
 import { LaunchOptionActionButton } from "../../../../components/launch-option-action-button"
 import { FaEllipsisV } from "react-icons/fa"
-import { copyTextToClipboard } from "../../../../utils"
+import {
+  AppLaunchOptionsUpdatedEvent,
+  appLaunchOptionsUpdatedEventType,
+  copyTextToClipboard,
+  setAppLaunchOptions,
+} from "../../../../utils"
 
 type LaunchOptionScope = "local" | "global"
 
@@ -817,7 +823,11 @@ function appLaunchOptionsIsDloCommand(
   return command === info.COMMAND
 }
 
-function InactiveAutoManageWarning() {
+function InactiveAutoManageWarning({
+  isNonSteamApp,
+}: {
+  isNonSteamApp: boolean
+}) {
   return (
     <div
       style={{
@@ -837,8 +847,10 @@ function InactiveAutoManageWarning() {
         <strong>Inactive</strong>
       </div>
       <div>
-        Auto-manage Launch Options is off and the DLO command is not present in
-        the app's launch options.
+        {isNonSteamApp
+          ? "Auto-manage Non-Steam App Launch Options"
+          : "Auto-manage Steam App Launch Options"}{" "}
+        is off and the DLO command is not present in the app's launch options.
       </div>
     </div>
   )
@@ -848,10 +860,16 @@ export function AppLaunchOptionsPage() {
   const { appid } = useParams<{ appid: string }>()
   const [tab, setTab] = useState<string>("local")
   const [currentLaunchOptions, setCurrentLaunchOptions] = useState("")
+  const locallySetLaunchOptionsRef = useRef<string | undefined>(undefined)
+  const [isNonSteamApp, setIsNonSteamApp] = useState(false)
   const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy)
   const autoManageLaunchOptions = useStore(
     settingsStore,
     (state) => state.autoManageLaunchOptions,
+  )
+  const autoManageNonSteamLaunchOptions = useStore(
+    settingsStore,
+    (state) => state.autoManageNonSteamLaunchOptions,
   )
   const showCommands = useStore(settingsStore, (state) => state.showCommands)
   const launchOptionSort = useStore(
@@ -882,11 +900,14 @@ export function AppLaunchOptionsPage() {
   const getInfoQuery = useGetInfoQuery()
   const deleteOriginalLaunchOptionsBackupsMutation =
     useDeleteOriginalLaunchOptionsBackupsMutation()
+  const autoManageCurrentApp = isNonSteamApp
+    ? autoManageNonSteamLaunchOptions
+    : autoManageLaunchOptions
   const showInactiveAutoManageWarning =
-    (!autoManageLaunchOptions || getAppDisableAutoManageLaunchOptions(appid)) &&
+    (!autoManageCurrentApp || getAppDisableAutoManageLaunchOptions(appid)) &&
     !appLaunchOptionsIncludesDloCommand(currentLaunchOptions, getInfoQuery.data)
   const canManuallyChangeAppLaunchOptions =
-    !autoManageLaunchOptions || getAppDisableAutoManageLaunchOptions(appid)
+    !autoManageCurrentApp || getAppDisableAutoManageLaunchOptions(appid)
   const showResetAppLaunchOptions =
     !getAppOriginalLaunchOptions(appid).trim() &&
     appLaunchOptionsIsDloCommand(currentLaunchOptions, getInfoQuery.data)
@@ -1023,14 +1044,69 @@ export function AppLaunchOptionsPage() {
     setReadyToShow(false)
   }, [tab])
   useEffect(() => {
+    locallySetLaunchOptionsRef.current = undefined
+    setCurrentLaunchOptions("")
+    setIsNonSteamApp(false)
+  }, [appid])
+  useEffect(() => {
+    const handleAppLaunchOptionsUpdated = (event: Event) => {
+      const { detail } = event as AppLaunchOptionsUpdatedEvent
+      if (detail.appid >>> 0 !== Number(appid) >>> 0) return
+
+      locallySetLaunchOptionsRef.current = detail.launchOptions
+      setCurrentLaunchOptions(detail.launchOptions)
+    }
+
+    window.addEventListener(
+      appLaunchOptionsUpdatedEventType,
+      handleAppLaunchOptionsUpdated,
+    )
+
+    return () => {
+      window.removeEventListener(
+        appLaunchOptionsUpdatedEventType,
+        handleAppLaunchOptionsUpdated,
+      )
+    }
+  }, [appid])
+  useEffect(() => {
+    let cancelled = false
     const { unregister } = SteamClient.Apps.RegisterForAppDetails(
       Number(appid),
       (details: AppDetails) => {
-        setCurrentLaunchOptions(details.strLaunchOptions)
+        const appDetails = details as AppDetails & {
+          strLaunchOptions?: string
+          strShortcutExe?: unknown
+        }
+        const currentSteamLaunchOptions = appDetails.strLaunchOptions ?? ""
+        const isNonSteam = typeof appDetails.strShortcutExe !== "undefined"
+        if (!cancelled) setIsNonSteamApp(isNonSteam)
+        const setLaunchOptions = (launchOptions: string) => {
+          if (!cancelled) {
+            setCurrentLaunchOptions(
+              isNonSteam
+                ? (locallySetLaunchOptionsRef.current ?? launchOptions)
+                : launchOptions,
+            )
+          }
+        }
+
+        if (isNonSteam) {
+          get_shortcut_launch_options(appid).then(
+            (launchOptions) =>
+              setLaunchOptions(launchOptions ?? currentSteamLaunchOptions),
+            () => setLaunchOptions(currentSteamLaunchOptions),
+          )
+        } else {
+          setLaunchOptions(currentSteamLaunchOptions)
+        }
       },
     )
 
-    return unregister
+    return () => {
+      cancelled = true
+      unregister()
+    }
   }, [appid])
   const showCreateLaunchOptionFormModal = useCallback(() => {
     const isGroupTab =
@@ -1191,11 +1267,8 @@ export function AppLaunchOptionsPage() {
                       indentLevel={1}
                       disabled={!canManuallyChangeAppLaunchOptions}
                       onClick={() => {
-                        SteamClient.Apps.SetAppLaunchOptions(
+                        setAppLaunchOptions(
                           Number(appid),
-                          getAppOriginalLaunchOptions(appid),
-                        )
-                        setCurrentLaunchOptions(
                           getAppOriginalLaunchOptions(appid),
                         )
                         setAppOriginalLaunchOptions(appid, "")
@@ -1232,8 +1305,7 @@ export function AppLaunchOptionsPage() {
                       indentLevel={1}
                       disabled={!canManuallyChangeAppLaunchOptions}
                       onClick={() => {
-                        SteamClient.Apps.SetAppLaunchOptions(Number(appid), "")
-                        setCurrentLaunchOptions("")
+                        setAppLaunchOptions(Number(appid), "")
                         setAppOriginalLaunchOptions(appid, "")
                         toaster.toast({
                           title: "App launch options reset",
@@ -1280,7 +1352,7 @@ export function AppLaunchOptionsPage() {
                   style={{ height: "100%" }}
                 >
                   {showInactiveAutoManageWarning && (
-                    <InactiveAutoManageWarning />
+                    <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
                   )}
                   <PanelSectionRow>
                     <ButtonItem
@@ -1346,7 +1418,7 @@ export function AppLaunchOptionsPage() {
                   style={{ height: "100%" }}
                 >
                   {showInactiveAutoManageWarning && (
-                    <InactiveAutoManageWarning />
+                    <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
                   )}
                   <PanelSectionRow>
                     <ButtonItem
@@ -1397,7 +1469,7 @@ export function AppLaunchOptionsPage() {
                   style={{ height: "100%" }}
                 >
                   {showInactiveAutoManageWarning && (
-                    <InactiveAutoManageWarning />
+                    <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
                   )}
                   <PanelSectionRow>
                     <ButtonItem
