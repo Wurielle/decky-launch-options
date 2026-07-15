@@ -567,6 +567,64 @@ if __name__ == "__main__":
             print(f"{appid}: {actual} (expected {expected})")
         print(f"\n{'PASS' if match_h3 else 'FAIL'}")
 
+        # Test H4: Merge ordinary suffix args before a shared -- separator
+        print(f"\n{'='*60}")
+        print("Test: Suffix separator stays after ordinary command args")
+        print(f"{'='*60}")
+        settings_h4 = make_settings([
+            make_opt(
+                "fullscreen",
+                "gamescope -f -W 1280 -H 800 -- %command% -- --fullscreen",
+            ),
+            make_opt("portal-args", "-novid +cl_showfps 3"),
+        ])
+        final_args_h4, _ = get_final_args_details(settings_h4, "123")
+        expected_args_h4 = [
+            "gamescope",
+            "-f",
+            "-W",
+            "1280",
+            "-H",
+            "800",
+            "--",
+            "/path/to/game",
+            "-novid",
+            "+cl_showfps",
+            "3",
+            "--",
+            "--fullscreen",
+        ]
+        match_h4 = final_args_h4 == expected_args_h4
+        print(f"Result:   {final_args_h4}")
+        print(f"Expected: {expected_args_h4}")
+        print(f"\n{'PASS' if match_h4 else 'FAIL'}")
+        assert match_h4
+
+        # Test H5: Non-Steam original args participate in separator merging
+        print(f"\n{'='*60}")
+        print("Test: Non-Steam suffix args merge around original separator")
+        print(f"{'='*60}")
+        settings_h5 = make_settings(
+            [make_opt("portal-args", "-novid +cl_showfps 3")],
+            appid=non_steam_appid,
+            original_launch_options="--commandArg -- --fullscreen",
+        )
+        final_args_h5, _ = get_final_args_details(settings_h5, non_steam_appid)
+        expected_args_h5 = [
+            "/path/to/game",
+            "--commandArg",
+            "-novid",
+            "+cl_showfps",
+            "3",
+            "--",
+            "--fullscreen",
+        ]
+        match_h5 = final_args_h5 == expected_args_h5
+        print(f"Result:   {final_args_h5}")
+        print(f"Expected: {expected_args_h5}")
+        print(f"\n{'PASS' if match_h5 else 'FAIL'}")
+        assert match_h5
+
         # Test I: Default merge rules apply when older settings omit envVariableMerges
         print(f"\n{'='*60}")
         print("Test: Env variable merge - defaults apply to older settings")
