@@ -4,7 +4,6 @@ import {
   Field,
   Focusable,
   gamepadDialogClasses,
-  ModalPosition,
   Navigation,
   PanelSection,
   PanelSectionRow,
@@ -35,6 +34,7 @@ import {
 import { copyTextToClipboard } from "../utils"
 
 const ModalScrollPanel = ScrollPanelGroup as ComponentType<{
+  className?: string
   children?: ReactNode
   focusable?: boolean
   style?: CSSProperties
@@ -42,6 +42,7 @@ const ModalScrollPanel = ScrollPanelGroup as ComponentType<{
 
 const ModalScrollContent = Focusable as ComponentType<{
   autoFocus?: boolean
+  className?: string
   children: ReactNode
   focusable?: boolean
   noFocusRing?: boolean
@@ -75,45 +76,35 @@ function DebugLogModal({ onClose }: { onClose: () => void }) {
   }, [])
 
   return (
-    <ModalPosition>
-      <div
+    <ModalScrollPanel
+      className={gamepadDialogClasses.ModalPosition}
+      focusable={false}
+      style={{ position: "absolute" }}
+    >
+      <ModalScrollContent
+        autoFocus
         className={`${gamepadDialogClasses.GamepadDialogContent} DialogContent _DialogLayout`}
-        style={{
-          display: "flex",
-          flex: "0 1 auto",
-          flexDirection: "column",
-          minHeight: 0,
-        }}
+        focusable
+        noFocusRing
+        onCancel={onClose}
       >
-        <ModalScrollPanel
-          focusable={false}
-          style={{ flex: "1 1 auto", minHeight: 0 }}
-        >
-          <ModalScrollContent
-            autoFocus
-            focusable
-            noFocusRing
-            onCancel={onClose}
+        {loading ? (
+          <div>Loading...</div>
+        ) : log ? (
+          <pre
+            style={{
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              margin: 0,
+            }}
           >
-            {loading ? (
-              <div>Loading...</div>
-            ) : log ? (
-              <pre
-                style={{
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
-                  margin: 0,
-                }}
-              >
-                {log}
-              </pre>
-            ) : (
-              <div>No debug log found. Launch a game to generate one.</div>
-            )}
-          </ModalScrollContent>
-        </ModalScrollPanel>
-      </div>
-    </ModalPosition>
+            {log}
+          </pre>
+        ) : (
+          <div>No debug log found. Launch a game to generate one.</div>
+        )}
+      </ModalScrollContent>
+    </ModalScrollPanel>
   )
 }
 
