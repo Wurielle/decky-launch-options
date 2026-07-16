@@ -2,6 +2,7 @@ import asyncio
 from datetime import datetime
 import json
 import os
+import shutil
 import stat
 import struct
 import sys
@@ -19,6 +20,7 @@ from py_modules import vdf
 
 SETTINGS_FOLDER_NAME = '.dlo'
 SETTINGS_FOLDER_PATH = os.path.join(os.path.expanduser('~'), SETTINGS_FOLDER_NAME)
+SETTINGS_BACKUP_FOLDER_PATH = f"{SETTINGS_FOLDER_PATH}.backup"
 SETTINGS_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'settings.json')}"
 DEBUG_LOG_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'debug.log')}"
 BACKUPS_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'backups')}"
@@ -33,6 +35,7 @@ COMMAND = f"{SHORT_SH_COMMAND_PATH} %command%"
 info = {
     "SETTINGS_FOLDER_NAME": SETTINGS_FOLDER_NAME,
     "SETTINGS_FOLDER_PATH": SETTINGS_FOLDER_PATH,
+    "SETTINGS_BACKUP_FOLDER_PATH": SETTINGS_BACKUP_FOLDER_PATH,
     "SETTINGS_PATH": SETTINGS_PATH,
     "SH_COMMAND_NAME": SH_COMMAND_NAME,
     "SHORT_SH_COMMAND_PATH": SHORT_SH_COMMAND_PATH,
@@ -48,7 +51,30 @@ def log(str):
 
 
 class Plugin:
+    def _restore_settings_folder_backup(self):
+        folder_path = Path(SETTINGS_FOLDER_PATH)
+        backup_folder_path = Path(SETTINGS_BACKUP_FOLDER_PATH)
+
+        if folder_path.exists() or not backup_folder_path.is_dir():
+            return
+
+        shutil.copytree(backup_folder_path, folder_path)
+
+    def _backup_settings_folder(self):
+        folder_path = Path(SETTINGS_FOLDER_PATH)
+        backup_folder_path = Path(SETTINGS_BACKUP_FOLDER_PATH)
+
+        if not folder_path.is_dir():
+            return
+
+        if backup_folder_path.exists():
+            shutil.rmtree(backup_folder_path)
+
+        shutil.copytree(folder_path, backup_folder_path)
+
     async def prepare(self):
+        self._restore_settings_folder_backup()
+
         folder_path = Path(SETTINGS_FOLDER_PATH)
         folder_path.mkdir(parents=True, exist_ok=True)
         await self.backup_existing_original_launch_options()
@@ -439,6 +465,12 @@ class Plugin:
             os.chmod(FULL_SH_COMMAND_PATH, current_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
         except (OSError, IOError, PermissionError) as e:
             log(f"Failed to update launcher script during uninstall: {e}")
+            raise
+
+        try:
+            self._backup_settings_folder()
+        except (OSError, IOError, PermissionError) as e:
+            log(f"Failed to backup settings during uninstall: {e}")
             raise
 
     async def _migration(self):
