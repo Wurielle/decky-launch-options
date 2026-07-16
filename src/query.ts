@@ -211,6 +211,7 @@ const useDloLaunchOptionsActions = () => {
     applyDloLaunchOptions(
       context: SetDloLaunchOptionsContext | void,
       data: Pick<SetDloLaunchOptionsData, "appid">,
+      missingShellLaunchOptions?: string,
     ) {
       if (!context) return
 
@@ -219,7 +220,8 @@ const useDloLaunchOptionsActions = () => {
       } else {
         setAppLaunchOptions(
           data.appid,
-          getAppOriginalLaunchOptions(String(data.appid)),
+          missingShellLaunchOptions ??
+            getAppOriginalLaunchOptions(String(data.appid)),
         )
       }
     },
@@ -244,7 +246,9 @@ export const useSetDloLaunchOptionsMutation = () => {
         ),
       )
     },
-    onSuccess: applyDloLaunchOptions,
+    onSuccess(context, data) {
+      applyDloLaunchOptions(context, data, data.currentLaunchOptions)
+    },
   })
 }
 
@@ -330,6 +334,8 @@ export const useApplyLaunchOptionsMutation = () => {
         )
       })
     },
-    onSuccess: applyDloLaunchOptions,
+    onSuccess(context, data) {
+      applyDloLaunchOptions(context, data)
+    },
   })
 }

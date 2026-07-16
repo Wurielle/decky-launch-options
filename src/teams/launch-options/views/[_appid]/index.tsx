@@ -47,7 +47,7 @@ import { LaunchOptionActionButton } from "../../../../components/launch-option-a
 import { FaEllipsisV } from "react-icons/fa"
 import {
   AppLaunchOptionsUpdatedEvent,
-  appLaunchOptionsIncludesDloCommand,
+  appLaunchOptionsIncludesSupportedDloCommand,
   appLaunchOptionsUpdatedEventType,
   copyTextToClipboard,
   setAppLaunchOptions,
@@ -889,9 +889,9 @@ export function AppLaunchOptionsPage() {
     ? autoManageNonSteamLaunchOptions
     : autoManageLaunchOptions
   const appLaunchOptionsHasDloCommand = getInfoQuery.data
-    ? appLaunchOptionsIncludesDloCommand(
+    ? appLaunchOptionsIncludesSupportedDloCommand(
         currentLaunchOptions,
-        getInfoQuery.data.COMMAND,
+        getInfoQuery.data,
       )
     : true
   const showInactiveAutoManageWarning =
