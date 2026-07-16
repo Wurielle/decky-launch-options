@@ -1,20 +1,28 @@
 import {
   ButtonItem,
-  DialogBody,
   Dropdown,
   Field,
-  ModalRoot,
+  Focusable,
+  gamepadDialogClasses,
   Navigation,
   PanelSection,
   PanelSectionRow,
-  ScrollPanel,
+  ScrollPanelGroup,
   showModal,
   SingleDropdownOption,
   ToggleField,
 } from "@decky/ui"
 import { toaster } from "@decky/api"
 import { useStore } from "@tanstack/react-store"
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import {
+  type ComponentType,
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react"
 import { FaChevronDown, FaChevronUp } from "react-icons/fa"
 import { get_debug_log, useGetInfoQuery } from "../query"
 import { batchCreateLaunchOptionsEventType, routes } from "../shared"
@@ -24,6 +32,22 @@ import {
   settingsStore,
 } from "../stores"
 import { copyTextToClipboard } from "../utils"
+
+const ModalScrollPanel = ScrollPanelGroup as ComponentType<{
+  className?: string
+  children?: ReactNode
+  focusable?: boolean
+  style?: CSSProperties
+}>
+
+const ModalScrollContent = Focusable as ComponentType<{
+  autoFocus?: boolean
+  className?: string
+  children: ReactNode
+  focusable?: boolean
+  noFocusRing?: boolean
+  onCancel?: () => void
+}>
 
 function resetAncestorScrollPositions(element: HTMLElement | null) {
   const ownerDocument = element?.ownerDocument ?? document
@@ -52,27 +76,35 @@ function DebugLogModal({ onClose }: { onClose: () => void }) {
   }, [])
 
   return (
-    <ModalRoot onCancel={onClose}>
-      <DialogBody>
-        <ScrollPanel>
-          {loading ? (
-            <div>Loading...</div>
-          ) : log ? (
-            <pre
-              style={{
-                whiteSpace: "pre-wrap",
-                wordBreak: "break-word",
-                margin: 0,
-              }}
-            >
-              {log}
-            </pre>
-          ) : (
-            <div>No debug log found. Launch a game to generate one.</div>
-          )}
-        </ScrollPanel>
-      </DialogBody>
-    </ModalRoot>
+    <ModalScrollPanel
+      className={gamepadDialogClasses.ModalPosition}
+      focusable={false}
+      style={{ position: "absolute" }}
+    >
+      <ModalScrollContent
+        autoFocus
+        className={`${gamepadDialogClasses.GamepadDialogContent} DialogContent _DialogLayout`}
+        focusable
+        noFocusRing
+        onCancel={onClose}
+      >
+        {loading ? (
+          <div>Loading...</div>
+        ) : log ? (
+          <pre
+            style={{
+              whiteSpace: "pre-wrap",
+              wordBreak: "break-word",
+              margin: 0,
+            }}
+          >
+            {log}
+          </pre>
+        ) : (
+          <div>No debug log found. Launch a game to generate one.</div>
+        )}
+      </ModalScrollContent>
+    </ModalScrollPanel>
   )
 }
 
