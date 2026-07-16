@@ -1,10 +1,10 @@
 import {
   ButtonItem,
-  DialogBody,
   Dropdown,
   Field,
   Focusable,
-  ModalRoot,
+  gamepadDialogClasses,
+  ModalPosition,
   Navigation,
   PanelSection,
   PanelSectionRow,
@@ -15,7 +15,15 @@ import {
 } from "@decky/ui"
 import { toaster } from "@decky/api"
 import { useStore } from "@tanstack/react-store"
-import { useEffect, useLayoutEffect, useRef, useState } from "react"
+import {
+  type ComponentType,
+  type CSSProperties,
+  type ReactNode,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react"
 import { FaChevronDown, FaChevronUp } from "react-icons/fa"
 import { get_debug_log, useGetInfoQuery } from "../query"
 import { batchCreateLaunchOptionsEventType, routes } from "../shared"
@@ -25,6 +33,20 @@ import {
   settingsStore,
 } from "../stores"
 import { copyTextToClipboard } from "../utils"
+
+const ModalScrollPanel = ScrollPanelGroup as ComponentType<{
+  children?: ReactNode
+  focusable?: boolean
+  style?: CSSProperties
+}>
+
+const ModalScrollContent = Focusable as ComponentType<{
+  autoFocus?: boolean
+  children: ReactNode
+  focusable?: boolean
+  noFocusRing?: boolean
+  onCancel?: () => void
+}>
 
 function resetAncestorScrollPositions(element: HTMLElement | null) {
   const ownerDocument = element?.ownerDocument ?? document
@@ -53,10 +75,26 @@ function DebugLogModal({ onClose }: { onClose: () => void }) {
   }, [])
 
   return (
-    <ModalRoot onCancel={onClose}>
-      <DialogBody>
-        <ScrollPanelGroup>
-          <Focusable noFocusRing>
+    <ModalPosition>
+      <div
+        className={`${gamepadDialogClasses.GamepadDialogContent} DialogContent _DialogLayout`}
+        style={{
+          display: "flex",
+          flex: "0 1 auto",
+          flexDirection: "column",
+          minHeight: 0,
+        }}
+      >
+        <ModalScrollPanel
+          focusable={false}
+          style={{ flex: "1 1 auto", minHeight: 0 }}
+        >
+          <ModalScrollContent
+            autoFocus
+            focusable
+            noFocusRing
+            onCancel={onClose}
+          >
             {loading ? (
               <div>Loading...</div>
             ) : log ? (
@@ -72,10 +110,10 @@ function DebugLogModal({ onClose }: { onClose: () => void }) {
             ) : (
               <div>No debug log found. Launch a game to generate one.</div>
             )}
-          </Focusable>
-        </ScrollPanelGroup>
-      </DialogBody>
-    </ModalRoot>
+          </ModalScrollContent>
+        </ModalScrollPanel>
+      </div>
+    </ModalPosition>
   )
 }
 
