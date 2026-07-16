@@ -418,6 +418,25 @@ if __name__ == "__main__":
         print(f"Expected: {expected_d}")
         print(f"\n{'✓ PASS' if match_d else '✗ FAIL'}")
 
+        # Test D2: Higher priority environment variables override lower priority
+        print(f"\n{'='*60}")
+        print("Test: Higher priority environment variable wins")
+        print(f"{'='*60}")
+        settings_d2 = make_settings([
+            make_opt("low", "CUSTOM_ENV=low low-wrapper %command%", priority=0),
+            make_opt("high", "CUSTOM_ENV=high high-wrapper %command%", priority=10),
+        ], env_variable_merges=[])
+        final_args_d2, env_vars_d2 = get_final_args_details(settings_d2, "123")
+        expected_args_d2 = ["high-wrapper", "low-wrapper", "/path/to/game"]
+        expected_env_d2 = {"CUSTOM_ENV": "high"}
+        match_d2 = final_args_d2 == expected_args_d2 and env_vars_d2 == expected_env_d2
+        print(f"Args:     {final_args_d2}")
+        print(f"Expected: {expected_args_d2}")
+        print(f"Env:      {env_vars_d2}")
+        print(f"Expected: {expected_env_d2}")
+        print(f"\n{'PASS' if match_d2 else 'FAIL'}")
+        assert match_d2
+
         # Test E: Merge configured env var values with a semicolon delimiter
         print(f"\n{'='*60}")
         print("Test: Env variable merge - WINEDLLOVERRIDES uses semicolon")

@@ -296,9 +296,14 @@ def get_final_args_details(settings, appid):
     # Python's sort is stable, so equal-priority options keep their original order.
     launch_option_parts.sort(key=lambda x: x[0], reverse=True)
 
-    # Merge sorted results into collectors
-    for priority, parsed in launch_option_parts:
+    # Environment variables use last-value-wins semantics, so process them from
+    # lowest to highest priority. The stable sort preserves the existing behavior
+    # where a later option wins when priorities are equal.
+    for priority, parsed in sorted(launch_option_parts, key=lambda x: x[0]):
         add_env_vars(all_env_var_values, env_merge_rules, parsed['env_vars'])
+
+    # Merge command parts in execution order.
+    for priority, parsed in launch_option_parts:
         if parsed['prefix']:
             all_prefixes.append(parsed['prefix'])
         if parsed['suffix']:
