@@ -28,6 +28,7 @@ export const get_info = callable<
   {
     SETTINGS_FOLDER_NAME: string
     SETTINGS_FOLDER_PATH: string
+    SETTINGS_BACKUP_FOLDER_PATH: string
     SETTINGS_PATH: string
     SH_COMMAND_NAME: string
     SHORT_SH_COMMAND_PATH: string
