@@ -5,6 +5,13 @@ export type AppLaunchOptionsUpdatedEvent = CustomEvent<{
   launchOptions: string
 }>
 
+export function appLaunchOptionsIncludesDloCommand(
+  appLaunchOptions: string,
+  command: string,
+): boolean {
+  return appLaunchOptions.includes(command)
+}
+
 export function setAppLaunchOptions(appid: number, launchOptions: string) {
   SteamClient.Apps.SetAppLaunchOptions(appid, launchOptions)
   window.dispatchEvent(

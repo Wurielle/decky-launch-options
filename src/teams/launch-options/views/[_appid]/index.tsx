@@ -36,6 +36,7 @@ import {
   useDeleteOriginalLaunchOptionsBackupsMutation,
   useGetInfoQuery,
   useGetOriginalLaunchOptionsBackupsQuery,
+  useSetDloLaunchOptionsMutation,
 } from "../../../../query"
 import { AppDetails } from "@decky/ui/dist/globals/steam-client/App"
 import { CreateLaunchOptionForm } from "../../../../components/create-launch-option-form"
@@ -46,6 +47,7 @@ import { LaunchOptionActionButton } from "../../../../components/launch-option-a
 import { FaEllipsisV } from "react-icons/fa"
 import {
   AppLaunchOptionsUpdatedEvent,
+  appLaunchOptionsIncludesDloCommand,
   appLaunchOptionsUpdatedEventType,
   copyTextToClipboard,
   setAppLaunchOptions,
@@ -792,30 +794,9 @@ function countActiveLaunchOptions(
   return count
 }
 
-function appLaunchOptionsIncludesDloCommand(
-  appLaunchOptions: string,
-  info?: {
-    COMMAND: string
-    SHORT_SH_COMMAND_PATH: string
-    FULL_SH_COMMAND_PATH: string
-  },
-): boolean {
-  if (!info) return true
-
-  return [
-    info.COMMAND,
-    info.SHORT_SH_COMMAND_PATH,
-    info.FULL_SH_COMMAND_PATH,
-  ].some((command) => command && appLaunchOptions.includes(command))
-}
-
 function appLaunchOptionsIsDloCommand(
   appLaunchOptions: string,
-  info?: {
-    COMMAND: string
-    SHORT_SH_COMMAND_PATH: string
-    FULL_SH_COMMAND_PATH: string
-  },
+  info?: { COMMAND: string },
 ): boolean {
   if (!info) return false
 
@@ -860,6 +841,9 @@ export function AppLaunchOptionsPage() {
   const { appid } = useParams<{ appid: string }>()
   const [tab, setTab] = useState<string>("local")
   const [currentLaunchOptions, setCurrentLaunchOptions] = useState("")
+  const [loadedLaunchOptionsAppid, setLoadedLaunchOptionsAppid] = useState<
+    string | null
+  >(null)
   const locallySetLaunchOptionsRef = useRef<string | undefined>(undefined)
   const [isNonSteamApp, setIsNonSteamApp] = useState(false)
   const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy)
@@ -898,14 +882,21 @@ export function AppLaunchOptionsPage() {
     deleteLaunchOptionsByValueId,
   } = useSettings()
   const getInfoQuery = useGetInfoQuery()
+  const setDloLaunchOptionsMutation = useSetDloLaunchOptionsMutation()
   const deleteOriginalLaunchOptionsBackupsMutation =
     useDeleteOriginalLaunchOptionsBackupsMutation()
   const autoManageCurrentApp = isNonSteamApp
     ? autoManageNonSteamLaunchOptions
     : autoManageLaunchOptions
+  const appLaunchOptionsHasDloCommand = getInfoQuery.data
+    ? appLaunchOptionsIncludesDloCommand(
+        currentLaunchOptions,
+        getInfoQuery.data.COMMAND,
+      )
+    : true
   const showInactiveAutoManageWarning =
     (!autoManageCurrentApp || getAppDisableAutoManageLaunchOptions(appid)) &&
-    !appLaunchOptionsIncludesDloCommand(currentLaunchOptions, getInfoQuery.data)
+    !appLaunchOptionsHasDloCommand
   const canManuallyChangeAppLaunchOptions =
     !autoManageCurrentApp || getAppDisableAutoManageLaunchOptions(appid)
   const showResetAppLaunchOptions =
@@ -1046,6 +1037,7 @@ export function AppLaunchOptionsPage() {
   useEffect(() => {
     locallySetLaunchOptionsRef.current = undefined
     setCurrentLaunchOptions("")
+    setLoadedLaunchOptionsAppid(null)
     setIsNonSteamApp(false)
   }, [appid])
   useEffect(() => {
@@ -1055,6 +1047,7 @@ export function AppLaunchOptionsPage() {
 
       locallySetLaunchOptionsRef.current = detail.launchOptions
       setCurrentLaunchOptions(detail.launchOptions)
+      setLoadedLaunchOptionsAppid(appid)
     }
 
     window.addEventListener(
@@ -1081,21 +1074,33 @@ export function AppLaunchOptionsPage() {
         const currentSteamLaunchOptions = appDetails.strLaunchOptions ?? ""
         const isNonSteam = typeof appDetails.strShortcutExe !== "undefined"
         if (!cancelled) setIsNonSteamApp(isNonSteam)
-        const setLaunchOptions = (launchOptions: string) => {
+        const setLaunchOptions = (
+          launchOptions: string,
+          hasAuthoritativeLaunchOptions: boolean = true,
+        ) => {
           if (!cancelled) {
             setCurrentLaunchOptions(
               isNonSteam
                 ? (locallySetLaunchOptionsRef.current ?? launchOptions)
                 : launchOptions,
             )
+            setLoadedLaunchOptionsAppid(
+              hasAuthoritativeLaunchOptions ? appid : null,
+            )
           }
         }
 
         if (isNonSteam) {
           get_shortcut_launch_options(appid).then(
-            (launchOptions) =>
-              setLaunchOptions(launchOptions ?? currentSteamLaunchOptions),
-            () => setLaunchOptions(currentSteamLaunchOptions),
+            (launchOptions) => {
+              if (launchOptions === null) {
+                setLaunchOptions(currentSteamLaunchOptions, false)
+                return
+              }
+
+              setLaunchOptions(launchOptions)
+            },
+            () => setLaunchOptions(currentSteamLaunchOptions, false),
           )
         } else {
           setLaunchOptions(currentSteamLaunchOptions)
@@ -1242,6 +1247,49 @@ export function AppLaunchOptionsPage() {
                     label={'Disable "Auto-manage Launch Options" for this app'}
                     bottomSeparator={"none"}
                   />
+                  {loadedLaunchOptionsAppid === appid &&
+                    getInfoQuery.data &&
+                    !appLaunchOptionsHasDloCommand && (
+                      <ButtonItem
+                        label={"Set DLO command as app launch options"}
+                        indentLevel={1}
+                        disabled={setDloLaunchOptionsMutation.isPending}
+                        onClick={() => {
+                          const info = getInfoQuery.data
+                          if (!info) return
+
+                          setDloLaunchOptionsMutation.mutate(
+                            {
+                              appid: Number(appid),
+                              currentLaunchOptions,
+                              command: info.COMMAND,
+                            },
+                            {
+                              onSuccess: (context) => {
+                                toaster.toast({
+                                  title: context.hasShellScript
+                                    ? "DLO command set"
+                                    : "DLO command not set",
+                                  body: context.hasShellScript
+                                    ? context.currentLaunchOptions
+                                    : "The DLO launcher script is unavailable; the original launch options were restored.",
+                                  duration: 5000,
+                                })
+                              },
+                              onError: (error) => {
+                                toaster.toast({
+                                  title: "Failed to set DLO command",
+                                  body: error.message,
+                                  duration: 5000,
+                                })
+                              },
+                            },
+                          )
+                        }}
+                      >
+                        Set DLO command
+                      </ButtonItem>
+                    )}
                   {getAppOriginalLaunchOptions(appid) && (
                     <ButtonItem
                       label={"Revert app launch options to original value"}
