@@ -24,10 +24,12 @@ export function appLaunchOptionsIncludesSupportedDloCommand(
 ): boolean {
   return [
     info.COMMAND,
-    `${info.SHORT_SH_COMMAND_PATH} %command%`,
-    `${info.FULL_SH_COMMAND_PATH} %command%`,
-  ].some((command) =>
-    appLaunchOptionsIncludesDloCommand(appLaunchOptions, command),
+    info.SHORT_SH_COMMAND_PATH,
+    info.FULL_SH_COMMAND_PATH,
+  ].some(
+    (command) =>
+      !!command &&
+      appLaunchOptionsIncludesDloCommand(appLaunchOptions, command),
   )
 }
 

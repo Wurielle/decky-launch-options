@@ -1079,13 +1079,17 @@ export function AppLaunchOptionsPage() {
           hasAuthoritativeLaunchOptions: boolean = true,
         ) => {
           if (!cancelled) {
+            const locallySetLaunchOptions = locallySetLaunchOptionsRef.current
             setCurrentLaunchOptions(
               isNonSteam
-                ? (locallySetLaunchOptionsRef.current ?? launchOptions)
+                ? (locallySetLaunchOptions ?? launchOptions)
                 : launchOptions,
             )
             setLoadedLaunchOptionsAppid(
-              hasAuthoritativeLaunchOptions ? appid : null,
+              hasAuthoritativeLaunchOptions ||
+                locallySetLaunchOptions !== undefined
+                ? appid
+                : null,
             )
           }
         }
