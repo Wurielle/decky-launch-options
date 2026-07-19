@@ -1255,7 +1255,21 @@ export function AppLaunchOptionsPage() {
                     getInfoQuery.data &&
                     !appLaunchOptionsHasDloCommand && (
                       <ButtonItem
-                        label={"Set DLO command as app launch options"}
+                        label={"Apply DLO command for this app"}
+                        description={
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 2,
+                            }}
+                          >
+                            <div>
+                              <strong>Current:</strong>{" "}
+                              {currentLaunchOptions.trim() || "(empty)"}
+                            </div>
+                          </div>
+                        }
                         indentLevel={1}
                         disabled={setDloLaunchOptionsMutation.isPending}
                         onClick={() => {
@@ -1271,18 +1285,14 @@ export function AppLaunchOptionsPage() {
                             {
                               onSuccess: (context) => {
                                 toaster.toast({
-                                  title: context.hasShellScript
-                                    ? "DLO command set"
-                                    : "DLO command not set",
-                                  body: context.hasShellScript
-                                    ? context.currentLaunchOptions
-                                    : "The DLO launcher script is unavailable; the original launch options were restored.",
+                                  title: "Applied DLO command",
+                                  body: context.currentLaunchOptions,
                                   duration: 5000,
                                 })
                               },
                               onError: (error) => {
                                 toaster.toast({
-                                  title: "Failed to set DLO command",
+                                  title: "Failed to apply DLO command",
                                   body: error.message,
                                   duration: 5000,
                                 })
@@ -1291,7 +1301,7 @@ export function AppLaunchOptionsPage() {
                           )
                         }}
                       >
-                        Set DLO command
+                        Apply
                       </ButtonItem>
                     )}
                   {getAppOriginalLaunchOptions(appid) && (
