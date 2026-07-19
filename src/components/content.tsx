@@ -2,29 +2,19 @@ import {
   ButtonItem,
   Dropdown,
   Field,
-  Focusable,
-  gamepadDialogClasses,
   Navigation,
   PanelSection,
   PanelSectionRow,
-  ScrollPanelGroup,
   showModal,
   SingleDropdownOption,
   ToggleField,
 } from "@decky/ui"
 import { toaster } from "@decky/api"
 import { useStore } from "@tanstack/react-store"
-import {
-  type ComponentType,
-  type CSSProperties,
-  type ReactNode,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react"
+import { useLayoutEffect, useRef, useState } from "react"
 import { FaChevronDown, FaChevronUp } from "react-icons/fa"
-import { get_debug_log, useGetInfoQuery } from "../query"
+import { debugLaunchOptions } from "../debug-launch-options"
+import { useGetInfoQuery } from "../query"
 import { batchCreateLaunchOptionsEventType, routes } from "../shared"
 import {
   type LaunchOptionSort,
@@ -32,22 +22,7 @@ import {
   settingsStore,
 } from "../stores"
 import { copyTextToClipboard } from "../utils"
-
-const ModalScrollPanel = ScrollPanelGroup as ComponentType<{
-  className?: string
-  children?: ReactNode
-  focusable?: boolean
-  style?: CSSProperties
-}>
-
-const ModalScrollContent = Focusable as ComponentType<{
-  autoFocus?: boolean
-  className?: string
-  children: ReactNode
-  focusable?: boolean
-  noFocusRing?: boolean
-  onCancel?: () => void
-}>
+import { DebugLogModal } from "./debug-log-modal"
 
 function resetAncestorScrollPositions(element: HTMLElement | null) {
   const ownerDocument = element?.ownerDocument ?? document
@@ -62,50 +37,6 @@ function resetAncestorScrollPositions(element: HTMLElement | null) {
   }
 
   ownerDocument.scrollingElement?.scrollTo({ top: 0 })
-}
-
-function DebugLogModal({ onClose }: { onClose: () => void }) {
-  const [log, setLog] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    get_debug_log().then((result) => {
-      setLog(result)
-      setLoading(false)
-    })
-  }, [])
-
-  return (
-    <ModalScrollPanel
-      className={gamepadDialogClasses.ModalPosition}
-      focusable={false}
-      style={{ position: "absolute" }}
-    >
-      <ModalScrollContent
-        autoFocus
-        className={`${gamepadDialogClasses.GamepadDialogContent} DialogContent _DialogLayout`}
-        focusable
-        noFocusRing
-        onCancel={onClose}
-      >
-        {loading ? (
-          <div>Loading...</div>
-        ) : log ? (
-          <pre
-            style={{
-              whiteSpace: "pre-wrap",
-              wordBreak: "break-word",
-              margin: 0,
-            }}
-          >
-            {log}
-          </pre>
-        ) : (
-          <div>No debug log found. Launch a game to generate one.</div>
-        )}
-      </ModalScrollContent>
-    </ModalScrollPanel>
-  )
 }
 
 export function Content() {
@@ -304,92 +235,7 @@ export function Content() {
                 onClick={() => {
                   window.dispatchEvent(
                     new CustomEvent(batchCreateLaunchOptionsEventType, {
-                      detail: [
-                        {
-                          id: "portal-args",
-                          name: "Portal args",
-                          on: "-novid +cl_showfps 3",
-                          off: "",
-                          enableGlobally: false,
-                        },
-                        {
-                          id: "steam-deck",
-                          group: "Steam",
-                          name: "Steam Deck",
-                          on: "SteamDeck=1",
-                          off: "SteamDeck=0",
-                          enableGlobally: true,
-                        },
-                        {
-                          id: "mangohud",
-                          group: "MangoHud",
-                          name: "MangoHud",
-                          on: "mangohud %command%",
-                          off: "",
-                          enableGlobally: false,
-                        },
-                        {
-                          id: "mangohud-config-preset-none",
-                          group: "MangoHud",
-                          name: "MangoHud Preset",
-                          on: "",
-                          off: "",
-                          enableGlobally: false,
-                          valueId: "mangohud-config-preset",
-                          valueName: "None",
-                          fallbackValue: true,
-                        },
-                        {
-                          id: "mangohud-config-preset-0",
-                          group: "MangoHud",
-                          name: "MangoHud Preset",
-                          on: 'MANGOHUD_CONFIG="preset=0"',
-                          off: "",
-                          enableGlobally: false,
-                          valueId: "mangohud-config-preset",
-                          valueName: "No Hud",
-                        },
-                        {
-                          id: "mangohud-config-preset-1",
-                          group: "MangoHud",
-                          name: "MangoHud Preset",
-                          on: 'MANGOHUD_CONFIG="preset=1"',
-                          off: "",
-                          enableGlobally: false,
-                          valueId: "mangohud-config-preset",
-                          valueName: "FPS Only",
-                        },
-                        {
-                          id: "mangohud-config-preset-2",
-                          group: "MangoHud",
-                          name: "MangoHud Preset",
-                          on: 'MANGOHUD_CONFIG="preset=2"',
-                          off: "",
-                          enableGlobally: false,
-                          valueId: "mangohud-config-preset",
-                          valueName: "Horizontal",
-                        },
-                        {
-                          id: "mangohud-config-preset-3",
-                          group: "MangoHud",
-                          name: "MangoHud Preset",
-                          on: 'MANGOHUD_CONFIG="preset=3"',
-                          off: "",
-                          enableGlobally: false,
-                          valueId: "mangohud-config-preset",
-                          valueName: "Extended",
-                        },
-                        {
-                          id: "mangohud-config-preset-4",
-                          group: "MangoHud",
-                          name: "MangoHud Preset",
-                          on: 'MANGOHUD_CONFIG="preset=4"',
-                          off: "",
-                          enableGlobally: false,
-                          valueId: "mangohud-config-preset",
-                          valueName: "Detailed",
-                        },
-                      ],
+                      detail: debugLaunchOptions,
                     }),
                   )
                 }}
