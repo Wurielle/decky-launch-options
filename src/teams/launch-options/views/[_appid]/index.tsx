@@ -1,4 +1,18 @@
-import { ConfirmModal, showModal, useParams } from "@decky/ui"
+import { toaster } from "@decky/api"
+import {
+  ButtonItem,
+  ConfirmModal,
+  Field,
+  findModule,
+  Focusable,
+  NavEntryPositionPreferences,
+  PanelSectionRow,
+  showModal,
+  Tabs,
+  TextField,
+  ToggleField,
+  useParams,
+} from "@decky/ui"
 import { AppDetails } from "@decky/ui/dist/globals/steam-client/App"
 import { useStore } from "@tanstack/react-store"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -19,18 +33,32 @@ import {
   appLaunchOptionsIncludesSupportedDloCommand,
   appLaunchOptionsIsDloCommand,
   appLaunchOptionsUpdatedEventType,
+  countActiveLaunchOptions,
+  HierarchicalLaunchOption,
   LaunchOptionScope,
+  setAppLaunchOptions,
   toHierarchicalLaunchOptions,
 } from "../../../../utils"
-import {
-  AppLaunchOptionsTabs,
-  FocusTarget,
-  GroupedLaunchOptions,
-} from "../../components/app-launch-options-tabs"
+import { BackupActionButton } from "../../components/backup-action-button"
+import { InactiveAutoManageWarning } from "../../components/inactive-auto-manage-warning"
+import { renderLaunchOptionItems } from "../../components/launch-option-list"
 import { LaunchOptionsBackupsModal } from "../../components/launch-options-backups-modal"
 import { ModalWrapper } from "../../components/modal-wrapper"
 
 const advancedTabId = "__advanced"
+
+interface FocusTarget {
+  id: string
+  version: number
+}
+
+type GroupedLaunchOptions = Record<
+  string,
+  {
+    local: HierarchicalLaunchOption[]
+    global: HierarchicalLaunchOption[]
+  }
+>
 
 export function AppLaunchOptionsPage() {
   const { appid } = useParams<{ appid: string }>()
@@ -206,6 +234,15 @@ export function AppLaunchOptionsPage() {
   )
     ? ["global", "local"]
     : ["local", "global"]
+  const { TabCount } = findModule((mod) => {
+    if (typeof mod !== "object") return false
+
+    if (mod.TabCount && mod.TabTitle) {
+      return true
+    }
+
+    return false
+  })
 
   // this fixes weird issues when switching tab by forcing the blur on the active element (no document.activeElement.blur doesn't work)
   const [readyToShow, setReadyToShow] = useState(true)
@@ -407,48 +444,377 @@ export function AppLaunchOptionsPage() {
       }}
     >
       <div style={{ flex: 1, minHeight: 0 }}>
-        <AppLaunchOptionsTabs
-          appid={appid}
-          tab={tab}
-          handleShowTab={handleShowTab}
-          readyToShow={readyToShow}
-          focusTarget={focusTarget}
-          focusTargetId={focusTargetId}
-          setFocusTargetId={setFocusTargetId}
-          isNonSteamApp={isNonSteamApp}
-          showInactiveAutoManageWarning={showInactiveAutoManageWarning}
-          loadedLaunchOptionsAppid={loadedLaunchOptionsAppid}
-          currentLaunchOptions={currentLaunchOptions}
-          appLaunchOptionsHasDloCommand={appLaunchOptionsHasDloCommand}
-          canManuallyChangeAppLaunchOptions={canManuallyChangeAppLaunchOptions}
-          showResetAppLaunchOptions={showResetAppLaunchOptions}
-          getInfoQuery={getInfoQuery}
-          setDloLaunchOptionsMutation={setDloLaunchOptionsMutation}
-          getAppDisableAutoManageLaunchOptions={
-            getAppDisableAutoManageLaunchOptions
-          }
-          setAppDisableAutoManageLaunchOptions={
-            setAppDisableAutoManageLaunchOptions
-          }
-          getAppOriginalLaunchOptions={getAppOriginalLaunchOptions}
-          setAppOriginalLaunchOptions={setAppOriginalLaunchOptions}
-          getAppLaunchOptionState={getAppLaunchOptionState}
-          setAppLaunchOptionState={setAppLaunchOptionState}
-          setAppValueIdState={setAppValueIdState}
-          duplicateLaunchOption={duplicateLaunchOption}
-          showCreateLaunchOptionFormModal={showCreateLaunchOptionFormModal}
-          showUpdateLaunchOptionFormModal={showUpdateLaunchOptionFormModal}
-          showLaunchOptionsBackupsModal={showLaunchOptionsBackupsModal}
-          confirmDeleteLaunchOptionsBackups={confirmDeleteLaunchOptionsBackups}
-          confirmDeleteLaunchOption={confirmDeleteLaunchOption}
-          localLaunchOptions={localLaunchOptions}
-          globalLaunchOptions={globalLaunchOptions}
-          savedLaunchOptions={settings.launchOptions}
-          showCommands={showCommands}
-          groups={groups}
-          groupedLaunchOptions={groupedLaunchOptions}
-          groupSectionOrder={groupSectionOrder}
-          isLaunchOptionGlobal={isLaunchOptionGlobal}
+        <Tabs
+          activeTab={tab}
+          onShowTab={handleShowTab}
+          autoFocusContents
+          tabs={[
+            {
+              id: advancedTabId,
+              title: "Advanced",
+              content: readyToShow && (
+                <Focusable
+                  key="advanced"
+                  navEntryPreferPosition={
+                    NavEntryPositionPreferences.PREFERRED_CHILD
+                  }
+                  style={{ height: "100%" }}
+                >
+                  <ToggleField
+                    checked={getAppDisableAutoManageLaunchOptions(appid)}
+                    onChange={(value) =>
+                      setAppDisableAutoManageLaunchOptions(appid, value)
+                    }
+                    description={
+                      'Decky Launch Options will not manage the "Launch Options" field for this app'
+                    }
+                    label={'Disable "Auto-manage Launch Options" for this app'}
+                    bottomSeparator={"none"}
+                  />
+                  {loadedLaunchOptionsAppid === appid &&
+                    getInfoQuery.data &&
+                    !appLaunchOptionsHasDloCommand && (
+                      <ButtonItem
+                        label={"Apply DLO command for this app"}
+                        description={
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 2,
+                            }}
+                          >
+                            <div>
+                              <strong>Current:</strong>{" "}
+                              {currentLaunchOptions.trim() || "(empty)"}
+                            </div>
+                          </div>
+                        }
+                        indentLevel={1}
+                        disabled={setDloLaunchOptionsMutation.isPending}
+                        onClick={() => {
+                          const info = getInfoQuery.data
+                          if (!info) return
+
+                          setDloLaunchOptionsMutation.mutate(
+                            {
+                              appid: Number(appid),
+                              currentLaunchOptions,
+                              command: info.COMMAND,
+                            },
+                            {
+                              onSuccess: (context) => {
+                                if (!context.hasShellScript) {
+                                  toaster.toast({
+                                    title: "DLO command not applied",
+                                    body: "The DLO launcher script is missing.",
+                                    duration: 5000,
+                                    critical: true,
+                                  })
+                                  return
+                                }
+
+                                toaster.toast({
+                                  title: "Applied DLO command",
+                                  body: context.currentLaunchOptions,
+                                  duration: 5000,
+                                })
+                              },
+                              onError: (error) => {
+                                toaster.toast({
+                                  title: "Failed to apply DLO command",
+                                  body: error.message,
+                                  duration: 5000,
+                                })
+                              },
+                            },
+                          )
+                        }}
+                      >
+                        Apply
+                      </ButtonItem>
+                    )}
+                  {getAppOriginalLaunchOptions(appid) && (
+                    <ButtonItem
+                      label={"Revert app launch options to original value"}
+                      description={
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 2,
+                          }}
+                        >
+                          <div>
+                            <strong>Current:</strong>{" "}
+                            {currentLaunchOptions.trim() || "(empty)"}
+                          </div>
+                          <div>
+                            <strong>Original:</strong>{" "}
+                            {getAppOriginalLaunchOptions(appid).trim() ||
+                              "(empty)"}
+                          </div>
+                        </div>
+                      }
+                      indentLevel={1}
+                      disabled={!canManuallyChangeAppLaunchOptions}
+                      onClick={() => {
+                        setAppLaunchOptions(
+                          Number(appid),
+                          getAppOriginalLaunchOptions(appid),
+                        )
+                        setAppOriginalLaunchOptions(appid, "")
+                        toaster.toast({
+                          title: "App launch options reverted",
+                          body: getAppOriginalLaunchOptions(appid),
+                          duration: 5000,
+                        })
+                      }}
+                    >
+                      Revert
+                    </ButtonItem>
+                  )}
+                  {showResetAppLaunchOptions && (
+                    <ButtonItem
+                      label={"Reset app launch options to empty value"}
+                      description={
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 2,
+                          }}
+                        >
+                          <div>
+                            <strong>Current:</strong>{" "}
+                            {currentLaunchOptions.trim() || "(empty)"}
+                          </div>
+                          <div>
+                            <strong>Original:</strong> (empty)
+                          </div>
+                        </div>
+                      }
+                      indentLevel={1}
+                      disabled={!canManuallyChangeAppLaunchOptions}
+                      onClick={() => {
+                        setAppLaunchOptions(Number(appid), "")
+                        setAppOriginalLaunchOptions(appid, "")
+                        toaster.toast({
+                          title: "App launch options reset",
+                          body: "(empty)",
+                          duration: 5000,
+                        })
+                      }}
+                    >
+                      Reset
+                    </ButtonItem>
+                  )}
+                  <Field
+                    label={"Original launch options backups"}
+                    description={"Show backed up original launch options"}
+                    childrenLayout={"inline"}
+                  >
+                    <BackupActionButton
+                      label="Backups actions"
+                      actions={[
+                        {
+                          label: "Show",
+                          onSelected: showLaunchOptionsBackupsModal,
+                        },
+                        {
+                          label: "Delete all",
+                          tone: "destructive",
+                          onSelected: confirmDeleteLaunchOptionsBackups,
+                        },
+                      ]}
+                    />
+                  </Field>
+                </Focusable>
+              ),
+            },
+            {
+              id: "local",
+              title: "Local",
+              content: readyToShow && (
+                <Focusable
+                  key={`local-${focusTarget?.version ?? 0}`}
+                  navEntryPreferPosition={
+                    NavEntryPositionPreferences.PREFERRED_CHILD
+                  }
+                  style={{ height: "100%" }}
+                >
+                  {showInactiveAutoManageWarning && (
+                    <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
+                  )}
+                  <PanelSectionRow>
+                    <ButtonItem
+                      layout="below"
+                      onClick={() => {
+                        showCreateLaunchOptionFormModal()
+                      }}
+                    >
+                      Add launch option
+                    </ButtonItem>
+                  </PanelSectionRow>
+                  <Field
+                    childrenLayout={"below"}
+                    label={"Original launch options"}
+                  >
+                    <TextField
+                      value={getAppOriginalLaunchOptions(appid)}
+                      onChange={(e) =>
+                        setAppOriginalLaunchOptions(appid, e.target.value)
+                      }
+                    />
+                  </Field>
+                  {renderLaunchOptionItems({
+                    items: localLaunchOptions,
+                    savedLaunchOptions: settings.launchOptions,
+                    appid,
+                    showCommands,
+                    getAppLaunchOptionState,
+                    setAppLaunchOptionState,
+                    setAppValueIdState,
+                    setValueAsDefault: false,
+                    focusTargetId,
+                    setFocusTargetId,
+                    onEdit: showUpdateLaunchOptionFormModal,
+                    onDuplicate: duplicateLaunchOption,
+                    onDelete: confirmDeleteLaunchOption,
+                  })}
+                </Focusable>
+              ),
+              renderTabAddon: () => {
+                const count = countActiveLaunchOptions(
+                  settings.launchOptions,
+                  appid,
+                  getAppLaunchOptionState,
+                  (item) => !isLaunchOptionGlobal(item) && !item.group,
+                )
+                return (
+                  <span className={TabCount}>
+                    {count + Number(!!getAppOriginalLaunchOptions(appid))}
+                  </span>
+                )
+              },
+            },
+            {
+              id: "global",
+              title: "Global",
+              content: readyToShow && (
+                <Focusable
+                  key={`global-${focusTarget?.version ?? 0}`}
+                  navEntryPreferPosition={
+                    NavEntryPositionPreferences.PREFERRED_CHILD
+                  }
+                  style={{ height: "100%" }}
+                >
+                  {showInactiveAutoManageWarning && (
+                    <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
+                  )}
+                  <PanelSectionRow>
+                    <ButtonItem
+                      layout="below"
+                      onClick={() => {
+                        showCreateLaunchOptionFormModal()
+                      }}
+                    >
+                      Add launch option
+                    </ButtonItem>
+                  </PanelSectionRow>
+                  {renderLaunchOptionItems({
+                    items: globalLaunchOptions,
+                    savedLaunchOptions: settings.launchOptions,
+                    appid,
+                    showCommands,
+                    getAppLaunchOptionState,
+                    setAppLaunchOptionState,
+                    setAppValueIdState,
+                    setValueAsDefault: true,
+                    focusTargetId,
+                    setFocusTargetId,
+                    onEdit: showUpdateLaunchOptionFormModal,
+                    onDuplicate: duplicateLaunchOption,
+                    onDelete: confirmDeleteLaunchOption,
+                  })}
+                </Focusable>
+              ),
+              renderTabAddon: () => {
+                const count = countActiveLaunchOptions(
+                  settings.launchOptions,
+                  appid,
+                  getAppLaunchOptionState,
+                  (item) => isLaunchOptionGlobal(item) && !item.group,
+                )
+                return <span className={TabCount}>{count}</span>
+              },
+            },
+            ...groups.map((group) => ({
+              id: group,
+              title: group,
+              content: readyToShow && (
+                <Focusable
+                  key={`group-${group}-${focusTarget?.version ?? 0}`}
+                  navEntryPreferPosition={
+                    NavEntryPositionPreferences.PREFERRED_CHILD
+                  }
+                  style={{ height: "100%" }}
+                >
+                  {showInactiveAutoManageWarning && (
+                    <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
+                  )}
+                  <PanelSectionRow>
+                    <ButtonItem
+                      layout="below"
+                      onClick={() => {
+                        showCreateLaunchOptionFormModal()
+                      }}
+                    >
+                      Add launch option
+                    </ButtonItem>
+                  </PanelSectionRow>
+                  {groupSectionOrder.map((scope) => {
+                    const items = groupedLaunchOptions[group]?.[scope] ?? []
+                    if (items.length === 0) return null
+
+                    return (
+                      <div key={scope}>
+                        <div style={{ marginTop: "16px" }}>
+                          <strong>
+                            {scope === "local" ? "Local" : "Global"}
+                          </strong>
+                        </div>
+                        {renderLaunchOptionItems({
+                          items,
+                          savedLaunchOptions: settings.launchOptions,
+                          appid,
+                          showCommands,
+                          getAppLaunchOptionState,
+                          setAppLaunchOptionState,
+                          setAppValueIdState,
+                          setValueAsDefault: scope === "global",
+                          focusTargetId,
+                          setFocusTargetId,
+                          onEdit: showUpdateLaunchOptionFormModal,
+                          onDuplicate: duplicateLaunchOption,
+                          onDelete: confirmDeleteLaunchOption,
+                        })}
+                      </div>
+                    )
+                  })}
+                </Focusable>
+              ),
+              renderTabAddon: () => {
+                const count = countActiveLaunchOptions(
+                  settings.launchOptions,
+                  appid,
+                  getAppLaunchOptionState,
+                  (item) => item.group === group,
+                )
+                return <span className={TabCount}>{count}</span>
+              },
+            })),
+          ]}
         />
       </div>
     </div>
