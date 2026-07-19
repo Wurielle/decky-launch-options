@@ -209,13 +209,13 @@ export function AppLaunchOptionsPage() {
 
   // this fixes weird issues when switching tab by forcing the blur on the active element (no document.activeElement.blur doesn't work)
   const [readyToShow, setReadyToShow] = useState(true)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   useEffect(() => {
-    if (timeoutRef.current) clearInterval(timeoutRef.current)
-    timeoutRef.current = setInterval(() => {
+    setReadyToShow(false)
+    const timeout = window.setTimeout(() => {
       setReadyToShow(true)
     }, 100)
-    setReadyToShow(false)
+
+    return () => window.clearTimeout(timeout)
   }, [tab])
   useEffect(() => {
     locallySetLaunchOptionsRef.current = undefined

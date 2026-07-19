@@ -97,6 +97,16 @@ export function AppLaunchOptionsAdvancedTab({
                 },
                 {
                   onSuccess: (context) => {
+                    if (!context.hasShellScript) {
+                      toaster.toast({
+                        title: "DLO command not applied",
+                        body: "The DLO launcher script is missing.",
+                        duration: 5000,
+                        critical: true,
+                      })
+                      return
+                    }
+
                     toaster.toast({
                       title: "Applied DLO command",
                       body: context.currentLaunchOptions,
