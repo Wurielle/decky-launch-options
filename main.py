@@ -2,16 +2,25 @@ import asyncio
 from datetime import datetime
 import json
 import os
+import shutil
 import stat
+import struct
+import sys
 from pathlib import Path
+
+PLUGIN_DIR = Path(__file__).resolve().parent
+if str(PLUGIN_DIR) not in sys.path:
+    sys.path.insert(0, str(PLUGIN_DIR))
 
 # The decky plugin module is located at decky-loader/plugin
 # For easy intellisense checkout the decky-loader code repo
 # and add the `decky-loader/plugin/imports` path to `python.analysis.extraPaths` in `.vscode/settings.json`
 import decky
+from py_modules import vdf
 
 SETTINGS_FOLDER_NAME = '.dlo'
 SETTINGS_FOLDER_PATH = os.path.join(os.path.expanduser('~'), SETTINGS_FOLDER_NAME)
+SETTINGS_BACKUP_FOLDER_PATH = f"{SETTINGS_FOLDER_PATH}.backup"
 SETTINGS_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'settings.json')}"
 DEBUG_LOG_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'debug.log')}"
 BACKUPS_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'backups')}"
@@ -26,6 +35,7 @@ COMMAND = f"{SHORT_SH_COMMAND_PATH} %command%"
 info = {
     "SETTINGS_FOLDER_NAME": SETTINGS_FOLDER_NAME,
     "SETTINGS_FOLDER_PATH": SETTINGS_FOLDER_PATH,
+    "SETTINGS_BACKUP_FOLDER_PATH": SETTINGS_BACKUP_FOLDER_PATH,
     "SETTINGS_PATH": SETTINGS_PATH,
     "SH_COMMAND_NAME": SH_COMMAND_NAME,
     "SHORT_SH_COMMAND_PATH": SHORT_SH_COMMAND_PATH,
@@ -41,7 +51,30 @@ def log(str):
 
 
 class Plugin:
+    def _restore_settings_folder_backup(self):
+        folder_path = Path(SETTINGS_FOLDER_PATH)
+        backup_folder_path = Path(SETTINGS_BACKUP_FOLDER_PATH)
+
+        if folder_path.exists() or not backup_folder_path.is_dir():
+            return
+
+        shutil.copytree(backup_folder_path, folder_path)
+
+    def _backup_settings_folder(self):
+        folder_path = Path(SETTINGS_FOLDER_PATH)
+        backup_folder_path = Path(SETTINGS_BACKUP_FOLDER_PATH)
+
+        if not folder_path.is_dir():
+            return
+
+        if backup_folder_path.exists():
+            shutil.rmtree(backup_folder_path)
+
+        shutil.copytree(folder_path, backup_folder_path)
+
     async def prepare(self):
+        self._restore_settings_folder_backup()
+
         folder_path = Path(SETTINGS_FOLDER_PATH)
         folder_path.mkdir(parents=True, exist_ok=True)
         await self.backup_existing_original_launch_options()
@@ -100,6 +133,106 @@ class Plugin:
             raise FileNotFoundError(f"localconfig.vdf not found at: {localconfig_path}")
 
         return localconfig_path
+
+    async def get_shortcuts_vdf_paths(self):
+        userdata_path = (await self.get_steam_path()) / "userdata"
+
+        if not userdata_path.exists():
+            raise FileNotFoundError(
+                f"Steam userdata directory not found at: {userdata_path}"
+            )
+
+        try:
+            user_dirs = [
+                d for d in userdata_path.iterdir()
+                if d.is_dir() and d.name.isdigit()
+            ]
+        except PermissionError as e:
+            raise PermissionError(
+                f"Permission denied accessing userdata directory: {userdata_path}"
+            ) from e
+
+        user_dirs.sort(key=lambda x: x.stat().st_mtime, reverse=True)
+        return [
+            user_dir / "config" / "shortcuts.vdf"
+            for user_dir in user_dirs
+            if (user_dir / "config" / "shortcuts.vdf").exists()
+        ]
+
+    def _to_uint32(self, value):
+        return int(value) & 0xFFFFFFFF
+
+    def _to_int32(self, value):
+        value = self._to_uint32(value)
+        if value >= 0x80000000:
+            return value - 0x100000000
+        return value
+
+    def _steam_shortcut_appids_match(self, expected_appid, actual_appid):
+        try:
+            expected = int(expected_appid)
+            actual = int(actual_appid)
+        except (TypeError, ValueError):
+            return False
+
+        return (
+            expected == actual
+            or self._to_uint32(expected) == self._to_uint32(actual)
+            or self._to_int32(expected) == self._to_int32(actual)
+        )
+
+    def _get_shortcut_launch_options_from_path(self, appid, shortcuts_path):
+        shortcuts_vdf = vdf.binary_loads(shortcuts_path.read_bytes())
+        shortcuts = shortcuts_vdf.get("shortcuts")
+        if not isinstance(shortcuts, dict):
+            return None
+
+        for shortcut in shortcuts.values():
+            if not isinstance(shortcut, dict):
+                continue
+
+            if self._steam_shortcut_appids_match(appid, shortcut.get("appid")):
+                return shortcut.get("LaunchOptions", "")
+
+        return None
+
+    def _get_shortcut_launch_options(self, appid, shortcuts_vdf_paths):
+        for shortcuts_path in shortcuts_vdf_paths:
+            try:
+                launch_options = self._get_shortcut_launch_options_from_path(
+                    appid,
+                    shortcuts_path,
+                )
+            except (
+                OSError,
+                IOError,
+                SyntaxError,
+                TypeError,
+                ValueError,
+                struct.error,
+            ) as e:
+                log(
+                    "Failed to read shortcut launch options from "
+                    f"{shortcuts_path}: {e}"
+                )
+                continue
+
+            if launch_options is not None:
+                return launch_options
+
+        return None
+
+    async def get_shortcut_launch_options(self, appid):
+        try:
+            shortcuts_vdf_paths = await self.get_shortcuts_vdf_paths()
+            return await asyncio.to_thread(
+                self._get_shortcut_launch_options,
+                appid,
+                shortcuts_vdf_paths,
+            )
+        except (OSError, IOError, TypeError, ValueError) as e:
+            log(f"Failed to get shortcut launch options for {appid}: {e}")
+            return None
 
     async def debug_logs(self):
         log("------------ Debug logs")
@@ -332,6 +465,12 @@ class Plugin:
             os.chmod(FULL_SH_COMMAND_PATH, current_stat.st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
         except (OSError, IOError, PermissionError) as e:
             log(f"Failed to update launcher script during uninstall: {e}")
+            raise
+
+        try:
+            self._backup_settings_folder()
+        except (OSError, IOError, PermissionError) as e:
+            log(f"Failed to backup settings during uninstall: {e}")
             raise
 
     async def _migration(self):

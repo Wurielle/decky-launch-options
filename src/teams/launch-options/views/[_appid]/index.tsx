@@ -1,51 +1,46 @@
+import { toaster } from "@decky/api"
 import {
   ButtonItem,
   ConfirmModal,
-  DialogBody,
-  DialogButton,
-  DialogHeader,
-  Dropdown,
   Field,
   findModule,
   Focusable,
-  Menu,
-  MenuItem,
-  ModalRoot,
   NavEntryPositionPreferences,
   PanelSectionRow,
-  showContextMenu,
   showModal,
   Tabs,
   TextField,
-  Toggle,
   ToggleField,
   useParams,
 } from "@decky/ui"
-import { toaster } from "@decky/api"
-import { SingleDropdownOption } from "@decky/ui/dist/components/Dropdown"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { useSettings } from "../../../../hooks"
-import { UpdateLaunchOptionForm } from "../../../../components/update-launch-option-form"
+import { useStore } from "@tanstack/react-store"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { CreateLaunchOptionForm } from "../../../../components/create-launch-option-form"
 import { showDeleteLaunchOptionModal } from "../../../../components/delete-launch-option-modal"
-import { PluginProvider } from "../../../../components/plugin-provider"
-import { QueryClientProvider } from "@tanstack/react-query"
+import { UpdateLaunchOptionForm } from "../../../../components/update-launch-option-form"
+import { useSettings } from "../../../../hooks"
 import {
-  queryClient,
-  useDeleteOriginalLaunchOptionsBackupMutation,
   useDeleteOriginalLaunchOptionsBackupsMutation,
   useGetInfoQuery,
-  useGetOriginalLaunchOptionsBackupsQuery,
+  useSetDloLaunchOptionsMutation,
 } from "../../../../query"
-import { AppDetails } from "@decky/ui/dist/globals/steam-client/App"
-import { CreateLaunchOptionForm } from "../../../../components/create-launch-option-form"
 import { LaunchOption } from "../../../../shared"
-import { type LaunchOptionSort, settingsStore } from "../../../../stores"
-import { useStore } from "@tanstack/react-store"
-import { LaunchOptionActionButton } from "../../../../components/launch-option-action-button"
-import { FaEllipsisV } from "react-icons/fa"
-import { copyTextToClipboard } from "../../../../utils"
-
-type LaunchOptionScope = "local" | "global"
+import { settingsStore } from "../../../../stores"
+import {
+  appLaunchOptionsIncludesSupportedDloCommand,
+  appLaunchOptionsIsDloCommand,
+  countActiveLaunchOptions,
+  HierarchicalLaunchOption,
+  LaunchOptionScope,
+  setAppLaunchOptions,
+  toHierarchicalLaunchOptions,
+} from "../../../../utils"
+import { BackupActionButton } from "../../components/backup-action-button"
+import { InactiveAutoManageWarning } from "../../components/inactive-auto-manage-warning"
+import { renderLaunchOptionItems } from "../../components/launch-option-list"
+import { LaunchOptionsBackupsModal } from "../../components/launch-options-backups-modal"
+import { ModalWrapper } from "../../components/modal-wrapper"
+import { useAppLaunchOptionsState } from "../../hooks/use-app-launch-options-state"
 
 const advancedTabId = "__advanced"
 
@@ -54,790 +49,27 @@ interface FocusTarget {
   version: number
 }
 
-interface HierarchicalLaunchOption {
-  launchOption: LaunchOption
-  displayName: string
-  indentLevel: number
-}
-
-interface HierarchicalLaunchOptionNode {
-  item: HierarchicalLaunchOption
-  children: HierarchicalLaunchOptionNode[]
-  isActive: boolean
-  originalIndex: number
-}
-
-function compareLaunchOptionsAlphabetically(
-  a: LaunchOption,
-  b: LaunchOption,
-): number {
-  const name = a.name.localeCompare(b.name)
-  if (name !== 0) return name
-
-  const valueName = (a.valueName ?? "").localeCompare(b.valueName ?? "")
-  if (valueName !== 0) return valueName
-
-  const on = (a.on ?? "").localeCompare(b.on ?? "")
-  if (on !== 0) return on
-
-  return a.id.localeCompare(b.id)
-}
-
-function isLaunchOptionActive(
-  item: LaunchOption,
-  appid: string,
-  getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean,
-): boolean {
-  const isActive = getAppLaunchOptionState(appid, item.id)
-  return isActive ? !!item.on : !!item.off
-}
-
-function sortLaunchOptions(
-  options: LaunchOption[],
-  sortMode: LaunchOptionSort,
-  appid: string,
-  getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean,
-  sortActive: boolean = sortMode.endsWith("-active"),
-): LaunchOption[] {
-  return [...options].sort((a, b) => {
-    if (sortActive) {
-      const active =
-        Number(isLaunchOptionActive(b, appid, getAppLaunchOptionState)) -
-        Number(isLaunchOptionActive(a, appid, getAppLaunchOptionState))
-      if (active !== 0) return active
-    }
-
-    return compareLaunchOptionsAlphabetically(a, b)
-  })
-}
-
-function sortHierarchicalLaunchOptions(
-  items: HierarchicalLaunchOption[],
-  sortMode: LaunchOptionSort,
-  appid: string,
-  getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean,
-): HierarchicalLaunchOption[] {
-  if (!sortMode.endsWith("-active")) return items
-
-  const roots: HierarchicalLaunchOptionNode[] = []
-  const stack: HierarchicalLaunchOptionNode[] = []
-
-  for (let index = 0; index < items.length; index++) {
-    const item = items[index]
-    const node: HierarchicalLaunchOptionNode = {
-      item,
-      children: [],
-      isActive: isLaunchOptionActive(
-        item.launchOption,
-        appid,
-        getAppLaunchOptionState,
-      ),
-      originalIndex: index,
-    }
-
-    while (
-      stack.length > 0 &&
-      stack[stack.length - 1].item.indentLevel >= item.indentLevel
-    ) {
-      stack.pop()
-    }
-
-    if (stack.length > 0) {
-      stack[stack.length - 1].children.push(node)
-    } else {
-      roots.push(node)
-    }
-
-    stack.push(node)
+type GroupedLaunchOptions = Record<
+  string,
+  {
+    local: HierarchicalLaunchOption[]
+    global: HierarchicalLaunchOption[]
   }
-
-  const sortNodes = (nodes: HierarchicalLaunchOptionNode[]): boolean => {
-    let hasActiveNode = false
-
-    for (const node of nodes) {
-      node.isActive = sortNodes(node.children) || node.isActive
-      hasActiveNode = node.isActive || hasActiveNode
-    }
-
-    nodes.sort((a, b) => {
-      const active = Number(b.isActive) - Number(a.isActive)
-      if (active !== 0) return active
-
-      const alphabetical = compareLaunchOptionsAlphabetically(
-        a.item.launchOption,
-        b.item.launchOption,
-      )
-      if (alphabetical !== 0) return alphabetical
-
-      return a.originalIndex - b.originalIndex
-    })
-
-    return hasActiveNode
-  }
-
-  const flattenNodes = (
-    nodes: HierarchicalLaunchOptionNode[],
-  ): HierarchicalLaunchOption[] => {
-    const result: HierarchicalLaunchOption[] = []
-
-    for (const node of nodes) {
-      result.push(node.item)
-      result.push(...flattenNodes(node.children))
-    }
-
-    return result
-  }
-
-  sortNodes(roots)
-  return flattenNodes(roots)
-}
-
-function toHierarchicalLaunchOptions(
-  options: LaunchOption[],
-  useHierarchy: boolean,
-  sortMode: LaunchOptionSort,
-  appid: string,
-  getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean,
-): HierarchicalLaunchOption[] {
-  if (!useHierarchy) {
-    return sortLaunchOptions(
-      options,
-      sortMode,
-      appid,
-      getAppLaunchOptionState,
-    ).map((item) => ({
-      launchOption: item,
-      displayName: item.name,
-      indentLevel: 0,
-    }))
-  }
-
-  const alphabetical = sortLaunchOptions(
-    options,
-    sortMode,
-    appid,
-    getAppLaunchOptionState,
-    false,
-  )
-  return sortHierarchicalLaunchOptions(
-    buildHierarchy(alphabetical),
-    sortMode,
-    appid,
-    getAppLaunchOptionState,
-  )
-}
-
-function buildHierarchy(options: LaunchOption[]): HierarchicalLaunchOption[] {
-  const result: HierarchicalLaunchOption[] = []
-
-  // Track which options have been processed as children
-  const processed = new Set<string>()
-
-  function findChildren(
-    parent: LaunchOption,
-    parentIndent: number,
-    parentPrefix: string,
-  ): HierarchicalLaunchOption[] {
-    const children: HierarchicalLaunchOption[] = []
-
-    for (const option of options) {
-      if (processed.has(option.id) || option.id === parent.id) continue
-
-      // Check if this option starts with the parent's name (plus a space)
-      if (option.name.startsWith(parentPrefix + " ")) {
-        processed.add(option.id)
-        const displayName = option.name
-          .substring(parentPrefix.length + 1)
-          .trim()
-
-        children.push({
-          launchOption: option,
-          displayName,
-          indentLevel: parentIndent + 1,
-        })
-
-        // Recursively find children of this child
-        const grandchildren = findChildren(
-          option,
-          parentIndent + 1,
-          option.name,
-        )
-        children.push(...grandchildren)
-      }
-    }
-
-    return children
-  }
-
-  // First pass: identify root-level items and build hierarchy
-  for (const option of options) {
-    if (processed.has(option.id)) continue
-
-    // Add the root item
-    result.push({
-      launchOption: option,
-      displayName: option.name,
-      indentLevel: 0,
-    })
-    processed.add(option.id)
-
-    // Find and add all children recursively
-    const children = findChildren(option, 0, option.name)
-    result.push(...children)
-  }
-
-  return result
-}
-
-interface ModalWrapperProps {
-  title: string
-  children: React.ReactNode
-  onClose: () => void
-}
-
-function ModalWrapper({ title, children, onClose }: ModalWrapperProps) {
-  return (
-    <ModalRoot onCancel={onClose}>
-      <DialogHeader>{title}</DialogHeader>
-      <DialogBody>
-        <QueryClientProvider client={queryClient}>
-          <PluginProvider>{children}</PluginProvider>
-        </QueryClientProvider>
-      </DialogBody>
-    </ModalRoot>
-  )
-}
-
-interface LaunchOptionsBackupsModalProps {
-  appid: string
-  onRestore: (command: string) => void
-}
-
-interface BackupAction {
-  label: string
-  tone?: "destructive"
-  onSelected: () => void
-}
-
-function BackupActionButton({
-  label,
-  actions,
-}: {
-  label: string
-  actions: BackupAction[]
-}) {
-  const showActions = (event: any) => {
-    let menu: ReturnType<typeof showContextMenu>
-    const runAction = (action: () => void) => () => {
-      menu.Hide()
-      action()
-    }
-
-    menu = showContextMenu(
-      <Menu label={label} onCancel={() => menu.Hide()}>
-        {actions.map((action) => (
-          <MenuItem
-            key={action.label}
-            tone={action.tone}
-            onSelected={runAction(action.onSelected)}
-          >
-            {action.label}
-          </MenuItem>
-        ))}
-      </Menu>,
-      event.currentTarget,
-    )
-  }
-
-  return (
-    <DialogButton
-      style={{
-        minWidth: 40,
-        width: 40,
-        height: 40,
-        padding: 0,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-      onClick={showActions}
-    >
-      <FaEllipsisV />
-    </DialogButton>
-  )
-}
-
-function formatBackupDate(date: string): string {
-  const parsedDate = new Date(date)
-  if (Number.isNaN(parsedDate.getTime())) return date
-
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  }).format(parsedDate)
-}
-
-function LaunchOptionsBackupsModal({
-  appid,
-  onRestore,
-}: LaunchOptionsBackupsModalProps) {
-  const backupsQuery = useGetOriginalLaunchOptionsBackupsQuery(appid)
-  const deleteBackupMutation = useDeleteOriginalLaunchOptionsBackupMutation()
-  const backups = backupsQuery.data ?? []
-
-  const confirmDeleteBackup = (backupId: string, date: string) => {
-    showModal(
-      <ConfirmModal
-        strTitle="Delete original launch options backup"
-        strDescription={`Do you want to delete the backup from ${formatBackupDate(date)}?`}
-        strOKButtonText="Confirm"
-        strCancelButtonText="Cancel"
-        onOK={async () => {
-          deleteBackupMutation.mutate({ appid, backupId })
-        }}
-      />,
-    )
-  }
-
-  if (backupsQuery.isLoading) {
-    return <div>Loading backups...</div>
-  }
-
-  if (!backups.length) {
-    return <div>No original launch options backups found for this app.</div>
-  }
-
-  return (
-    <Focusable style={{ maxHeight: "55vh", overflowY: "auto" }}>
-      {backups.map((backup) => (
-        <Field
-          key={`${backup.date}:${backup.command}`}
-          label={formatBackupDate(backup.date)}
-          description={backup.command || "(empty)"}
-          childrenLayout={"inline"}
-        >
-          <BackupActionButton
-            label="Backup actions"
-            actions={[
-              {
-                label: "Restore",
-                onSelected: () => {
-                  onRestore(backup.command)
-                  toaster.toast({
-                    title: "Backup restored",
-                    body: backup.command || "(empty)",
-                    duration: 5000,
-                  })
-                },
-              },
-              {
-                label: "Copy to clipboard",
-                onSelected: () => {
-                  copyTextToClipboard(backup.command).then(
-                    () => {
-                      toaster.toast({
-                        title: "Copied to clipboard",
-                        body: backup.command || "(empty)",
-                        duration: 5000,
-                      })
-                    },
-                    () => {
-                      toaster.toast({
-                        title: "Copy failed",
-                        body: "Clipboard unavailable.",
-                        duration: 5000,
-                        critical: true,
-                      })
-                    },
-                  )
-                },
-              },
-              {
-                label: "Delete",
-                tone: "destructive",
-                onSelected: () => confirmDeleteBackup(backup.id, backup.date),
-              },
-            ]}
-          />
-        </Field>
-      ))}
-    </Focusable>
-  )
-}
-
-interface LaunchOptionItemProps {
-  launchOption: LaunchOption
-  displayName: string
-  indentLevel: number
-  isChecked: boolean
-  showCommands: boolean
-  focusTargetId: string | null
-  setFocusTargetId: (id: string) => void
-  onToggle: (value: boolean) => void
-  onEdit: () => void
-  onDuplicate: () => void
-  onDelete: () => void
-}
-
-function LaunchOptionItem({
-  launchOption,
-  displayName,
-  indentLevel,
-  isChecked,
-  showCommands,
-  focusTargetId,
-  setFocusTargetId,
-  onToggle,
-  onEdit,
-  onDuplicate,
-  onDelete,
-}: LaunchOptionItemProps) {
-  const activeColor = "oklch(80.9% 0.105 251.813)"
-  const focusId = `launch-option:${launchOption.id}`
-  const description = showCommands ? (
-    <span style={{ color: "oklch(55.4% 0.046 257.417)" }}>
-      {launchOption.on && (
-        <span style={{ color: isChecked ? activeColor : undefined }}>
-          ON: {launchOption.on}
-        </span>
-      )}
-      {launchOption.on && launchOption.off && " | "}
-      {launchOption.off && (
-        <span style={{ color: !isChecked ? activeColor : undefined }}>
-          OFF: {launchOption.off}
-        </span>
-      )}
-      {!launchOption.on && !launchOption.off && "None"}
-    </span>
-  ) : undefined
-
-  return (
-    <Field
-      indentLevel={indentLevel}
-      label={displayName}
-      description={description}
-      childrenLayout={"inline"}
-    >
-      <Focusable
-        autoFocus={focusTargetId === focusId}
-        style={{ display: "flex", gap: 10, alignItems: "center" }}
-      >
-        <Toggle
-          value={isChecked}
-          onChange={(value) => {
-            setFocusTargetId(focusId)
-            onToggle(value)
-          }}
-        />
-        <LaunchOptionActionButton
-          onEdit={onEdit}
-          onDuplicate={onDuplicate}
-          onDelete={onDelete}
-        />
-      </Focusable>
-    </Field>
-  )
-}
-
-interface ValueIdSelectItemProps {
-  valueId: string
-  launchOptions: LaunchOption[]
-  displayName: string
-  indentLevel: number
-  appid: string
-  showCommands: boolean
-  getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean
-  setAppValueIdState: (
-    appid: string,
-    valueId: string,
-    selectedLaunchOptionId: string,
-    setAsDefault?: boolean,
-  ) => void
-  setValueAsDefault: boolean
-  focusTargetId: string | null
-  setFocusTargetId: (id: string) => void
-  onEdit: (id: string) => void
-  onDuplicate: (id: string) => void
-  onDelete: (id: string) => void
-}
-
-function ValueIdSelectItem({
-  valueId,
-  launchOptions,
-  displayName,
-  indentLevel,
-  appid,
-  showCommands,
-  getAppLaunchOptionState,
-  setAppValueIdState,
-  setValueAsDefault,
-  focusTargetId,
-  setFocusTargetId,
-  onEdit,
-  onDuplicate,
-  onDelete,
-}: ValueIdSelectItemProps) {
-  const activeColor = "oklch(80.9% 0.105 251.813)"
-  const focusId = `value-id:${valueId}`
-
-  const selectedOption = launchOptions.find((lo) =>
-    getAppLaunchOptionState(appid, lo.id),
-  )
-  const selectedId = selectedOption?.id ?? launchOptions[0]?.id ?? null
-
-  const rgOptions = launchOptions.map((lo) => ({
-    data: lo.id,
-    label: (lo.valueName || lo.on || lo.name) + "\u00A0\u00A0",
-  }))
-
-  const description = showCommands ? (
-    <span style={{ color: "oklch(55.4% 0.046 257.417)" }}>
-      {selectedOption?.on ? (
-        <span style={{ color: activeColor }}>ON: {selectedOption.on}</span>
-      ) : (
-        selectedOption?.valueName || selectedOption?.name || "None"
-      )}
-    </span>
-  ) : undefined
-
-  return (
-    <Field
-      indentLevel={indentLevel}
-      label={displayName}
-      description={description}
-      childrenLayout={"inline"}
-    >
-      <Focusable
-        autoFocus={focusTargetId === focusId}
-        style={{ display: "flex", gap: 10, alignItems: "center" }}
-      >
-        <Focusable style={{ flex: 1 }}>
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "stretch",
-              minWidth: 200,
-            }}
-          >
-            <Dropdown
-              rgOptions={rgOptions}
-              selectedOption={selectedId}
-              onChange={(option: SingleDropdownOption) => {
-                setFocusTargetId(focusId)
-                setAppValueIdState(
-                  appid,
-                  valueId,
-                  option.data,
-                  setValueAsDefault,
-                )
-              }}
-            />
-          </div>
-        </Focusable>
-        <LaunchOptionActionButton
-          onEdit={() => onEdit(selectedOption?.id ?? launchOptions[0].id)}
-          onDuplicate={() =>
-            onDuplicate(selectedOption?.id ?? launchOptions[0].id)
-          }
-          onDelete={() => onDelete(selectedOption?.id ?? launchOptions[0].id)}
-        />
-      </Focusable>
-    </Field>
-  )
-}
-
-interface RenderItemsParams {
-  items: HierarchicalLaunchOption[]
-  savedLaunchOptions: LaunchOption[]
-  appid: string
-  showCommands: boolean
-  getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean
-  setAppLaunchOptionState: (
-    appid: string,
-    launchOptionId: string,
-    value: boolean,
-  ) => void
-  setAppValueIdState: (
-    appid: string,
-    valueId: string,
-    selectedLaunchOptionId: string,
-    setAsDefault?: boolean,
-  ) => void
-  setValueAsDefault: boolean
-  focusTargetId: string | null
-  setFocusTargetId: (id: string) => void
-  onEdit: (id: string) => void
-  onDuplicate: (id: string) => void
-  onDelete: (id: string) => void
-}
-
-function renderLaunchOptionItems({
-  items,
-  savedLaunchOptions,
-  appid,
-  showCommands,
-  getAppLaunchOptionState,
-  setAppLaunchOptionState,
-  setAppValueIdState,
-  setValueAsDefault,
-  focusTargetId,
-  setFocusTargetId,
-  onEdit,
-  onDuplicate,
-  onDelete,
-}: RenderItemsParams) {
-  const result: React.ReactNode[] = []
-  const processedValueIds = new Set<string>()
-
-  for (const item of items) {
-    const { launchOption } = item
-
-    // If this item has a valueId, render it as part of a dropdown group
-    if (launchOption.valueId) {
-      if (processedValueIds.has(launchOption.valueId)) continue
-      processedValueIds.add(launchOption.valueId)
-
-      // Collect all items in this list that share the same valueId
-      const siblingIds = new Set(
-        items
-          .filter((i) => i.launchOption.valueId === launchOption.valueId)
-          .map((i) => i.launchOption.id),
-      )
-      const siblings = savedLaunchOptions
-        .filter((savedLaunchOption) => siblingIds.has(savedLaunchOption.id))
-        .reverse()
-
-      // Fall back to the current display order if saved settings are missing.
-      const launchOptions = siblings.length
-        ? siblings
-        : items
-            .filter((i) => i.launchOption.valueId === launchOption.valueId)
-            .map((i) => i.launchOption)
-
-      result.push(
-        <ValueIdSelectItem
-          key={`valueId-${launchOption.valueId}`}
-          valueId={launchOption.valueId}
-          launchOptions={launchOptions}
-          displayName={item.displayName}
-          indentLevel={item.indentLevel}
-          appid={appid}
-          showCommands={showCommands}
-          getAppLaunchOptionState={getAppLaunchOptionState}
-          setAppValueIdState={setAppValueIdState}
-          setValueAsDefault={setValueAsDefault}
-          focusTargetId={focusTargetId}
-          setFocusTargetId={setFocusTargetId}
-          onEdit={onEdit}
-          onDuplicate={onDuplicate}
-          onDelete={onDelete}
-        />,
-      )
-    } else {
-      // Normal toggle item
-      result.push(
-        <LaunchOptionItem
-          key={launchOption.id}
-          launchOption={launchOption}
-          displayName={item.displayName}
-          indentLevel={item.indentLevel}
-          isChecked={getAppLaunchOptionState(appid, launchOption.id)}
-          showCommands={showCommands}
-          focusTargetId={focusTargetId}
-          setFocusTargetId={setFocusTargetId}
-          onToggle={(value) =>
-            setAppLaunchOptionState(appid, launchOption.id, value)
-          }
-          onEdit={() => onEdit(launchOption.id)}
-          onDuplicate={() => onDuplicate(launchOption.id)}
-          onDelete={() => onDelete(launchOption.id)}
-        />,
-      )
-    }
-  }
-
-  return result
-}
-
-/**
- * Count active launch options, treating valueId groups as at most 1.
- */
-function countActiveLaunchOptions(
-  launchOptions: LaunchOption[],
-  appid: string,
-  getAppLaunchOptionState: (appid: string, launchOptionId: string) => boolean,
-  filter?: (item: LaunchOption) => boolean,
-): number {
-  const filtered = filter ? launchOptions.filter(filter) : launchOptions
-  const countedValueIds = new Set<string>()
-  let count = 0
-
-  for (const item of filtered) {
-    if (!isLaunchOptionActive(item, appid, getAppLaunchOptionState)) continue
-
-    if (item.valueId) {
-      if (countedValueIds.has(item.valueId)) continue
-      countedValueIds.add(item.valueId)
-    }
-
-    count++
-  }
-
-  return count
-}
-
-function appLaunchOptionsIncludesDloCommand(
-  appLaunchOptions: string,
-  info?: {
-    COMMAND: string
-    SHORT_SH_COMMAND_PATH: string
-    FULL_SH_COMMAND_PATH: string
-  },
-): boolean {
-  if (!info) return true
-
-  return [
-    info.COMMAND,
-    info.SHORT_SH_COMMAND_PATH,
-    info.FULL_SH_COMMAND_PATH,
-  ].some((command) => command && appLaunchOptions.includes(command))
-}
-
-function InactiveAutoManageWarning() {
-  return (
-    <div
-      style={{
-        marginBottom: 6,
-        padding: 12,
-        borderRadius: 4,
-        border: "1px solid rgba(245, 158, 11, 0.55)",
-        background: "rgba(120, 53, 15, 0.35)",
-        color: "rgb(253, 230, 138)",
-        lineHeight: 1.35,
-        display: "flex",
-        flexDirection: "column",
-        gap: 6,
-      }}
-    >
-      <div>
-        <strong>Inactive</strong>
-      </div>
-      <div>
-        Auto-manage Launch Options is off and the DLO command is not present in
-        the app's launch options.
-      </div>
-    </div>
-  )
-}
+>
 
 export function AppLaunchOptionsPage() {
   const { appid } = useParams<{ appid: string }>()
   const [tab, setTab] = useState<string>("local")
-  const [currentLaunchOptions, setCurrentLaunchOptions] = useState("")
+  const { currentLaunchOptions, loadedLaunchOptionsAppid, isNonSteamApp } =
+    useAppLaunchOptionsState(appid)
   const useHierarchy = useStore(settingsStore, (state) => state.useHierarchy)
   const autoManageLaunchOptions = useStore(
     settingsStore,
     (state) => state.autoManageLaunchOptions,
+  )
+  const autoManageNonSteamLaunchOptions = useStore(
+    settingsStore,
+    (state) => state.autoManageNonSteamLaunchOptions,
   )
   const showCommands = useStore(settingsStore, (state) => state.showCommands)
   const launchOptionSort = useStore(
@@ -866,11 +98,26 @@ export function AppLaunchOptionsPage() {
     deleteLaunchOptionsByValueId,
   } = useSettings()
   const getInfoQuery = useGetInfoQuery()
+  const setDloLaunchOptionsMutation = useSetDloLaunchOptionsMutation()
   const deleteOriginalLaunchOptionsBackupsMutation =
     useDeleteOriginalLaunchOptionsBackupsMutation()
+  const autoManageCurrentApp = isNonSteamApp
+    ? autoManageNonSteamLaunchOptions
+    : autoManageLaunchOptions
+  const appLaunchOptionsHasDloCommand = getInfoQuery.data
+    ? appLaunchOptionsIncludesSupportedDloCommand(
+        currentLaunchOptions,
+        getInfoQuery.data,
+      )
+    : true
   const showInactiveAutoManageWarning =
-    (!autoManageLaunchOptions || getAppDisableAutoManageLaunchOptions(appid)) &&
-    !appLaunchOptionsIncludesDloCommand(currentLaunchOptions, getInfoQuery.data)
+    (!autoManageCurrentApp || getAppDisableAutoManageLaunchOptions(appid)) &&
+    !appLaunchOptionsHasDloCommand
+  const canManuallyChangeAppLaunchOptions =
+    !autoManageCurrentApp || getAppDisableAutoManageLaunchOptions(appid)
+  const showResetAppLaunchOptions =
+    !getAppOriginalLaunchOptions(appid).trim() &&
+    appLaunchOptionsIsDloCommand(currentLaunchOptions, getInfoQuery.data)
   const globalValueIds = useMemo(() => {
     const valueIds = new Set<string>()
     settings.launchOptions.forEach((item) => {
@@ -899,10 +146,7 @@ export function AppLaunchOptionsPage() {
     return Array.from(groupSet).sort((a, b) => a.localeCompare(b))
   }, [settings])
   const groupedLaunchOptions = useMemo(() => {
-    const map: Record<
-      string,
-      { local: HierarchicalLaunchOption[]; global: HierarchicalLaunchOption[] }
-    > = {}
+    const map: GroupedLaunchOptions = {}
     for (const group of groups) {
       const inGroup = settings.launchOptions.filter(
         (item) => item.group === group,
@@ -995,24 +239,14 @@ export function AppLaunchOptionsPage() {
 
   // this fixes weird issues when switching tab by forcing the blur on the active element (no document.activeElement.blur doesn't work)
   const [readyToShow, setReadyToShow] = useState(true)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   useEffect(() => {
-    if (timeoutRef.current) clearInterval(timeoutRef.current)
-    timeoutRef.current = setInterval(() => {
+    setReadyToShow(false)
+    const timeout = window.setTimeout(() => {
       setReadyToShow(true)
     }, 100)
-    setReadyToShow(false)
-  }, [tab])
-  useEffect(() => {
-    const { unregister } = SteamClient.Apps.RegisterForAppDetails(
-      Number(appid),
-      (details: AppDetails) => {
-        setCurrentLaunchOptions(details.strLaunchOptions)
-      },
-    )
 
-    return unregister
-  }, [appid])
+    return () => window.clearTimeout(timeout)
+  }, [tab])
   const showCreateLaunchOptionFormModal = useCallback(() => {
     const isGroupTab =
       tab !== "local" && tab !== "global" && tab !== advancedTabId
@@ -1147,6 +381,69 @@ export function AppLaunchOptionsPage() {
                     label={'Disable "Auto-manage Launch Options" for this app'}
                     bottomSeparator={"none"}
                   />
+                  {loadedLaunchOptionsAppid === appid &&
+                    getInfoQuery.data &&
+                    !appLaunchOptionsHasDloCommand && (
+                      <ButtonItem
+                        label={"Apply DLO command for this app"}
+                        description={
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 2,
+                            }}
+                          >
+                            <div>
+                              <strong>Current:</strong>{" "}
+                              {currentLaunchOptions.trim() || "(empty)"}
+                            </div>
+                          </div>
+                        }
+                        indentLevel={1}
+                        disabled={setDloLaunchOptionsMutation.isPending}
+                        onClick={() => {
+                          const info = getInfoQuery.data
+                          if (!info) return
+
+                          setDloLaunchOptionsMutation.mutate(
+                            {
+                              appid: Number(appid),
+                              currentLaunchOptions,
+                              command: info.COMMAND,
+                            },
+                            {
+                              onSuccess: (context) => {
+                                if (!context.hasShellScript) {
+                                  toaster.toast({
+                                    title: "DLO command not applied",
+                                    body: "The DLO launcher script is missing.",
+                                    duration: 5000,
+                                    critical: true,
+                                  })
+                                  return
+                                }
+
+                                toaster.toast({
+                                  title: "Applied DLO command",
+                                  body: context.currentLaunchOptions,
+                                  duration: 5000,
+                                })
+                              },
+                              onError: (error) => {
+                                toaster.toast({
+                                  title: "Failed to apply DLO command",
+                                  body: error.message,
+                                  duration: 5000,
+                                })
+                              },
+                            },
+                          )
+                        }}
+                      >
+                        Apply
+                      </ButtonItem>
+                    )}
                   {getAppOriginalLaunchOptions(appid) && (
                     <ButtonItem
                       label={"Revert app launch options to original value"}
@@ -1170,13 +467,10 @@ export function AppLaunchOptionsPage() {
                         </div>
                       }
                       indentLevel={1}
-                      disabled={!getAppDisableAutoManageLaunchOptions(appid)}
+                      disabled={!canManuallyChangeAppLaunchOptions}
                       onClick={() => {
-                        SteamClient.Apps.SetAppLaunchOptions(
+                        setAppLaunchOptions(
                           Number(appid),
-                          getAppOriginalLaunchOptions(appid),
-                        )
-                        setCurrentLaunchOptions(
                           getAppOriginalLaunchOptions(appid),
                         )
                         setAppOriginalLaunchOptions(appid, "")
@@ -1188,6 +482,41 @@ export function AppLaunchOptionsPage() {
                       }}
                     >
                       Revert
+                    </ButtonItem>
+                  )}
+                  {showResetAppLaunchOptions && (
+                    <ButtonItem
+                      label={"Reset app launch options to empty value"}
+                      description={
+                        <div
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 2,
+                          }}
+                        >
+                          <div>
+                            <strong>Current:</strong>{" "}
+                            {currentLaunchOptions.trim() || "(empty)"}
+                          </div>
+                          <div>
+                            <strong>Original:</strong> (empty)
+                          </div>
+                        </div>
+                      }
+                      indentLevel={1}
+                      disabled={!canManuallyChangeAppLaunchOptions}
+                      onClick={() => {
+                        setAppLaunchOptions(Number(appid), "")
+                        setAppOriginalLaunchOptions(appid, "")
+                        toaster.toast({
+                          title: "App launch options reset",
+                          body: "(empty)",
+                          duration: 5000,
+                        })
+                      }}
+                    >
+                      Reset
                     </ButtonItem>
                   )}
                   <Field
@@ -1225,7 +554,7 @@ export function AppLaunchOptionsPage() {
                   style={{ height: "100%" }}
                 >
                   {showInactiveAutoManageWarning && (
-                    <InactiveAutoManageWarning />
+                    <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
                   )}
                   <PanelSectionRow>
                     <ButtonItem
@@ -1291,7 +620,7 @@ export function AppLaunchOptionsPage() {
                   style={{ height: "100%" }}
                 >
                   {showInactiveAutoManageWarning && (
-                    <InactiveAutoManageWarning />
+                    <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
                   )}
                   <PanelSectionRow>
                     <ButtonItem
@@ -1342,7 +671,7 @@ export function AppLaunchOptionsPage() {
                   style={{ height: "100%" }}
                 >
                   {showInactiveAutoManageWarning && (
-                    <InactiveAutoManageWarning />
+                    <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
                   )}
                   <PanelSectionRow>
                     <ButtonItem

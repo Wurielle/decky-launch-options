@@ -14,7 +14,7 @@ if hasattr(sys.stdout, "reconfigure"):
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from unittest.mock import patch
-from run import parse_launch_option, get_final_args_details
+from run import parse_launch_option, get_final_args_details, is_non_steam_appid
 
 def test_case(name, raw_command, expected=None):
     print(f"\n{'='*60}")
@@ -418,6 +418,25 @@ if __name__ == "__main__":
         print(f"Expected: {expected_d}")
         print(f"\n{'✓ PASS' if match_d else '✗ FAIL'}")
 
+        # Test D2: Higher priority environment variables override lower priority
+        print(f"\n{'='*60}")
+        print("Test: Higher priority environment variable wins")
+        print(f"{'='*60}")
+        settings_d2 = make_settings([
+            make_opt("low", "CUSTOM_ENV=low low-wrapper %command%", priority=0),
+            make_opt("high", "CUSTOM_ENV=high high-wrapper %command%", priority=10),
+        ], env_variable_merges=[])
+        final_args_d2, env_vars_d2 = get_final_args_details(settings_d2, "123")
+        expected_args_d2 = ["high-wrapper", "low-wrapper", "/path/to/game"]
+        expected_env_d2 = {"CUSTOM_ENV": "high"}
+        match_d2 = final_args_d2 == expected_args_d2 and env_vars_d2 == expected_env_d2
+        print(f"Args:     {final_args_d2}")
+        print(f"Expected: {expected_args_d2}")
+        print(f"Env:      {env_vars_d2}")
+        print(f"Expected: {expected_env_d2}")
+        print(f"\n{'PASS' if match_d2 else 'FAIL'}")
+        assert match_d2
+
         # Test E: Merge configured env var values with a semicolon delimiter
         print(f"\n{'='*60}")
         print("Test: Env variable merge - WINEDLLOVERRIDES uses semicolon")
@@ -513,6 +532,162 @@ if __name__ == "__main__":
         print(f"Result:   {env_vars_h}")
         print(f"Expected: {expected_h}")
         print(f"\n{'PASS' if match_h else 'FAIL'}")
+
+        # Test H2: Non-Steam app ids protect original launch options as args
+        print(f"\n{'='*60}")
+        print("Test: Non-Steam app original launch options stay protected")
+        print(f"{'='*60}")
+        non_steam_appid = "3221225472"
+        settings_h2 = make_settings(
+            [
+                make_opt("wine-a", 'WINEDLLOVERRIDES="dxgi=n,b"', priority=0),
+            ],
+            appid=non_steam_appid,
+            original_launch_options='WINEDLLOVERRIDES="dinput8=n,b"',
+            env_variable_merges=[
+                {
+                    "id": "winedlloverrides",
+                    "name": "WINEDLLOVERRIDES",
+                    "delimiter": ";",
+                }
+            ],
+        )
+        final_args_h2, env_vars_h2 = get_final_args_details(
+            settings_h2,
+            non_steam_appid,
+        )
+        expected_args_h2 = ["/path/to/game", "WINEDLLOVERRIDES=dinput8=n,b"]
+        expected_env_h2 = {"WINEDLLOVERRIDES": "dxgi=n,b"}
+        match_h2 = final_args_h2 == expected_args_h2 and env_vars_h2 == expected_env_h2
+        print(f"Args:     {final_args_h2}")
+        print(f"Expected: {expected_args_h2}")
+        print(f"Env:      {env_vars_h2}")
+        print(f"Expected: {expected_env_h2}")
+        print(f"\n{'PASS' if match_h2 else 'FAIL'}")
+
+        # Test H3: App id range detection
+        print(f"\n{'='*60}")
+        print("Test: App id range detection")
+        print(f"{'='*60}")
+        detection_cases = [
+            ("123", False),
+            ("2147483647", False),
+            ("2147483648", True),
+            ("3221225472", True),
+            ("-1073741824", True),
+            (None, False),
+        ]
+        detection_results = [
+            (appid, is_non_steam_appid(appid), expected)
+            for appid, expected in detection_cases
+        ]
+        match_h3 = all(actual == expected for _, actual, expected in detection_results)
+        for appid, actual, expected in detection_results:
+            print(f"{appid}: {actual} (expected {expected})")
+        print(f"\n{'PASS' if match_h3 else 'FAIL'}")
+
+        # Test H4: Merge ordinary suffix args before a shared -- separator
+        print(f"\n{'='*60}")
+        print("Test: Suffix separator stays after ordinary command args")
+        print(f"{'='*60}")
+        settings_h4 = make_settings([
+            make_opt(
+                "fullscreen",
+                "gamescope -f -W 1280 -H 800 -- %command% -- --fullscreen",
+            ),
+            make_opt("portal-args", "-novid +cl_showfps 3"),
+        ])
+        final_args_h4, _ = get_final_args_details(settings_h4, "123")
+        expected_args_h4 = [
+            "gamescope",
+            "-f",
+            "-W",
+            "1280",
+            "-H",
+            "800",
+            "--",
+            "/path/to/game",
+            "-novid",
+            "+cl_showfps",
+            "3",
+            "--",
+            "--fullscreen",
+        ]
+        match_h4 = final_args_h4 == expected_args_h4
+        print(f"Result:   {final_args_h4}")
+        print(f"Expected: {expected_args_h4}")
+        print(f"\n{'PASS' if match_h4 else 'FAIL'}")
+        assert match_h4
+
+        # Test H5: Non-Steam original args participate in separator merging
+        print(f"\n{'='*60}")
+        print("Test: Non-Steam suffix args merge around original separator")
+        print(f"{'='*60}")
+        settings_h5 = make_settings(
+            [make_opt("portal-args", "-novid +cl_showfps 3")],
+            appid=non_steam_appid,
+            original_launch_options="--commandArg -- --fullscreen",
+        )
+        final_args_h5, _ = get_final_args_details(settings_h5, non_steam_appid)
+        expected_args_h5 = [
+            "/path/to/game",
+            "--commandArg",
+            "-novid",
+            "+cl_showfps",
+            "3",
+            "--",
+            "--fullscreen",
+        ]
+        match_h5 = final_args_h5 == expected_args_h5
+        print(f"Result:   {final_args_h5}")
+        print(f"Expected: {expected_args_h5}")
+        print(f"\n{'PASS' if match_h5 else 'FAIL'}")
+        assert match_h5
+
+        # Test H6: First -- from each suffix group shares one boundary
+        print(f"\n{'='*60}")
+        print("Test: Multiple suffix separators merge into one boundary")
+        print(f"{'='*60}")
+        settings_h6 = make_settings([
+            make_opt("gamescope", "gamescope -f -- %command%"),
+            make_opt("portal-args", "-novid +cl_showfps 3"),
+            make_opt("output-args", "-- -o -p"),
+            make_opt("fullscreen", "%command% -- --fullscreen"),
+        ])
+        final_args_h6, _ = get_final_args_details(settings_h6, "123")
+        expected_args_h6 = [
+            "gamescope",
+            "-f",
+            "--",
+            "/path/to/game",
+            "-novid",
+            "+cl_showfps",
+            "3",
+            "--",
+            "-o",
+            "-p",
+            "--fullscreen",
+        ]
+        match_h6 = final_args_h6 == expected_args_h6
+        print(f"Result:   {final_args_h6}")
+        print(f"Expected: {expected_args_h6}")
+        print(f"\n{'PASS' if match_h6 else 'FAIL'}")
+        assert match_h6
+
+        # Test H7: A later -- within one group remains a literal argument
+        print(f"\n{'='*60}")
+        print("Test: Additional separator within one suffix group is preserved")
+        print(f"{'='*60}")
+        settings_h7 = make_settings([
+            make_opt("nested-args", "%command% -- -o -- -p"),
+        ])
+        final_args_h7, _ = get_final_args_details(settings_h7, "123")
+        expected_args_h7 = ["/path/to/game", "--", "-o", "--", "-p"]
+        match_h7 = final_args_h7 == expected_args_h7
+        print(f"Result:   {final_args_h7}")
+        print(f"Expected: {expected_args_h7}")
+        print(f"\n{'PASS' if match_h7 else 'FAIL'}")
+        assert match_h7
 
         # Test I: Default merge rules apply when older settings omit envVariableMerges
         print(f"\n{'='*60}")

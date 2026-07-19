@@ -58,6 +58,25 @@ def get_steam_appid():
     return None
 
 
+def _to_uint32(value):
+    return int(value) & 0xFFFFFFFF
+
+
+def is_non_steam_appid(appid):
+    try:
+        return _to_uint32(appid) >= 0x80000000
+    except (TypeError, ValueError):
+        return False
+
+
+def split_command_args(raw_command):
+    try:
+        import shlex
+        return shlex.split(raw_command)
+    except ValueError:
+        return raw_command.split()
+
+
 def parse_launch_option(raw_command):
     """
     Parse a launch option string into its components.
@@ -166,6 +185,32 @@ def finalize_env_vars(env_var_values, merge_rules):
     return final_env_vars
 
 
+def merge_suffix_args(suffix_groups):
+    """Merge suffix token groups around a shared first bare -- boundary."""
+    before_separator = []
+    after_separator = []
+    has_separator = False
+
+    for suffix in suffix_groups:
+        try:
+            separator_idx = suffix.index('--')
+        except ValueError:
+            before_separator.extend(suffix)
+            continue
+
+        before_separator.extend(suffix[:separator_idx])
+
+        # Each group's first separator denotes the same shared boundary. Any
+        # later separators in this group remain in the sliced arguments below.
+        has_separator = True
+        after_separator.extend(suffix[separator_idx + 1:])
+
+    if not has_separator:
+        return before_separator
+
+    return before_separator + ['--'] + after_separator
+
+
 def get_final_args_details(settings, appid):
     base_args = sys.argv[1:]
 
@@ -176,20 +221,29 @@ def get_final_args_details(settings, appid):
     profile = settings["profiles"].get(str(appid), {})
     profile_state = profile.get("state", {})
     profile_original_launch_options = profile.get("originalLaunchOptions", "")
+    is_non_steam_app = is_non_steam_appid(appid)
 
     # Collections for all launch option components
     env_merge_rules = get_env_variable_merge_rules(settings)
     all_env_var_values = {}
     all_prefixes = []
-    all_suffixes = []
+    all_suffix_groups = []
 
     # Parse original launch options first
     if profile_original_launch_options:
-        parsed = parse_launch_option(profile_original_launch_options)
-        add_env_vars(all_env_var_values, env_merge_rules, parsed['env_vars'])
-        if parsed['prefix']:
-            all_prefixes.append(parsed['prefix'])
-        all_suffixes.extend(parsed['suffix'])
+        if is_non_steam_app:
+            # Keep shortcut arguments together as a suffix group so tokens such
+            # as Flatpak's @@u/@@ remain intact during separator merging.
+            protected_original_args = split_command_args(profile_original_launch_options)
+            if protected_original_args:
+                all_suffix_groups.append(protected_original_args)
+        else:
+            parsed = parse_launch_option(profile_original_launch_options)
+            add_env_vars(all_env_var_values, env_merge_rules, parsed['env_vars'])
+            if parsed['prefix']:
+                all_prefixes.append(parsed['prefix'])
+            if parsed['suffix']:
+                all_suffix_groups.append(parsed['suffix'])
 
     # Resolve selected option per valueId group.
     value_id_groups = {}
@@ -242,12 +296,18 @@ def get_final_args_details(settings, appid):
     # Python's sort is stable, so equal-priority options keep their original order.
     launch_option_parts.sort(key=lambda x: x[0], reverse=True)
 
-    # Merge sorted results into collectors
-    for priority, parsed in launch_option_parts:
+    # Environment variables use last-value-wins semantics, so process them from
+    # lowest to highest priority. The stable sort preserves the existing behavior
+    # where a later option wins when priorities are equal.
+    for priority, parsed in sorted(launch_option_parts, key=lambda x: x[0]):
         add_env_vars(all_env_var_values, env_merge_rules, parsed['env_vars'])
+
+    # Merge command parts in execution order.
+    for priority, parsed in launch_option_parts:
         if parsed['prefix']:
             all_prefixes.append(parsed['prefix'])
-        all_suffixes.extend(parsed['suffix'])
+        if parsed['suffix']:
+            all_suffix_groups.append(parsed['suffix'])
 
     all_env_vars = finalize_env_vars(all_env_var_values, env_merge_rules)
 
@@ -276,8 +336,10 @@ def get_final_args_details(settings, appid):
     # Add base game command
     final_args.extend(base_args)
 
-    # Add all suffix args at the end
-    final_args.extend(all_suffixes)
+    # Add suffix args after the base command. A bare -- is a shared boundary:
+    # ordinary args from every option belong before it, while explicitly
+    # separated args stay after it.
+    final_args.extend(merge_suffix_args(all_suffix_groups))
 
     return final_args, all_env_vars
 
