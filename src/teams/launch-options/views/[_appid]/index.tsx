@@ -405,8 +405,7 @@ export function AppLaunchOptionsPage() {
                     >
                       <TextField
                         {...{
-                          placeholder:
-                            "/path/to/app/App.AppImage",
+                          placeholder: "/path/to/app/App.AppImage",
                         }}
                         style={{ width: "100%" }}
                         value={getAppOverrideCommand(appid)}
