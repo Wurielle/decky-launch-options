@@ -93,6 +93,10 @@ export function AppLaunchOptionsPage() {
     setAppOriginalLaunchOptions,
     getAppDisableAutoManageLaunchOptions,
     setAppDisableAutoManageLaunchOptions,
+    getAppOverrideCommandEnabled,
+    setAppOverrideCommandEnabled,
+    getAppOverrideCommand,
+    setAppOverrideCommand,
     duplicateLaunchOption,
     deleteLaunchOption,
     deleteLaunchOptionsByValueId,
@@ -381,6 +385,37 @@ export function AppLaunchOptionsPage() {
                     label={'Disable "Auto-manage Launch Options" for this app'}
                     bottomSeparator={"none"}
                   />
+                  <ToggleField
+                    checked={getAppOverrideCommandEnabled(appid)}
+                    onChange={(value) =>
+                      setAppOverrideCommandEnabled(appid, value)
+                    }
+                    description={"Replace Steam's command for this app"}
+                    label={"Enable %command% override"}
+                    bottomSeparator={"none"}
+                  />
+                  {getAppOverrideCommandEnabled(appid) && (
+                    <Field
+                      childrenLayout={"below"}
+                      label={"Override command"}
+                      description={
+                        "Requires a value; otherwise Steam's original %command% is used."
+                      }
+                      indentLevel={1}
+                    >
+                      <TextField
+                        {...{
+                          placeholder:
+                            "/path/to/app/App.AppImage",
+                        }}
+                        style={{ width: "100%" }}
+                        value={getAppOverrideCommand(appid)}
+                        onChange={(event) =>
+                          setAppOverrideCommand(appid, event.target.value)
+                        }
+                      />
+                    </Field>
+                  )}
                   {loadedLaunchOptionsAppid === appid &&
                     getInfoQuery.data &&
                     !appLaunchOptionsHasDloCommand && (

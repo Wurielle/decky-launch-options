@@ -221,6 +221,13 @@ def get_final_args_details(settings, appid):
     profile = settings["profiles"].get(str(appid), {})
     profile_state = profile.get("state", {})
     profile_original_launch_options = profile.get("originalLaunchOptions", "")
+    override_command = profile.get("overrideCommand", "")
+    if (
+        profile.get("overrideCommandEnabled") is True
+        and isinstance(override_command, str)
+        and override_command.strip()
+    ):
+        base_args = split_command_args(override_command)
     is_non_steam_app = is_non_steam_appid(appid)
 
     # Collections for all launch option components
