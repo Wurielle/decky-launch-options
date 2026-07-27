@@ -385,6 +385,39 @@ export function AppLaunchOptionsPage() {
                     label={'Disable "Auto-manage Launch Options" for this app'}
                     bottomSeparator={"none"}
                   />
+<<<<<<< HEAD
+=======
+                  <ToggleField
+                    checked={getAppOverrideCommandEnabled(appid)}
+                    onChange={(value) =>
+                      setAppOverrideCommandEnabled(appid, value)
+                    }
+                    description={"Replace Steam's command for this app"}
+                    label={"Enable %command% override"}
+                    bottomSeparator={"none"}
+                  />
+                  {getAppOverrideCommandEnabled(appid) && (
+                    <Field
+                      childrenLayout={"below"}
+                      label={"Override command"}
+                      description={
+                        "Requires a value; otherwise Steam's original %command% is used."
+                      }
+                      indentLevel={1}
+                    >
+                      <TextField
+                        {...{
+                          placeholder: "/path/to/app/App.AppImage",
+                        }}
+                        style={{ width: "100%" }}
+                        value={getAppOverrideCommand(appid)}
+                        onChange={(event) =>
+                          setAppOverrideCommand(appid, event.target.value)
+                        }
+                      />
+                    </Field>
+                  )}
+>>>>>>> 51e4bbf6b238ed6dbef12e590cfae3c7cfda8d57
                   {loadedLaunchOptionsAppid === appid &&
                     getInfoQuery.data &&
                     !appLaunchOptionsHasDloCommand && (
