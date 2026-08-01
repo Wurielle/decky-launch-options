@@ -306,12 +306,16 @@ if __name__ == "__main__":
         state=None,
         env_variable_merges=OMIT_ENV_VARIABLE_MERGES,
         original_launch_options="",
+        override_command_enabled=False,
+        override_command="",
     ):
         settings = {
             "profiles": {
                 str(appid): {
                     "state": state or {},
                     "originalLaunchOptions": original_launch_options,
+                    "overrideCommandEnabled": override_command_enabled,
+                    "overrideCommand": override_command,
                 }
             },
             "launchOptions": launch_options,
@@ -688,6 +692,46 @@ if __name__ == "__main__":
         print(f"Expected: {expected_args_h7}")
         print(f"\n{'PASS' if match_h7 else 'FAIL'}")
         assert match_h7
+
+        # Test H8: Override command replaces the base command only when enabled and set
+        print(f"\n{'='*60}")
+        print("Test: Command override requires both the toggle and a value")
+        print(f"{'='*60}")
+        enabled_override = make_settings(
+            [make_opt("wrapper", "mangohud %command% --fullscreen")],
+            override_command_enabled=True,
+            override_command='"/alternate path/game" --custom',
+        )
+        disabled_override = make_settings(
+            [],
+            override_command_enabled=False,
+            override_command="/alternate/game",
+        )
+        empty_override = make_settings(
+            [],
+            override_command_enabled=True,
+            override_command="   ",
+        )
+        enabled_args, _ = get_final_args_details(enabled_override, "123")
+        disabled_args, _ = get_final_args_details(disabled_override, "123")
+        empty_args, _ = get_final_args_details(empty_override, "123")
+        expected_enabled_args = [
+            "mangohud",
+            "/alternate path/game",
+            "--custom",
+            "--fullscreen",
+        ]
+        expected_original_args = ["/path/to/game"]
+        match_h8 = (
+            enabled_args == expected_enabled_args
+            and disabled_args == expected_original_args
+            and empty_args == expected_original_args
+        )
+        print(f"Enabled:  {enabled_args}")
+        print(f"Disabled: {disabled_args}")
+        print(f"Empty:    {empty_args}")
+        print(f"\n{'PASS' if match_h8 else 'FAIL'}")
+        assert match_h8
 
         # Test I: Default merge rules apply when older settings omit envVariableMerges
         print(f"\n{'='*60}")

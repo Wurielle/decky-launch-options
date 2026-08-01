@@ -139,5 +139,31 @@ export function createProfileActions(
         draft.profiles[appid].disableAutoManageLaunchOptions = true
       })
     },
+    getAppOverrideCommandEnabled: (appid: string) =>
+      settings.profiles[appid]?.overrideCommandEnabled === true,
+    setAppOverrideCommandEnabled: (appid: string, value: boolean) => {
+      setSettings((draft) => {
+        if (!value) {
+          if (!draft.profiles[appid]) return
+          delete draft.profiles[appid].overrideCommandEnabled
+          return
+        }
+
+        draft.profiles[appid] = profileFactory({
+          ...draft.profiles[appid],
+          overrideCommandEnabled: true,
+        })
+      })
+    },
+    getAppOverrideCommand: (appid: string) =>
+      settings.profiles[appid]?.overrideCommand || "",
+    setAppOverrideCommand: (appid: string, command: string) => {
+      setSettings((draft) => {
+        draft.profiles[appid] = profileFactory({
+          ...draft.profiles[appid],
+          overrideCommand: command,
+        })
+      })
+    },
   }
 }
