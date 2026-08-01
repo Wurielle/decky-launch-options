@@ -54,6 +54,8 @@ export type Profile = {
   state: Record<string, boolean>
   originalLaunchOptions: string
   disableAutoManageLaunchOptions?: boolean
+  overrideCommandEnabled?: boolean
+  overrideCommand?: string
 }
 
 export type LaunchOption = {
