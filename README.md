@@ -18,10 +18,10 @@
 ## Table of Contents
 
 - [Installation](#installation)
+- [Recipes](#recipes)
 - [How to use](#how-to-use)
     - [Add a new tab](#add-a-new-tab)
     - [Add a dropdown](#add-a-dropdown)
-- [Recipes](#recipes)
 - [Integration with Third-Party plugins](#integration-with-third-party-plugins)
 - [Understanding launch options](#understanding-launch-options)
 - [Philosophy](#philosophy)
@@ -34,6 +34,17 @@
 * Or copy the link to `decky-launch-options.zip` and import it in Decky Loader
 
 > **Note:** You might need to enable `Developer mode` in the Decky Loader settings
+
+
+## Recipes
+
+Decky Launch Options does not come with a pre-defined set of launch options.
+
+If you wish to import a pre-defined set of
+launch options to quickstart your use of this plugin or create your own
+collection that you can share with others, I recommend checking out
+the [Decky Launch Options Recipes](https://github.com/Wurielle/decky-launch-options-recipes)
+plugin.
 
 ## How to use
 
@@ -103,16 +114,6 @@ For each launch option that should appear in a dropdown:
     <td><img src="./assets/dropdown-after.jpg" alt="After using valueId and valueName, the options appear in a single dropdown" /></td>
   </tr>
 </table>
-
-## Recipes
-
-Decky Launch Options does not come with a pre-defined set of launch options.
-
-If you wish to import a pre-defined set of
-launch options to quickstart your use of this plugin or create your own
-collection that you can share with others, I recommend checking out
-the [Decky Launch Options Recipes](https://github.com/Wurielle/decky-launch-options-recipes)
-plugin.
 
 ## Integration with Third-Party plugins
 
