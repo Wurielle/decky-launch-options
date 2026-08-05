@@ -145,6 +145,19 @@ export function AppLaunchOptionsPage() {
     })
     return Array.from(groupSet).sort((a, b) => a.localeCompare(b))
   }, [settings])
+  const activeTab =
+    tab === advancedTabId ||
+    tab === "local" ||
+    tab === "global" ||
+    groups.includes(tab)
+      ? tab
+      : "local"
+  useEffect(() => {
+    if (activeTab === tab) return
+
+    setFocusTarget(null)
+    setTab(activeTab)
+  }, [activeTab, tab])
   const groupedLaunchOptions = useMemo(() => {
     const map: GroupedLaunchOptions = {}
     for (const group of groups) {
@@ -246,10 +259,12 @@ export function AppLaunchOptionsPage() {
     }, 100)
 
     return () => window.clearTimeout(timeout)
-  }, [tab])
+  }, [activeTab])
   const showCreateLaunchOptionFormModal = useCallback(() => {
     const isGroupTab =
-      tab !== "local" && tab !== "global" && tab !== advancedTabId
+      activeTab !== "local" &&
+      activeTab !== "global" &&
+      activeTab !== advancedTabId
     const modalResult = showModal(
       <ModalWrapper
         title="Add launch option"
@@ -257,14 +272,14 @@ export function AppLaunchOptionsPage() {
       >
         <CreateLaunchOptionForm
           defaultValue={{
-            enableGlobally: tab === "global",
-            ...(isGroupTab ? { group: tab } : {}),
+            enableGlobally: activeTab === "global",
+            ...(isGroupTab ? { group: activeTab } : {}),
           }}
           onSubmit={() => modalResult.Close()}
         />
       </ModalWrapper>,
     )
-  }, [tab])
+  }, [activeTab])
 
   const showUpdateLaunchOptionFormModal = useCallback(
     (id: string) => {
@@ -355,7 +370,7 @@ export function AppLaunchOptionsPage() {
     >
       <div style={{ flex: 1, minHeight: 0 }}>
         <Tabs
-          activeTab={tab}
+          activeTab={activeTab}
           onShowTab={handleShowTab}
           autoFocusContents
           tabs={[
