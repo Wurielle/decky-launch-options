@@ -1,7 +1,8 @@
-import { toaster } from "@decky/api"
+import { FileSelectionType, openFilePicker, toaster } from "@decky/api"
 import {
   ButtonItem,
   ConfirmModal,
+  DialogButton,
   Field,
   findModule,
   Focusable,
@@ -43,6 +44,9 @@ import { ModalWrapper } from "../../components/modal-wrapper"
 import { useAppLaunchOptionsState } from "../../hooks/use-app-launch-options-state"
 
 const advancedTabId = "__advanced"
+
+const formatExecutablePath = (path: string) =>
+  /\s|'/.test(path) ? `'${path.split("'").join(`'"'"'`)}'` : path
 
 interface FocusTarget {
   id: string
@@ -93,6 +97,10 @@ export function AppLaunchOptionsPage() {
     setAppOriginalLaunchOptions,
     getAppDisableAutoManageLaunchOptions,
     setAppDisableAutoManageLaunchOptions,
+    getAppOverrideCommandEnabled,
+    setAppOverrideCommandEnabled,
+    getAppOverrideCommand,
+    setAppOverrideCommand,
     duplicateLaunchOption,
     deleteLaunchOption,
     deleteLaunchOptionsByValueId,
@@ -353,6 +361,27 @@ export function AppLaunchOptionsPage() {
     },
     [deleteLaunchOption, deleteLaunchOptionsByValueId, settings.launchOptions],
   )
+  const browseForOverrideCommand = useCallback(async () => {
+    const userHomePath = getInfoQuery.data?.DECKY_USER_HOME
+    if (!userHomePath) return
+
+    try {
+      const result = await openFilePicker(
+        FileSelectionType.FILE,
+        userHomePath,
+        true,
+        true,
+        undefined,
+        undefined,
+        false,
+        true,
+      )
+      const path = result.realpath || result.path
+      if (path) setAppOverrideCommand(appid, formatExecutablePath(path))
+    } catch {
+      // Closing the file picker rejects its promise.
+    }
+  }, [appid, getInfoQuery.data?.DECKY_USER_HOME, setAppOverrideCommand])
   const handleShowTab = useCallback((nextTab: string) => {
     setFocusTarget(null)
     setTab(nextTab)
@@ -533,6 +562,49 @@ export function AppLaunchOptionsPage() {
                     >
                       Reset
                     </ButtonItem>
+                  )}
+                  <ToggleField
+                    checked={getAppOverrideCommandEnabled(appid)}
+                    onChange={(value) =>
+                      setAppOverrideCommandEnabled(appid, value)
+                    }
+                    description={"Replace Steam's command for this app"}
+                    label={"Enable %command% override"}
+                    bottomSeparator={"none"}
+                  />
+                  {getAppOverrideCommandEnabled(appid) && (
+                    <Field
+                      childrenLayout={"below"}
+                      label={"Override command"}
+                      description={"A value is required to enable override"}
+                      indentLevel={1}
+                    >
+                      <Focusable
+                        style={{
+                          display: "grid",
+                          gap: 10,
+                          gridTemplateColumns: "minmax(0, 1fr) auto",
+                        }}
+                      >
+                        <TextField
+                          {...{
+                            placeholder: "/path/to/another/app.extension",
+                          }}
+                          style={{ width: "100%" }}
+                          value={getAppOverrideCommand(appid)}
+                          onChange={(event) =>
+                            setAppOverrideCommand(appid, event.target.value)
+                          }
+                        />
+                        <DialogButton
+                          style={{ minWidth: "initial", width: "initial" }}
+                          disabled={!getInfoQuery.data?.DECKY_USER_HOME}
+                          onClick={() => void browseForOverrideCommand()}
+                        >
+                          Browse
+                        </DialogButton>
+                      </Focusable>
+                    </Field>
                   )}
                   <Field
                     label={"Original launch options backups"}

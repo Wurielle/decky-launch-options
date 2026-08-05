@@ -4,6 +4,7 @@ import { Settings } from "./shared"
 export const get_info = callable<
   [],
   {
+    DECKY_USER_HOME: string
     SETTINGS_FOLDER_NAME: string
     SETTINGS_FOLDER_PATH: string
     SETTINGS_BACKUP_FOLDER_PATH: string
