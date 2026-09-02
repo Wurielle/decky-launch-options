@@ -77,6 +77,70 @@ def split_command_args(raw_command):
         return raw_command.split()
 
 
+def split_unquoted_and_chain(raw_command):
+    """Split a command on unquoted, unescaped && shell operators."""
+    parts = []
+    part_start = 0
+    quote = None
+    escaped = False
+    index = 0
+
+    while index < len(raw_command):
+        char = raw_command[index]
+
+        if escaped:
+            escaped = False
+            index += 1
+            continue
+
+        if char == '\\' and quote != "'":
+            escaped = True
+            index += 1
+            continue
+
+        if quote:
+            if char == quote:
+                quote = None
+            index += 1
+            continue
+
+        if char in ("'", '"'):
+            quote = char
+            index += 1
+            continue
+
+        if raw_command[index:index + 2] == '&&':
+            parts.append(raw_command[part_start:index].strip())
+            part_start = index + 2
+            index += 2
+            continue
+
+        index += 1
+
+    parts.append(raw_command[part_start:].strip())
+    return parts
+
+
+def split_pre_commands(raw_command):
+    """Extract shell commands chained before the final launch expression."""
+    chain = split_unquoted_and_chain(raw_command)
+    if len(chain) == 1 or any(not part for part in chain):
+        return [], raw_command
+
+    # Pre-launch chains only apply when %command% is in the final segment. A
+    # chain after the game would be a post-launch hook with different lifetime
+    # semantics, so leave it to the ordinary parser for now.
+    command_segments = [
+        index
+        for index, part in enumerate(chain)
+        if '%command%' in split_command_args(part)
+    ]
+    if command_segments and command_segments != [len(chain) - 1]:
+        return [], raw_command
+
+    return chain[:-1], chain[-1]
+
+
 def parse_launch_option(raw_command):
     """
     Parse a launch option string into its components.
@@ -84,17 +148,25 @@ def parse_launch_option(raw_command):
     Returns:
         dict with keys:
         - 'env_vars': dict of {key: value} environment variables
+        - 'pre_commands': shell commands chained with && before the launch
         - 'prefix': list of tokens before %command% (excluding env vars)
         - 'suffix': list of tokens after %command% (game args/flags)
     """
     if not raw_command or not raw_command.strip():
-        return {'env_vars': {}, 'prefix': [], 'suffix': []}
+        return {
+            'env_vars': {},
+            'pre_commands': [],
+            'prefix': [],
+            'suffix': [],
+        }
+
+    pre_commands, launch_command = split_pre_commands(raw_command)
 
     import shlex
     try:
-        parts = shlex.split(raw_command)
+        parts = shlex.split(launch_command)
     except ValueError:
-        parts = raw_command.split()
+        parts = launch_command.split()
 
     # Find %command% position
     try:
@@ -150,6 +222,7 @@ def parse_launch_option(raw_command):
 
     return {
         'env_vars': env_vars,
+        'pre_commands': pre_commands,
         'prefix': prefix,
         'suffix': right_parts
     }
@@ -211,6 +284,42 @@ def merge_suffix_args(suffix_groups):
     return before_separator + ['--'] + after_separator
 
 
+def wrap_pre_commands(pre_commands, final_args):
+    """Build a shell chain which replaces itself with the final executable."""
+    if not pre_commands or not final_args:
+        return final_args
+
+    import shlex
+    shell_command = ' && '.join([
+        *pre_commands,
+        f"exec {shlex.join(final_args)}",
+    ])
+    return ['/bin/sh', '-c', shell_command]
+
+
+def get_shell_command_log_details(executable_args):
+    """Extract readable debug details from the generated shell wrapper."""
+    if (
+        len(executable_args) != 3
+        or executable_args[0] != '/bin/sh'
+        or executable_args[1] != '-c'
+    ):
+        return None
+
+    shell_commands = split_unquoted_and_chain(executable_args[2])
+    if not shell_commands or not shell_commands[-1].startswith('exec '):
+        return None
+
+    final_args = split_command_args(shell_commands[-1][len('exec '):])
+    if not final_args:
+        return None
+
+    return {
+        'pre_commands': shell_commands[:-1],
+        'final_args': final_args,
+    }
+
+
 def get_final_args_details(settings, appid):
     base_args = sys.argv[1:]
 
@@ -233,6 +342,7 @@ def get_final_args_details(settings, appid):
     # Collections for all launch option components
     env_merge_rules = get_env_variable_merge_rules(settings)
     all_env_var_values = {}
+    all_pre_commands = []
     all_prefixes = []
     all_suffix_groups = []
 
@@ -247,6 +357,7 @@ def get_final_args_details(settings, appid):
         else:
             parsed = parse_launch_option(profile_original_launch_options)
             add_env_vars(all_env_var_values, env_merge_rules, parsed['env_vars'])
+            all_pre_commands.extend(parsed['pre_commands'])
             if parsed['prefix']:
                 all_prefixes.append(parsed['prefix'])
             if parsed['suffix']:
@@ -311,6 +422,7 @@ def get_final_args_details(settings, appid):
 
     # Merge command parts in execution order.
     for priority, parsed in launch_option_parts:
+        all_pre_commands.extend(parsed['pre_commands'])
         if parsed['prefix']:
             all_prefixes.append(parsed['prefix'])
         if parsed['suffix']:
@@ -348,7 +460,7 @@ def get_final_args_details(settings, appid):
     # separated args stay after it.
     final_args.extend(merge_suffix_args(all_suffix_groups))
 
-    return final_args, all_env_vars
+    return wrap_pre_commands(all_pre_commands, final_args), all_env_vars
 
 
 def get_final_args(settings, appid):
@@ -392,6 +504,22 @@ if __name__ == "__main__":
                     for i, arg in enumerate(args):
                         f.write(f"{i:02d}: {arg}\n")
                     f.write("\n")
+
+                    shell_log_details = get_shell_command_log_details(
+                        executable_args
+                    )
+                    if shell_log_details:
+                        f.write("[Pre-launch Shell Commands]\n")
+                        for i, command in enumerate(
+                            shell_log_details['pre_commands']
+                        ):
+                            f.write(f"{i:02d}: {command}\n")
+                        f.write("\n")
+
+                        f.write("[Final Command Args]\n")
+                        for i, arg in enumerate(shell_log_details['final_args']):
+                            f.write(f"{i:02d}: {arg}\n")
+                        f.write("\n")
 
                     f.write("[Final Executable Args]\n")
                     for i, arg in enumerate(executable_args):

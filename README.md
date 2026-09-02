@@ -288,8 +288,9 @@ SteamDeck=1 Foo="Bar baz" ~/lsfg mangohud %command% -novid +cl_showfps 3
 When multiple launch options are enabled, they are combined like so:
 
 1. **All environment variables** are collected and applied
-2. **All prefix commands** are chained together
-3. **All game arguments** are concatenated and passed to the game
+2. **All pre-launch commands** are run in priority order
+3. **All prefix commands** are chained together
+4. **All game arguments** are concatenated and passed to the game
 
 **With two launch options enabled:**
 
