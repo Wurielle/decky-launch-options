@@ -297,6 +297,29 @@ def wrap_pre_commands(pre_commands, final_args):
     return ['/bin/sh', '-c', shell_command]
 
 
+def get_shell_command_log_details(executable_args):
+    """Extract readable debug details from the generated shell wrapper."""
+    if (
+        len(executable_args) != 3
+        or executable_args[0] != '/bin/sh'
+        or executable_args[1] != '-c'
+    ):
+        return None
+
+    shell_commands = split_unquoted_and_chain(executable_args[2])
+    if not shell_commands or not shell_commands[-1].startswith('exec '):
+        return None
+
+    final_args = split_command_args(shell_commands[-1][len('exec '):])
+    if not final_args:
+        return None
+
+    return {
+        'pre_commands': shell_commands[:-1],
+        'final_args': final_args,
+    }
+
+
 def get_final_args_details(settings, appid):
     base_args = sys.argv[1:]
 
@@ -481,6 +504,22 @@ if __name__ == "__main__":
                     for i, arg in enumerate(args):
                         f.write(f"{i:02d}: {arg}\n")
                     f.write("\n")
+
+                    shell_log_details = get_shell_command_log_details(
+                        executable_args
+                    )
+                    if shell_log_details:
+                        f.write("[Pre-launch Shell Commands]\n")
+                        for i, command in enumerate(
+                            shell_log_details['pre_commands']
+                        ):
+                            f.write(f"{i:02d}: {command}\n")
+                        f.write("\n")
+
+                        f.write("[Final Command Args]\n")
+                        for i, arg in enumerate(shell_log_details['final_args']):
+                            f.write(f"{i:02d}: {arg}\n")
+                        f.write("\n")
 
                     f.write("[Final Executable Args]\n")
                     for i, arg in enumerate(executable_args):

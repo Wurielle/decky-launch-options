@@ -14,7 +14,12 @@ if hasattr(sys.stdout, "reconfigure"):
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from unittest.mock import patch
-from run import parse_launch_option, get_final_args_details, is_non_steam_appid
+from run import (
+    get_final_args_details,
+    get_shell_command_log_details,
+    is_non_steam_appid,
+    parse_launch_option,
+)
 
 def test_case(name, raw_command, expected=None):
     print(f"\n{'='*60}")
@@ -746,6 +751,25 @@ if __name__ == "__main__":
         print(f"Expected: {expected_args_h8}")
         print(f"\n{'PASS' if match_h8 else 'FAIL'}")
         assert match_h8
+
+        shell_log_details_h8 = get_shell_command_log_details(final_args_h8)
+        expected_shell_log_details_h8 = {
+            "pre_commands": [
+                "prepare-high",
+                "verify-high --check",
+                "prepare-low --alpha",
+            ],
+            "final_args": [
+                "mangohud",
+                "gamescope",
+                "--",
+                "/path/to/game",
+                "--",
+                "--fullscreen",
+            ],
+        }
+        assert shell_log_details_h8 == expected_shell_log_details_h8
+        assert get_shell_command_log_details(["/path/to/game"]) is None
 
         # Test H9: Raw quoting and expansions survive shell-chain construction
         print(f"\n{'='*60}")
