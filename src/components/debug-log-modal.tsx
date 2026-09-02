@@ -65,7 +65,7 @@ export function DebugLogModal({ onClose }: { onClose: () => void }) {
         event.detail.button === GamepadButton.DIR_UP
           ? -SCROLL_STEP
           : SCROLL_STEP,
-      behavior: "auto",
+      behavior: "smooth",
     })
   }
 
