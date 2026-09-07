@@ -22,6 +22,9 @@
 - [How to use](#how-to-use)
     - [Add a new tab](#add-a-new-tab)
     - [Add a dropdown](#add-a-dropdown)
+    - [Add an environment variable merge](#add-an-environment-variable-merge)
+    - [Change execution priority](#change-execution-priority)
+    - [Running scripts](#running-scripts)
 - [Integration with Third-Party plugins](#integration-with-third-party-plugins)
 - [Understanding launch options](#understanding-launch-options)
 - [Philosophy](#philosophy)
@@ -38,7 +41,7 @@
 
 ## Recipes
 
-Decky Launch Options does not come with a pre-defined set of launch options.
+Decky Launch Options does not come with a pre-defined set of launch options [by design](https://github.com/Wurielle/decky-launch-options/issues/48).
 
 If you wish to import a pre-defined set of
 launch options to quickstart your use of this plugin or create your own
@@ -55,29 +58,29 @@ Open the plugin tab to manage your launch options and create a new launch option
 ![Screenshot of the launch options settings for the plugin](./assets/manage-launch-options.png)
 
 * **Name** — A label to identify the launch option (e.g. "MangoHud", "Steam Deck mode")
-* **Enable globally** — When enabled, this launch option will be enabled by default for all games
-* **On command** — The launch option script that is applied when the toggle is **switched on**
-* **Off command** — The launch option script that is applied when the toggle is **switched off**
+* **Enable globally** — When enabled, this marks the launch option as opt-out: the on command will run automatically for all apps
+* **On command** — The command that runs when the toggle is **switched on**
+* **Off command** — The command that runs when the toggle is **switched off**
 
 > **Example:** For a "Steam Deck mode" launch option, you could set:
 > * **On command:** `SteamDeck=1 %command%` — forces Steam Deck compatibility
-> * **Off command:** `SteamDeck=0 %command%` — explicitly disables it
+> * **Off command:** `SteamDeck=0 %command%` — disables Steam Deck compatibility
 >
-> If you only need something applied when enabled (e.g. MangoHud), you can leave the **Off command** empty or vice
+> If you only need to run a command when enabled (e.g. MangoHud), you can leave the **Off command** empty or vice
 > versa:
 > * **On command:** `mangohud %command%`
 > * **Off command:** *(empty)*
 
-### 2. Toggle launch options per game
+### 2. Toggle launch options per app
 
-On your game page, click on settings and click on **Launch options**.
+On your app page, click on the settings button and click on **Launch Options**.
 
-![Screenshot of the settings for a game in Steam](./assets/app-page.png)
+![Screenshot of the settings for an app in Steam](./assets/app-page.png)
 
 ![Screenshot of the Decky Launch Options plugin on the Steam Deck](./assets/screenshot.png)
 
 You can enable or disable launch options to your liking.
-Each launch option is a **switch**. When you turn it on for a game, the **On command** is used.
+Each launch option is a **switch**. When you turn it on for an app, the **On command** is used.
 When you turn it off, the **Off command** is used instead.
 
 * **Locally enabled** launch options are opt-in — they are off by default and you can enable them if you need them
@@ -95,6 +98,19 @@ When you turn it off, the **Off command** is used instead.
 
 ### Add a dropdown
 
+Launch options can also appear in a dropdown. This is preferrable when multiple launch options target a singular change.
+
+<table>
+  <tr>
+    <td align="center"><strong>Before</strong></td>
+    <td align="center"><strong>After</strong></td>
+  </tr>
+  <tr>
+    <td><img src="./assets/dropdown-before.jpg" alt="Before using valueId and valueName, multiple launch options appear separately" /></td>
+    <td><img src="./assets/dropdown-after.jpg" alt="After using valueId and valueName, launch options appear in a single dropdown" /></td>
+  </tr>
+</table>
+
 For each launch option that should appear in a dropdown:
 
 - Use the same `Value ID`
@@ -103,17 +119,6 @@ For each launch option that should appear in a dropdown:
 - Set `Fallback Value` to `On` on a launch option to use it as the default value
 
 ![Fields used to configure a dropdown launch option](./assets/dropdown-value-id.jpg)
-
-<table>
-  <tr>
-    <td align="center"><strong>Before</strong></td>
-    <td align="center"><strong>After</strong></td>
-  </tr>
-  <tr>
-    <td><img src="./assets/dropdown-before.jpg" alt="Before using valueId and valueName, multiple options appear separately" /></td>
-    <td><img src="./assets/dropdown-after.jpg" alt="After using valueId and valueName, the options appear in a single dropdown" /></td>
-  </tr>
-</table>
 
 ## Integration with Third-Party plugins
 
@@ -162,13 +167,13 @@ You can also check if Decky Launch Options is available with:
 |------------------|-----------|------------------------------------------------------------------------------------------------------------|
 | `id`             | `string`  | Stable unique identifier used to select values and update the launch option during reimport.               |
 | `name`           | `string`  | Display label shown in the UI.                                                                             |
-| `on`             | `string`  | Command string applied when the launch option is enabled.                                                  |
-| `off`            | `string`  | Command string applied when the launch option is disabled.                                                 |
-| `enableGlobally` | `boolean` | Default state applied across all games.                                                                    |
+| `on`             | `string`  | Command that is run when the launch option is enabled.                                                  |
+| `off`            | `string`  | Command that is run when the launch option is disabled.                                                 |
+| `enableGlobally` | `boolean` | Mark the launch option as opt-out: this makes the on command run automatically for all apps.                                                                    |
 | `group`          | `string`  | Group name that creates a new tab in the UI.                                                               |
 | `valueId`        | `string`  | Shared identifier that groups launch options into a dropdown.                                              |
 | `valueName`      | `string`  | Display name shown for the dropdown value in the UI.                                                       |
-| `fallbackValue`  | `boolean` | Default choice used for its `valueId` group.                                                               |
+| `fallbackValue`  | `boolean` | Mark as default value for its `valueId` dropdown.                                                               |
 | `priority`       | `number`  | Execution priority for the launch option. Higher values run first; negative values run closer to %command% |
 
 > **Note:** Every property of a launch option is optional but I recommend at least setting a static id for each one to
