@@ -62,12 +62,12 @@ Open the plugin tab to manage your launch options and create a new launch option
 ![Screenshot of the launch options settings for the plugin](./assets/manage-launch-options.png)
 
 * **Name** — A label to identify the launch option (e.g. "MangoHud", "Steam Deck mode")
-* **Enable globally** — When enabled, this marks the launch option as opt-out: the on command will run automatically for all apps
+* **Enable globally** — When enabled, this marks the launch option as opt-out: the on command will run automatically for all apps by default until disabled
 * **On command** — The command that runs when the toggle is **switched on**, the launch option is enabled globally or the launch option is selected in a dropdown
 * **Off command** — The command that runs when the toggle is **switched off**
 
 > **Example:** For a "Steam Deck mode" launch option, you could set:
-> * **On command:** `SteamDeck=1 %command%` — forces Steam Deck compatibility
+> * **On command:** `SteamDeck=1 %command%` — enables Steam Deck compatibility
 > * **Off command:** `SteamDeck=0 %command%` — disables Steam Deck compatibility
 >
 > If you only need to run a command when enabled (e.g. MangoHud), you can leave the **Off command** empty or vice
@@ -102,7 +102,7 @@ When you turn it off, the **Off command** is used instead.
 
 ### Add a dropdown
 
-Launch options can also appear in a dropdown. This is preferrable when multiple launch options target a singular change.
+Launch options can also appear in a dropdown. This is preferable when multiple launch options target a singular change.
 
 <table>
   <tr>
@@ -141,7 +141,7 @@ MANGOHUD_CONFIG="cpu_temp" %command%
 MANGOHUD_CONFIG="gpu_temp" %command%
 ```
 
-produce a combined value of:
+produce this combined launch option:
 
 ```bash
 MANGOHUD_CONFIG="cpu_temp,gpu_temp" %command%
@@ -169,10 +169,8 @@ gamescope -f -- mangohud %command%
 ```
 
 Priority also resolves conflicts between environment variables that are **not configured to be merged**. 
-If a launch option sets`SteamDeck=0 %command%` with priority `0` and another sets `SteamDeck=1 %command%` with priority `10`, the highest priority
-value overrides all others. In this case it will be `SteamDeck=1  %command%`. 
-
-Environment variables configured to be merged have their values joined using their configured delimiter and therefore won't take priority into account.
+If a launch option sets `SteamDeck=0 %command%` with priority `0` and another sets `SteamDeck=1 %command%` with priority `10`, the highest priority
+value overrides all others. In this case it will be `SteamDeck=1 %command%`. 
 
 ### Advanced scripts
 
@@ -250,7 +248,7 @@ Inline example:
 bash -c 'printf "Starting app\n"; exec "$@"' -- %command%
 ```
 
-Here, `--` fills the script-name slot required by `bash -c`, so `"$@"` contains the app command and its arguments.
+Here, `--` fills the script-name slot used by `bash -c`, so `"$@"` contains the app command and its arguments.
 `exec "$@"` launches the app.
 
 #### Inline setup script with `&&`
