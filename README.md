@@ -141,14 +141,19 @@ MANGOHUD_CONFIG="cpu_temp" %command%
 MANGOHUD_CONFIG="gpu_temp" %command%
 ```
 
-produce a combined value of `MANGOHUD_CONFIG="cpu_temp,gpu_temp"`. Only configure merges for variables that support
-multiple values, and use the delimiter expected by the program reading the variable.
+produce a combined value of:
+
+```bash
+MANGOHUD_CONFIG="cpu_temp,gpu_temp" %command%
+```
+
+Only configure merges for environment variables that support multiple values, and use the delimiter expected as documented by the program reading the environment variable.
 
 ### Change execution priority
 
-Each launch option has a numeric **Priority** field which defaults to `0`.
-Increase it to run a prefix command earlier, or decrease it to place the command closer to `%command%`. Negative values
-are allowed. Higher values run first.
+Each launch option has an optional numeric **Priority** field which defaults to `0`.
+Higher priority launch options run first: increase it to run a command earlier, or decrease it to run a command closer to `%command%`. 
+Negative values are supported as well.
 
 For example, enabling these options:
 
@@ -163,14 +168,23 @@ produces:
 gamescope -f -- mangohud %command%
 ```
 
-Priority also resolves conflicts between environment variables that are **not configured to merge**. If one option sets
-`SteamDeck=0 %command%` with priority `0` and another sets `SteamDeck=1 %command%` with priority `10`, the higher-priority
-value wins: `SteamDeck=1`. Variables configured to merge have their values joined using their configured delimiter.
+Priority also resolves conflicts between environment variables that are **not configured to be merged**. 
+If a launch option sets`SteamDeck=0 %command%` with priority `0` and another sets `SteamDeck=1 %command%` with priority `10`, the highest priority
+value overrides all others. In this case it will be `SteamDeck=1  %command%`. 
+
+Environment variables configured to be merged have their values joined using their configured delimiter and therefore won't take priority into account.
 
 ### Advanced scripts
 
-Use a wrapper with `--` when your script should launch the app, or a setup command followed by `&&` when the app
-should start after the command succeeds. You can use a script file or a short inline `bash -c` command.
+> **Warning:** Only enter scripts and commands you trust in these fields. They can modify or delete files and make other
+> changes to your system. Decky Launch Options supports these capabilities to match what Steam's launch options already
+> allow. Use them at your own discretion. I am not responsible for any damage caused by scripts or commands you run.
+
+Decky Launch Options supports wrapper scripts using `--` and setup commands chained with `&&` to allow you to pass arguments directly to your scripts and commands instead of the targeted app.
+You can run a local script file, a local command or even a short inline `bash -c` command, feel free to be creative!
+
+* Use a wrapper script with `--` when your script should launch the app
+* Use a setup command followed by `&&` when the app should start after the command succeeds
 
 > **Warning:** Always include `%command%` when using a custom script or command in a launch option. It identifies where
 > the app belongs and lets the plugin distinguish the script's arguments from the app's arguments.
@@ -179,7 +193,7 @@ The script file examples invoke `bash` explicitly, so the files do not need exec
 
 #### Wrapper script with `--`
 
-Save this as `~/scripts/launch-app.sh`:
+Script example `~/scripts/launch-app.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -198,19 +212,18 @@ printf 'Launching with profile: %s\n' "$profile" >> ~/app-launch.log
 exec "$@"
 ```
 
-Set the **On command** to:
+Allows you to run a launch option like:
 
 ```bash
 bash ~/scripts/launch-app.sh handheld -- %command%
 ```
 
-Here, `handheld` is the script's profile argument. The script consumes it and `--`, leaving the app command and its
-arguments in `"$@"`. The `--` separator does not launch the app by itself: the wrapper must use `exec "$@"` to hand
-control to the remaining command. Keep the quotes so arguments containing spaces are preserved.
+The script reads `handheld` and skips `--`, then uses `exec "$@"` to launch the app with the remaining arguments.
+Keep the quotes around `"$@"` so arguments containing spaces stay intact.
 
 #### Setup script with `&&`
 
-Save this as `~/scripts/prepare-app.sh`:
+Script example `~/scripts/prepare-app.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -220,37 +233,36 @@ profile="$1"
 printf 'Preparing profile: %s\n' "$profile" >> ~/app-launch.log
 ```
 
-Set the **On command** to:
+Allows you to run a launch option like:
 
 ```bash
 bash ~/scripts/prepare-app.sh handheld && %command%
 ```
 
-This script receives only its own `handheld` argument. After it exits successfully, `&&` allows the app to start.
-If the script fails, the app will not start. This version does not need `exec "$@"` because the app command is outside
-the script.
+The script runs with `handheld` as its argument. `&&` starts the app only if the script succeeds.
+No `exec "$@"` is needed because the app is launched separately.
 
 #### Inline wrapper script with `--`
 
-Set the **On command** to:
+Inline example:
 
 ```bash
 bash -c 'printf "Starting app\n"; exec "$@"' -- %command%
 ```
 
-With `bash -c`, the first argument after the script becomes `$0`. Here, `--` fills that slot, leaving the app command
-and its arguments in `"$@"`. Keep `exec "$@"` so the wrapper actually launches the app.
+Here, `--` fills the script-name slot required by `bash -c`, so `"$@"` contains the app command and its arguments.
+`exec "$@"` launches the app.
 
 #### Inline setup script with `&&`
 
-Set the **On command** to:
+Inline example:
 
 ```bash
 bash -c 'printf "Preparing profile: %s\n" "$1"' -- handheld && %command%
 ```
 
-Here, `--` again fills `$0`, and `handheld` becomes `$1`. The app starts after the inline script succeeds, so this
-version does not need `exec "$@"`.
+Here, `--` fills the script-name slot, and `$1` holds `handheld`. `&&` starts the app only if the script succeeds,
+so no `exec "$@"` is needed.
 
 ## Integration with Third-Party plugins
 
