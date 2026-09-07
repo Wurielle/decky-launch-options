@@ -24,7 +24,7 @@
     - [Add a dropdown](#add-a-dropdown)
     - [Add an Environment Variable Merge](#add-an-environment-variable-merge)
     - [Change execution priority](#change-execution-priority)
-    - [Advanced commands](#advanced-commands)
+    - [Advanced scripts](#advanced-scripts)
         - [Wrapper script with `--`](#wrapper-script-with---)
         - [Setup script with `&&`](#setup-script-with-)
         - [Inline wrapper script with `--`](#inline-wrapper-script-with---)
@@ -167,7 +167,7 @@ Priority also resolves conflicts between environment variables that are **not co
 `SteamDeck=0 %command%` with priority `0` and another sets `SteamDeck=1 %command%` with priority `10`, the higher-priority
 value wins: `SteamDeck=1`. Variables configured to merge have their values joined using their configured delimiter.
 
-### Advanced commands
+### Advanced scripts
 
 Use a wrapper with `--` when your script should launch the app, or a setup command followed by `&&` when the app
 should start after the command succeeds. You can use a script file or a short inline `bash -c` command.
