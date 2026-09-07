@@ -375,71 +375,95 @@ window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
 
 ## Understanding launch options
 
-Decky Launch Options tries to simplify launch options management by offering a degree of leeway in how you can structure
-your launch options but it's still important to understand how launch options work to avoid mistakes!
+> This section is purely educational as this is not really explained by Steam and could help those not familiar with command-line tools.
 
-### The `%command%` Placeholder
+Launch options are instructions that change how an app starts. They can supply settings, launch the app through another
+tool, or pass options directly to the app. The examples below use Steam's launch options on Linux, including SteamOS.
+Tools used in the examples must already be installed.
 
-The `%command%` placeholder represents where your app executable will be inserted in the command chain. Everything
-before `%command%` becomes a **prefix** (executed before the app), and everything after becomes a **suffix** (passed as
-arguments to the app).
+### The `%command%` placeholder
 
-**Structure example:**
+`%command%` stands for the command Steam uses to start the app. This can include a compatibility tool such as Proton,
+so it is more than just a placeholder for an executable file's path. Leave `%command%` as written; you do not need to
+replace it with the app's location.
 
+This placeholder belongs to Steam's launch options; a terminal does not replace it automatically.
+
+For a typical launch option, the layout is:
+
+```text
+[environment variables] [wrapper commands] %command% [app arguments]
 ```
-[ENV_VARS] [PREFIX_COMMANDS] %command% [APP_ARGUMENTS]
-```
 
-### Simple Examples
+The bracketed labels describe optional parts; do not type the brackets themselves.
 
-Here are recipes for common launch option scenarios.
+- **Environment variables** are named settings made available to the launched processes, written as `NAME=value`.
+- **Wrapper commands**, also called prefixes, launch the next command in the chain. For example, `mangohud` starts the
+  app with an overlay; it does not need to finish before the app starts.
+- **App arguments**, also called suffixes, are extra options placed after `%command%`. The app decides what they mean.
 
-> **Note:** Please provide `%command%` whenever you can to assure proper detection of command parts. This will also help
-> readbility.
+Separate setup commands can also go before the launch using `&&`. They must finish successfully before the next command
+runs. If a setup command fails, the commands after its `&&` do not run.
 
-**Environment variables:**
+> **Note:** Always include `%command%` when adding environment variables, wrappers, or custom setup commands around the
+> app's launch. This tells Steam where to insert the app's original launch command.
+
+### Simple examples
+
+#### Environment variables
 
 ```bash
-SteamDeck=1 Foo="Bar baz" %command%
+MANGOHUD_CONFIG="cpu_temp,gpu_temp" %command%
 ```
 
-**Prefix command:**
+This sets a configuration value for MangoHud. It does not enable MangoHud by itself; the overlay must also be enabled.
+The comma joins two settings in the format expected by MangoHud. See its
+[configuration documentation](https://github.com/flightlessmango/MangoHud#environment-variables) for supported settings.
+
+Write assignments without spaces around `=`. If a value contains spaces, put quotes around the whole value, such as
+`EXAMPLE_SETTING="some text"`. That last name is only an illustration; a variable has an effect only if the app or tool
+recognizes it.
+
+#### Wrapper commands
 
 ```bash
 mangohud %command%
 ```
 
-**App arguments:**
+This launches the app through MangoHud. A wrapper's own arguments belong before `%command%`, alongside the wrapper.
+
+#### App arguments
 
 ```bash
 %command% -novid +cl_showfps 3
 ```
 
-**Environment variables + prefixes + app arguments:**
+Here, `-novid` and `+cl_showfps 3` are passed to the app. These are app-specific examples, not options that work with every
+app. Use the arguments documented by the app you are configuring. Keep an argument and its value together, as with
+`+cl_showfps 3`.
+
+#### Combining settings, a wrapper, and app arguments
 
 ```bash
-SteamDeck=1 Foo="Bar baz" ~/lsfg mangohud %command% -novid +cl_showfps 3
+MANGOHUD_CONFIG="cpu_temp,gpu_temp" mangohud %command% -novid +cl_showfps 3
 ```
 
-### How Decky Launch Options handle multiple launch options
+This supplies settings to MangoHud, launches the app through it, and adds the app arguments. Use this example only with
+an app that supports those arguments.
 
-When multiple launch options are enabled, they are combined like so:
+### Chaining multiple wrappers
 
-1. **All environment variables** are collected and applied
-2. **All pre-launch commands** are run in priority order
-3. **All prefix commands** are chained together
-4. **All app arguments** are concatenated and passed to the app
-
-**With two launch options enabled:**
-
-1. `SteamDeck=0 mangohhud %command% -novid`
-2. `~/lsfg %command% +cl_showfps 3`
-
-**We get:**
+Compatible wrappers can be placed one after another. Their position determines which tool launches which command:
 
 ```bash
-SteamDeck=0 ~/lsfg mangohud path/to/app -novid +cl_showfps 3
+MANGOHUD_CONFIG="cpu_temp,gpu_temp" gamescope -f -- mangohud %command%
 ```
+
+The `-f` argument belongs to gamescope, and its `--` separates its own options from the command it launches. The app is
+launched once, through gamescope and then MangoHud. The environment variable is available to the launched processes.
+
+The order matters: each wrapper must accept the command that follows it. `--` commonly marks the end of a tool's own
+options, but support depends on the tool. Follow each tool's documentation when combining wrappers.
 
 ## Philosophy
 
