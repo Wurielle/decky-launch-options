@@ -3,7 +3,7 @@
 </h1>
 
 <p align="center">
-   Manage launch options for your games with ease 🍃
+   Manage launch options for your apps with ease 🍃
 </p>
 
 ![Screenshot of the Decky Launch Options plugin on the Steam Deck](./assets/screenshot.png)
@@ -11,8 +11,8 @@
 ## Features
 
 - [x] Manage all your most used launch options in one place
-- [x] Enable or disable launch options per game
-- [x] Enable launch options globally for all games
+- [x] Enable or disable launch options per app
+- [x] Enable launch options globally for all apps
 - [x] Supports different behaviors when a launch option is on or off
 
 ## Table of Contents
@@ -25,6 +25,10 @@
     - [Add an Environment Variable Merge](#add-an-environment-variable-merge)
     - [Change execution priority](#change-execution-priority)
     - [Advanced commands](#advanced-commands)
+        - [Wrapper script with `--`](#wrapper-script-with---)
+        - [Setup script with `&&`](#setup-script-with-)
+        - [Inline wrapper script with `--`](#inline-wrapper-script-with---)
+        - [Inline setup script with `&&`](#inline-setup-script-with-)
 - [Integration with Third-Party plugins](#integration-with-third-party-plugins)
 - [Understanding launch options](#understanding-launch-options)
 - [Philosophy](#philosophy)
@@ -122,7 +126,7 @@ For each launch option that should appear in a dropdown:
 
 ### Add an Environment Variable Merge
 
-Some environment variables accept multiple values. If several launch options set the same variable, you can configure
+Some environment variables accept multiple joined values. If several launch options set the same variable, you can configure
 a merge so their values are joined instead of one overriding another.
 
 Open **Manage env variable merges** in the plugin and add a **New merge**:
@@ -142,7 +146,7 @@ multiple values, and use the delimiter expected by the program reading the varia
 
 ### Change execution priority
 
-Each launch option has a numeric **Priority** field (`priority` when importing options), which defaults to `0`.
+Each launch option has a numeric **Priority** field which defaults to `0`.
 Increase it to run a prefix command earlier, or decrease it to place the command closer to `%command%`. Negative values
 are allowed. Higher values run first.
 
@@ -165,10 +169,17 @@ value wins: `SteamDeck=1`. Variables configured to merge have their values joine
 
 ### Advanced commands
 
-> **Warning:** Always include `%command%` when using a custom script or command in a launch option. It identifies where
-> the game belongs and lets the plugin distinguish the script's arguments from the game's arguments.
+Use a wrapper with `--` when your script should launch the app, or a setup command followed by `&&` when the app
+should start after the command succeeds. You can use a script file or a short inline `bash -c` command.
 
-**Use `--` for a wrapper script that launches the game.** For example, save this as `/home/deck/scripts/launch-game.sh`:
+> **Warning:** Always include `%command%` when using a custom script or command in a launch option. It identifies where
+> the app belongs and lets the plugin distinguish the script's arguments from the app's arguments.
+
+The script file examples invoke `bash` explicitly, so the files do not need executable permissions.
+
+#### Wrapper script with `--`
+
+Save this as `~/scripts/launch-app.sh`:
 
 ```bash
 #!/usr/bin/env bash
@@ -178,62 +189,67 @@ set -e
 profile="$1"
 shift
 if [[ "$1" != "--" ]]; then
-    printf 'Usage: launch-game.sh PROFILE -- COMMAND [ARG...]\n' >&2
+    printf 'Usage: launch-app.sh PROFILE -- COMMAND [ARG...]\n' >&2
     exit 1
 fi
 shift
 
-printf 'Launching with profile: %s\n' "$profile" >> /home/deck/game-launch.log
+printf 'Launching with profile: %s\n' "$profile" >> ~/app-launch.log
 exec "$@"
 ```
 
 Set the **On command** to:
 
 ```bash
-bash /home/deck/scripts/launch-game.sh handheld -- %command%
+bash ~/scripts/launch-app.sh handheld -- %command%
 ```
 
-Here, `handheld` is the script's profile argument. The script consumes it and `--`, leaving the game command and its
-arguments in `"$@"`. The `--` separator does not launch the game by itself: the wrapper must use `exec "$@"` to hand
+Here, `handheld` is the script's profile argument. The script consumes it and `--`, leaving the app command and its
+arguments in `"$@"`. The `--` separator does not launch the app by itself: the wrapper must use `exec "$@"` to hand
 control to the remaining command. Keep the quotes so arguments containing spaces are preserved.
 
-**Use `&&` for a setup script that finishes before the game starts.** For example, save this as
-`/home/deck/scripts/prepare-game.sh`:
+#### Setup script with `&&`
+
+Save this as `~/scripts/prepare-app.sh`:
 
 ```bash
 #!/usr/bin/env bash
 set -e
 
 profile="$1"
-printf 'Preparing profile: %s\n' "$profile" >> /home/deck/game-launch.log
+printf 'Preparing profile: %s\n' "$profile" >> ~/app-launch.log
 ```
 
 Set the **On command** to:
 
 ```bash
-bash /home/deck/scripts/prepare-game.sh handheld && %command%
+bash ~/scripts/prepare-app.sh handheld && %command%
 ```
 
-This script receives only its own `handheld` argument. After it exits successfully, `&&` allows the game to start.
-If the script fails, the game will not start. This version does not need `exec "$@"` because the game command is outside
-the script. Both examples invoke `bash` explicitly, so the script files do not need executable permissions.
+This script receives only its own `handheld` argument. After it exits successfully, `&&` allows the app to start.
+If the script fails, the app will not start. This version does not need `exec "$@"` because the app command is outside
+the script.
 
-**For short commands, use inline `bash -c` scripts.** A wrapper using `--` can look like this:
+#### Inline wrapper script with `--`
+
+Set the **On command** to:
 
 ```bash
-bash -c 'printf "Starting game\n"; exec "$@"' -- %command%
+bash -c 'printf "Starting app\n"; exec "$@"' -- %command%
 ```
 
-With `bash -c`, the first argument after the script becomes `$0`. Here, `--` fills that slot, leaving the game command
-and its arguments in `"$@"`. Keep `exec "$@"` so the wrapper actually launches the game.
+With `bash -c`, the first argument after the script becomes `$0`. Here, `--` fills that slot, leaving the app command
+and its arguments in `"$@"`. Keep `exec "$@"` so the wrapper actually launches the app.
 
-For a command that runs before the game using `&&`:
+#### Inline setup script with `&&`
+
+Set the **On command** to:
 
 ```bash
 bash -c 'printf "Preparing profile: %s\n" "$1"' -- handheld && %command%
 ```
 
-Here, `--` again fills `$0`, and `handheld` becomes `$1`. The game starts after the inline script succeeds, so this
+Here, `--` again fills `$0`, and `handheld` becomes `$1`. The app starts after the inline script succeeds, so this
 version does not need `exec "$@"`.
 
 ## Integration with Third-Party plugins
@@ -364,14 +380,14 @@ your launch options but it's still important to understand how launch options wo
 
 ### The `%command%` Placeholder
 
-The `%command%` placeholder represents where your game executable will be inserted in the command chain. Everything
-before `%command%` becomes a **prefix** (executed before the game), and everything after becomes a **suffix** (passed as
-arguments to the game).
+The `%command%` placeholder represents where your app executable will be inserted in the command chain. Everything
+before `%command%` becomes a **prefix** (executed before the app), and everything after becomes a **suffix** (passed as
+arguments to the app).
 
 **Structure example:**
 
 ```
-[ENV_VARS] [PREFIX_COMMANDS] %command% [GAME_ARGUMENTS]
+[ENV_VARS] [PREFIX_COMMANDS] %command% [APP_ARGUMENTS]
 ```
 
 ### Simple Examples
@@ -393,13 +409,13 @@ SteamDeck=1 Foo="Bar baz" %command%
 mangohud %command%
 ```
 
-**Game arguments:**
+**App arguments:**
 
 ```bash
 %command% -novid +cl_showfps 3
 ```
 
-**Environment variables + prefixes + game arguments:**
+**Environment variables + prefixes + app arguments:**
 
 ```bash
 SteamDeck=1 Foo="Bar baz" ~/lsfg mangohud %command% -novid +cl_showfps 3
@@ -412,7 +428,7 @@ When multiple launch options are enabled, they are combined like so:
 1. **All environment variables** are collected and applied
 2. **All pre-launch commands** are run in priority order
 3. **All prefix commands** are chained together
-4. **All game arguments** are concatenated and passed to the game
+4. **All app arguments** are concatenated and passed to the app
 
 **With two launch options enabled:**
 
@@ -422,7 +438,7 @@ When multiple launch options are enabled, they are combined like so:
 **We get:**
 
 ```bash
-SteamDeck=0 ~/lsfg mangohud path/to/game -novid +cl_showfps 3
+SteamDeck=0 ~/lsfg mangohud path/to/app -novid +cl_showfps 3
 ```
 
 ## Philosophy
