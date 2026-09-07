@@ -22,9 +22,9 @@
 - [How to use](#how-to-use)
     - [Add a new tab](#add-a-new-tab)
     - [Add a dropdown](#add-a-dropdown)
-    - [Add an environment variable merge](#add-an-environment-variable-merge)
+    - [Add an Environment Variable Merge](#add-an-environment-variable-merge)
     - [Change execution priority](#change-execution-priority)
-    - [Running scripts](#running-scripts)
+    - [Advanced commands](#advanced-commands)
 - [Integration with Third-Party plugins](#integration-with-third-party-plugins)
 - [Understanding launch options](#understanding-launch-options)
 - [Philosophy](#philosophy)
@@ -59,7 +59,7 @@ Open the plugin tab to manage your launch options and create a new launch option
 
 * **Name** — A label to identify the launch option (e.g. "MangoHud", "Steam Deck mode")
 * **Enable globally** — When enabled, this marks the launch option as opt-out: the on command will run automatically for all apps
-* **On command** — The command that runs when the toggle is **switched on**
+* **On command** — The command that runs when the toggle is **switched on**, the launch option is enabled globally or the launch option is selected in a dropdown
 * **Off command** — The command that runs when the toggle is **switched off**
 
 > **Example:** For a "Steam Deck mode" launch option, you could set:
@@ -119,6 +119,122 @@ For each launch option that should appear in a dropdown:
 - Set `Fallback Value` to `On` on a launch option to use it as the default value
 
 ![Fields used to configure a dropdown launch option](./assets/dropdown-value-id.jpg)
+
+### Add an Environment Variable Merge
+
+Some environment variables accept multiple values. If several launch options set the same variable, you can configure
+a merge so their values are joined instead of one overriding another.
+
+Open **Manage env variable merges** in the plugin and add a **New merge**:
+
+- **Environment variable name** — The exact variable name, such as `MANGOHUD_CONFIG`.
+- **Delimiter** — The separator that variable expects, such as `,` for `MANGOHUD_CONFIG` or `;` for `WINEDLLOVERRIDES`.
+
+For example, with `MANGOHUD_CONFIG` configured to merge using `,`, these two enabled launch options:
+
+```bash
+MANGOHUD_CONFIG="cpu_temp" %command%
+MANGOHUD_CONFIG="gpu_temp" %command%
+```
+
+produce a combined value of `MANGOHUD_CONFIG="cpu_temp,gpu_temp"`. Only configure merges for variables that support
+multiple values, and use the delimiter expected by the program reading the variable.
+
+### Change execution priority
+
+Each launch option has a numeric **Priority** field (`priority` when importing options), which defaults to `0`.
+Increase it to run a prefix command earlier, or decrease it to place the command closer to `%command%`. Negative values
+are allowed. Higher values run first.
+
+For example, enabling these options:
+
+| On command | Priority |
+|------------|----------|
+| `gamescope -f -- %command%` | `10` |
+| `mangohud %command%` | `-10` |
+
+produces:
+
+```bash
+gamescope -f -- mangohud %command%
+```
+
+Priority also resolves conflicts between environment variables that are **not configured to merge**. If one option sets
+`SteamDeck=0 %command%` with priority `0` and another sets `SteamDeck=1 %command%` with priority `10`, the higher-priority
+value wins: `SteamDeck=1`. Variables configured to merge have their values joined using their configured delimiter.
+
+### Advanced commands
+
+> **Warning:** Always include `%command%` when using a custom script or command in a launch option. It identifies where
+> the game belongs and lets the plugin distinguish the script's arguments from the game's arguments.
+
+**Use `--` for a wrapper script that launches the game.** For example, save this as `/home/deck/scripts/launch-game.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -e
+
+# Read this script's required profile argument, then the -- separator.
+profile="$1"
+shift
+if [[ "$1" != "--" ]]; then
+    printf 'Usage: launch-game.sh PROFILE -- COMMAND [ARG...]\n' >&2
+    exit 1
+fi
+shift
+
+printf 'Launching with profile: %s\n' "$profile" >> /home/deck/game-launch.log
+exec "$@"
+```
+
+Set the **On command** to:
+
+```bash
+bash /home/deck/scripts/launch-game.sh handheld -- %command%
+```
+
+Here, `handheld` is the script's profile argument. The script consumes it and `--`, leaving the game command and its
+arguments in `"$@"`. The `--` separator does not launch the game by itself: the wrapper must use `exec "$@"` to hand
+control to the remaining command. Keep the quotes so arguments containing spaces are preserved.
+
+**Use `&&` for a setup script that finishes before the game starts.** For example, save this as
+`/home/deck/scripts/prepare-game.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -e
+
+profile="$1"
+printf 'Preparing profile: %s\n' "$profile" >> /home/deck/game-launch.log
+```
+
+Set the **On command** to:
+
+```bash
+bash /home/deck/scripts/prepare-game.sh handheld && %command%
+```
+
+This script receives only its own `handheld` argument. After it exits successfully, `&&` allows the game to start.
+If the script fails, the game will not start. This version does not need `exec "$@"` because the game command is outside
+the script. Both examples invoke `bash` explicitly, so the script files do not need executable permissions.
+
+**For short commands, use inline `bash -c` scripts.** A wrapper using `--` can look like this:
+
+```bash
+bash -c 'printf "Starting game\n"; exec "$@"' -- %command%
+```
+
+With `bash -c`, the first argument after the script becomes `$0`. Here, `--` fills that slot, leaving the game command
+and its arguments in `"$@"`. Keep `exec "$@"` so the wrapper actually launches the game.
+
+For a command that runs before the game using `&&`:
+
+```bash
+bash -c 'printf "Preparing profile: %s\n" "$1"' -- handheld && %command%
+```
+
+Here, `--` again fills `$0`, and `handheld` becomes `$1`. The game starts after the inline script succeeds, so this
+version does not need `exec "$@"`.
 
 ## Integration with Third-Party plugins
 
