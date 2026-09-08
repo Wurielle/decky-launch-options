@@ -14,7 +14,12 @@ if hasattr(sys.stdout, "reconfigure"):
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from unittest.mock import patch
-from run import parse_launch_option, get_final_args_details, is_non_steam_appid
+from run import (
+    get_final_args_details,
+    get_shell_command_log_details,
+    is_non_steam_appid,
+    parse_launch_option,
+)
 
 def test_case(name, raw_command, expected=None):
     print(f"\n{'='*60}")
@@ -26,17 +31,20 @@ def test_case(name, raw_command, expected=None):
     result = parse_launch_option(raw_command)
 
     print(f"Env vars: {result['env_vars']}")
+    print(f"Pre-run:  {result['pre_commands']}")
     print(f"Prefix:   {result['prefix']}")
     print(f"Suffix:   {result['suffix']}")
 
     if expected:
         print(f"\nExpected:")
         print(f"Env vars: {expected.get('env_vars', {})}")
+        print(f"Pre-run:  {expected.get('pre_commands', [])}")
         print(f"Prefix:   {expected.get('prefix', [])}")
         print(f"Suffix:   {expected.get('suffix', [])}")
 
         matches = (
             result['env_vars'] == expected.get('env_vars', {}) and
+            result['pre_commands'] == expected.get('pre_commands', []) and
             result['prefix'] == expected.get('prefix', []) and
             result['suffix'] == expected.get('suffix', [])
         )
@@ -289,6 +297,28 @@ if __name__ == "__main__":
             'suffix': ['-norestrictions', '-nomemrestrict', '-availablevidmem', '6144', '-width', '1280', '-height', '800', '-refreshrate', '60']
         }
     )
+
+    # Test 23: Pre-launch shell command
+    test_case(
+        "Command chained before %command%",
+        'sed -i \'s/value="[^"]*"/value="0"/\' "$HOME/settings.xml" && %command%',
+        {
+            'env_vars': {},
+            'pre_commands': [
+                'sed -i \'s/value="[^"]*"/value="0"/\' "$HOME/settings.xml"'
+            ],
+            'prefix': [],
+            'suffix': []
+        }
+    )
+
+    # Test 24: Quoted && remains part of the pre-launch command
+    quoted_chain = parse_launch_option(
+        "printf '%s' 'ready && waiting' && %command%"
+    )
+    assert quoted_chain['pre_commands'] == [
+        "printf '%s' 'ready && waiting'"
+    ]
 
     # =========================================================
     # Priority ordering tests
@@ -693,7 +723,77 @@ if __name__ == "__main__":
         print(f"\n{'PASS' if match_h7 else 'FAIL'}")
         assert match_h7
 
-        # Test H8: Override command replaces the base command only when enabled and set
+        # Test H8: Multiple pre-launch commands preserve priority and -- scope
+        print(f"\n{'='*60}")
+        print("Test: Pre-launch && chains merge in priority order")
+        print(f"{'='*60}")
+        settings_h8 = make_settings([
+            make_opt(
+                "low",
+                "prepare-low --alpha && gamescope -- %command% -- --fullscreen",
+                priority=0,
+            ),
+            make_opt(
+                "high",
+                "prepare-high && verify-high --check && mangohud %command%",
+                priority=10,
+            ),
+        ])
+        final_args_h8, _ = get_final_args_details(settings_h8, "123")
+        expected_args_h8 = [
+            "/bin/sh",
+            "-c",
+            "prepare-high && verify-high --check && prepare-low --alpha "
+            "&& exec mangohud gamescope -- /path/to/game -- --fullscreen",
+        ]
+        match_h8 = final_args_h8 == expected_args_h8
+        print(f"Result:   {final_args_h8}")
+        print(f"Expected: {expected_args_h8}")
+        print(f"\n{'PASS' if match_h8 else 'FAIL'}")
+        assert match_h8
+
+        shell_log_details_h8 = get_shell_command_log_details(final_args_h8)
+        expected_shell_log_details_h8 = {
+            "pre_commands": [
+                "prepare-high",
+                "verify-high --check",
+                "prepare-low --alpha",
+            ],
+            "final_args": [
+                "mangohud",
+                "gamescope",
+                "--",
+                "/path/to/game",
+                "--",
+                "--fullscreen",
+            ],
+        }
+        assert shell_log_details_h8 == expected_shell_log_details_h8
+        assert get_shell_command_log_details(["/path/to/game"]) is None
+
+        # Test H9: Raw quoting and expansions survive shell-chain construction
+        print(f"\n{'='*60}")
+        print("Test: Pre-launch command preserves shell quoting")
+        print(f"{'='*60}")
+        issue_command = (
+            "sed -i 's/<ResScalingType value=\"[^\"]*\"/"
+            "<ResScalingType value=\"0\"/' "
+            '"$HOME/settings.xml" && %command%'
+        )
+        settings_h9 = make_settings([make_opt("issue-86", issue_command)])
+        final_args_h9, _ = get_final_args_details(settings_h9, "123")
+        expected_args_h9 = [
+            "/bin/sh",
+            "-c",
+            issue_command.rsplit(" && ", 1)[0] + " && exec /path/to/game",
+        ]
+        match_h9 = final_args_h9 == expected_args_h9
+        print(f"Result:   {final_args_h9}")
+        print(f"Expected: {expected_args_h9}")
+        print(f"\n{'PASS' if match_h9 else 'FAIL'}")
+        assert match_h9
+
+        # Test H10: Override command replaces the base command only when enabled and set
         print(f"\n{'='*60}")
         print("Test: Command override requires both the toggle and a value")
         print(f"{'='*60}")

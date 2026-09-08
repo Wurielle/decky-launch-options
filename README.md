@@ -3,7 +3,7 @@
 </h1>
 
 <p align="center">
-   Manage launch options for your games with ease 🍃
+   Manage launch options for your apps with ease 🍃
 </p>
 
 ![Screenshot of the Decky Launch Options plugin on the Steam Deck](./assets/screenshot.png)
@@ -11,17 +11,24 @@
 ## Features
 
 - [x] Manage all your most used launch options in one place
-- [x] Enable or disable launch options per game
-- [x] Enable launch options globally for all games
+- [x] Enable or disable launch options per app
+- [x] Enable launch options globally for all apps
 - [x] Supports different behaviors when a launch option is on or off
 
 ## Table of Contents
 
 - [Installation](#installation)
+- [Recipes](#recipes)
 - [How to use](#how-to-use)
     - [Add a new tab](#add-a-new-tab)
     - [Add a dropdown](#add-a-dropdown)
-- [Recipes](#recipes)
+    - [Add an Environment Variable Merge](#add-an-environment-variable-merge)
+    - [Change execution priority](#change-execution-priority)
+    - [Advanced scripts](#advanced-scripts)
+        - [Wrapper script with `--`](#wrapper-script-with---)
+        - [Setup script with `&&`](#setup-script-with-)
+        - [Inline wrapper script with `--`](#inline-wrapper-script-with---)
+        - [Inline setup script with `&&`](#inline-setup-script-with-)
 - [Integration with Third-Party plugins](#integration-with-third-party-plugins)
 - [Understanding launch options](#understanding-launch-options)
 - [Philosophy](#philosophy)
@@ -35,6 +42,17 @@
 
 > **Note:** You might need to enable `Developer mode` in the Decky Loader settings
 
+
+## Recipes
+
+Decky Launch Options does not come with a pre-defined set of launch options [by design](https://github.com/Wurielle/decky-launch-options/issues/48).
+
+If you wish to import a pre-defined set of
+launch options to quickstart your use of this plugin or create your own
+collection that you can share with others, I recommend checking out
+the [Decky Launch Options Recipes](https://github.com/Wurielle/decky-launch-options-recipes)
+plugin.
+
 ## How to use
 
 ### 1. Create a launch option
@@ -44,29 +62,29 @@ Open the plugin tab to manage your launch options and create a new launch option
 ![Screenshot of the launch options settings for the plugin](./assets/manage-launch-options.png)
 
 * **Name** — A label to identify the launch option (e.g. "MangoHud", "Steam Deck mode")
-* **Enable globally** — When enabled, this launch option will be enabled by default for all games
-* **On command** — The launch option script that is applied when the toggle is **switched on**
-* **Off command** — The launch option script that is applied when the toggle is **switched off**
+* **Enable globally** — When enabled, this marks the launch option as opt-out: the on command will run automatically for all apps by default until disabled
+* **On command** — The command that runs when the toggle is **switched on**, the launch option is enabled globally or the launch option is selected in a dropdown
+* **Off command** — The command that runs when the toggle is **switched off**
 
 > **Example:** For a "Steam Deck mode" launch option, you could set:
-> * **On command:** `SteamDeck=1 %command%` — forces Steam Deck compatibility
-> * **Off command:** `SteamDeck=0 %command%` — explicitly disables it
+> * **On command:** `SteamDeck=1 %command%` — enables Steam Deck compatibility
+> * **Off command:** `SteamDeck=0 %command%` — disables Steam Deck compatibility
 >
-> If you only need something applied when enabled (e.g. MangoHud), you can leave the **Off command** empty or vice
+> If you only need to run a command when enabled (e.g. MangoHud), you can leave the **Off command** empty or vice
 > versa:
 > * **On command:** `mangohud %command%`
 > * **Off command:** *(empty)*
 
-### 2. Toggle launch options per game
+### 2. Toggle launch options per app
 
-On your game page, click on settings and click on **Launch options**.
+On your app page, click on the settings button and click on **Launch Options**.
 
-![Screenshot of the settings for a game in Steam](./assets/app-page.png)
+![Screenshot of the settings for an app in Steam](./assets/app-page.png)
 
 ![Screenshot of the Decky Launch Options plugin on the Steam Deck](./assets/screenshot.png)
 
 You can enable or disable launch options to your liking.
-Each launch option is a **switch**. When you turn it on for a game, the **On command** is used.
+Each launch option is a **switch**. When you turn it on for an app, the **On command** is used.
 When you turn it off, the **Off command** is used instead.
 
 * **Locally enabled** launch options are opt-in — they are off by default and you can enable them if you need them
@@ -84,6 +102,19 @@ When you turn it off, the **Off command** is used instead.
 
 ### Add a dropdown
 
+Launch options can also appear in a dropdown. This is preferable when multiple launch options target a singular change.
+
+<table>
+  <tr>
+    <td align="center"><strong>Before</strong></td>
+    <td align="center"><strong>After</strong></td>
+  </tr>
+  <tr>
+    <td><img src="./assets/dropdown-before.jpg" alt="Before using valueId and valueName, multiple launch options appear separately" /></td>
+    <td><img src="./assets/dropdown-after.jpg" alt="After using valueId and valueName, launch options appear in a single dropdown" /></td>
+  </tr>
+</table>
+
 For each launch option that should appear in a dropdown:
 
 - Use the same `Value ID`
@@ -93,26 +124,145 @@ For each launch option that should appear in a dropdown:
 
 ![Fields used to configure a dropdown launch option](./assets/dropdown-value-id.jpg)
 
-<table>
-  <tr>
-    <td align="center"><strong>Before</strong></td>
-    <td align="center"><strong>After</strong></td>
-  </tr>
-  <tr>
-    <td><img src="./assets/dropdown-before.jpg" alt="Before using valueId and valueName, multiple options appear separately" /></td>
-    <td><img src="./assets/dropdown-after.jpg" alt="After using valueId and valueName, the options appear in a single dropdown" /></td>
-  </tr>
-</table>
+### Add an Environment Variable Merge
 
-## Recipes
+Some environment variables accept multiple joined values. If several launch options set the same variable, you can configure
+a merge so their values are joined instead of one overriding another.
 
-Decky Launch Options does not come with a pre-defined set of launch options.
+Click on **Manage env variable merges** in the plugin tab and add a **New merge**:
 
-If you wish to import a pre-defined set of
-launch options to quickstart your use of this plugin or create your own
-collection that you can share with others, I recommend checking out
-the [Decky Launch Options Recipes](https://github.com/Wurielle/decky-launch-options-recipes)
-plugin.
+![Environment Variable Merges page](./assets/env-variable-merges.jpg)
+
+- **Environment variable name** — The exact variable name, such as `MANGOHUD_CONFIG`.
+- **Delimiter** — The separator that variable expects, such as `,` for `MANGOHUD_CONFIG` or `;` for `WINEDLLOVERRIDES`.
+
+For example, with `MANGOHUD_CONFIG` configured to merge using `,`, these two enabled launch options:
+
+```bash
+MANGOHUD_CONFIG="cpu_temp" %command%
+MANGOHUD_CONFIG="gpu_temp" %command%
+```
+
+produce this combined launch option:
+
+```bash
+MANGOHUD_CONFIG="cpu_temp,gpu_temp" %command%
+```
+
+Only configure merges for environment variables that support multiple values, and use the delimiter expected as documented by the program reading the environment variable.
+
+### Change execution priority
+
+Each launch option has an optional numeric **Priority** field which defaults to `0`.
+Higher priority launch options run first: increase it to run a command earlier, or decrease it to run a command closer to `%command%`. 
+Negative values are supported as well.
+
+For example, enabling these options:
+
+| On command | Priority |
+|------------|----------|
+| `gamescope -f -- %command%` | `10` |
+| `mangohud %command%` | `-10` |
+
+produces:
+
+```bash
+gamescope -f -- mangohud %command%
+```
+
+Priority also resolves conflicts between environment variables that are **not configured to be merged**. 
+If a launch option sets `SteamDeck=0 %command%` with priority `0` and another sets `SteamDeck=1 %command%` with priority `10`, the highest priority
+value overrides all others. In this case it will be `SteamDeck=1 %command%`. 
+
+### Advanced scripts
+
+> **Warning:** Only enter scripts and commands you trust in these fields. They can modify or delete files and make other
+> changes to your system. Decky Launch Options supports these capabilities to match what Steam's launch options already
+> allow. Use them at your own discretion. I am not responsible for any damage caused by scripts or commands you run.
+
+Decky Launch Options supports wrapper scripts using `--` and setup commands chained with `&&` to allow you to pass arguments directly to your scripts and commands instead of the targeted app.
+You can run a local script file, a local command or even a short inline `bash -c` command, feel free to be creative!
+
+* Use a wrapper script with `--` when your script should launch the app
+* Use a setup command followed by `&&` when the app should start after the command succeeds
+
+> **Warning:** Always include `%command%` when using a custom script or command in a launch option. It identifies where
+> the app belongs and lets the plugin distinguish the script's arguments from the app's arguments.
+
+The script file examples invoke `bash` explicitly, so the files do not need executable permissions.
+
+#### Wrapper script with `--`
+
+Script example `~/scripts/launch-app.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -e
+
+# Read this script's required profile argument, then the -- separator.
+profile="$1"
+shift
+if [[ "$1" != "--" ]]; then
+    printf 'Usage: launch-app.sh PROFILE -- COMMAND [ARG...]\n' >&2
+    exit 1
+fi
+shift
+
+printf 'Launching with profile: %s\n' "$profile" >> ~/app-launch.log
+exec "$@"
+```
+
+Allows you to run a launch option like:
+
+```bash
+bash ~/scripts/launch-app.sh handheld -- %command%
+```
+
+The script reads `handheld` and skips `--`, then uses `exec "$@"` to launch the app with the remaining arguments.
+Keep the quotes around `"$@"` so arguments containing spaces stay intact.
+
+#### Setup script with `&&`
+
+Script example `~/scripts/prepare-app.sh`:
+
+```bash
+#!/usr/bin/env bash
+set -e
+
+profile="$1"
+printf 'Preparing profile: %s\n' "$profile" >> ~/app-launch.log
+```
+
+Allows you to run a launch option like:
+
+```bash
+bash ~/scripts/prepare-app.sh handheld && %command%
+```
+
+The script runs with `handheld` as its argument. `&&` starts the app only if the script succeeds.
+No `exec "$@"` is needed because the app is launched separately.
+
+#### Inline wrapper script with `--`
+
+Inline example:
+
+```bash
+bash -c 'printf "Starting app\n"; exec "$@"' -- %command%
+```
+
+Here, `--` fills the script-name slot used by `bash -c`, so `"$@"` contains the app command and its arguments.
+`exec "$@"` launches the app.
+
+#### Inline setup script with `&&`
+
+Inline example:
+
+```bash
+bash -c 'printf "Preparing profile: %s\n" "$1"' -- handheld && %command%
+```
+
+Here, `--` fills the script-name slot, and `$1` holds `handheld`. `&&` starts the app only if the script succeeds,
+so no `exec "$@"` is needed.
 
 ## Integration with Third-Party plugins
 
@@ -161,13 +311,13 @@ You can also check if Decky Launch Options is available with:
 |------------------|-----------|------------------------------------------------------------------------------------------------------------|
 | `id`             | `string`  | Stable unique identifier used to select values and update the launch option during reimport.               |
 | `name`           | `string`  | Display label shown in the UI.                                                                             |
-| `on`             | `string`  | Command string applied when the launch option is enabled.                                                  |
-| `off`            | `string`  | Command string applied when the launch option is disabled.                                                 |
-| `enableGlobally` | `boolean` | Default state applied across all games.                                                                    |
+| `on`             | `string`  | Command that is run when the launch option is enabled.                                                  |
+| `off`            | `string`  | Command that is run when the launch option is disabled.                                                 |
+| `enableGlobally` | `boolean` | Mark the launch option as opt-out: this makes the on command run automatically for all apps.                                                                    |
 | `group`          | `string`  | Group name that creates a new tab in the UI.                                                               |
 | `valueId`        | `string`  | Shared identifier that groups launch options into a dropdown.                                              |
 | `valueName`      | `string`  | Display name shown for the dropdown value in the UI.                                                       |
-| `fallbackValue`  | `boolean` | Default choice used for its `valueId` group.                                                               |
+| `fallbackValue`  | `boolean` | Mark as default value for its `valueId` dropdown.                                                               |
 | `priority`       | `number`  | Execution priority for the launch option. Higher values run first; negative values run closer to %command% |
 
 > **Note:** Every property of a launch option is optional but I recommend at least setting a static id for each one to
@@ -237,70 +387,93 @@ window.dispatchEvent(new CustomEvent('dlo-add-launch-options', {
 
 ## Understanding launch options
 
-Decky Launch Options tries to simplify launch options management by offering a degree of leeway in how you can structure
-your launch options but it's still important to understand how launch options work to avoid mistakes!
+> This section is purely educational as this is not really explained by Steam and could help those not familiar with command-line tools.
 
-### The `%command%` Placeholder
+Launch options are instructions that change how an app starts. They can supply settings, launch the app through another
+tool, or pass options directly to the app. The examples below use Steam's launch options on Linux, including SteamOS.
+Tools used in the examples must already be installed.
 
-The `%command%` placeholder represents where your game executable will be inserted in the command chain. Everything
-before `%command%` becomes a **prefix** (executed before the game), and everything after becomes a **suffix** (passed as
-arguments to the game).
+### The `%command%` placeholder
 
-**Structure example:**
+`%command%` stands for the command Steam uses to start the app. This can include a compatibility tool such as Proton,
+so it is more than just a placeholder for an executable file's path. Leave `%command%` as written; you do not need to
+replace it with the app's location.
 
+This placeholder belongs to Steam's launch options; a terminal does not replace it automatically.
+
+For a typical launch option, the layout is:
+
+```text
+[environment variables] [wrapper commands] %command% [app arguments]
 ```
-[ENV_VARS] [PREFIX_COMMANDS] %command% [GAME_ARGUMENTS]
-```
 
-### Simple Examples
+- **Environment variables** are named settings made available to the launched processes, written as `NAME=value`.
+- **Wrapper commands**, also called prefixes, launch the next command in the chain. For example, `mangohud` starts the
+  app with an overlay; it does not need to finish before the app starts.
+- **App arguments**, also called suffixes, are extra options placed after `%command%`. The app decides what they mean.
 
-Here are recipes for common launch option scenarios.
+Separate setup commands can also go before the launch using `&&`. They must finish successfully before the next command
+runs. If a setup command fails, the commands after its `&&` do not run.
 
-> **Note:** Please provide `%command%` whenever you can to assure proper detection of command parts. This will also help
-> readbility.
+> **Note:** Always include `%command%` when adding environment variables, wrappers, or custom setup commands around the
+> app's launch. This tells Steam where to insert the app's original launch command.
 
-**Environment variables:**
+### Simple examples
+
+#### Environment variables
 
 ```bash
-SteamDeck=1 Foo="Bar baz" %command%
+MANGOHUD_CONFIG="cpu_temp,gpu_temp" %command%
 ```
 
-**Prefix command:**
+This sets a configuration value for MangoHud. It does not enable MangoHud by itself; the overlay must also be enabled.
+The comma joins two settings in the format expected by MangoHud. See its
+[configuration documentation](https://github.com/flightlessmango/MangoHud#environment-variables) for supported settings.
+
+Write assignments without spaces around `=`. If a value contains spaces, put quotes around the whole value, such as
+`EXAMPLE_SETTING="some text"`. That last name is only an illustration; a variable has an effect only if the app or tool
+recognizes it.
+
+#### Wrapper commands
 
 ```bash
 mangohud %command%
 ```
 
-**Game arguments:**
+This launches the app through MangoHud. A wrapper's own arguments belong before `%command%`, alongside the wrapper.
+
+#### App arguments
 
 ```bash
 %command% -novid +cl_showfps 3
 ```
 
-**Environment variables + prefixes + game arguments:**
+Here, `-novid` and `+cl_showfps 3` are passed to the app. These are app-specific examples, not options that work with every
+app. Use the arguments documented by the app you are configuring. Keep an argument and its value together, as with
+`+cl_showfps 3`.
+
+#### Combining settings, a wrapper, and app arguments
 
 ```bash
-SteamDeck=1 Foo="Bar baz" ~/lsfg mangohud %command% -novid +cl_showfps 3
+MANGOHUD_CONFIG="cpu_temp,gpu_temp" mangohud %command% -novid +cl_showfps 3
 ```
 
-### How Decky Launch Options handle multiple launch options
+This supplies settings to MangoHud, launches the app through it, and adds the app arguments. Use this example only with
+an app that supports those arguments.
 
-When multiple launch options are enabled, they are combined like so:
+### Chaining multiple wrappers
 
-1. **All environment variables** are collected and applied
-2. **All prefix commands** are chained together
-3. **All game arguments** are concatenated and passed to the game
-
-**With two launch options enabled:**
-
-1. `SteamDeck=0 mangohhud %command% -novid`
-2. `~/lsfg %command% +cl_showfps 3`
-
-**We get:**
+Compatible wrappers can be placed one after another. Their position determines which tool launches which command:
 
 ```bash
-SteamDeck=0 ~/lsfg mangohud path/to/game -novid +cl_showfps 3
+MANGOHUD_CONFIG="cpu_temp,gpu_temp" gamescope -f -- mangohud %command%
 ```
+
+The `-f` argument belongs to gamescope, and its `--` separates its own options from the command it launches. The app is
+launched once, through gamescope and then MangoHud. The environment variable is available to the launched processes.
+
+The order matters: each wrapper must accept the command that follows it. `--` commonly marks the end of a tool's own
+options, but support depends on the tool. Follow each tool's documentation when combining wrappers.
 
 ## Philosophy
 
