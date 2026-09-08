@@ -129,7 +129,9 @@ For each launch option that should appear in a dropdown:
 Some environment variables accept multiple joined values. If several launch options set the same variable, you can configure
 a merge so their values are joined instead of one overriding another.
 
-Open **Manage env variable merges** in the plugin and add a **New merge**:
+Click on **Manage env variable merges** in the plugin tab and add a **New merge**:
+
+![Environment Variable Merges page](./assets/env-variable-merges.jpg)
 
 - **Environment variable name** — The exact variable name, such as `MANGOHUD_CONFIG`.
 - **Delimiter** — The separator that variable expects, such as `,` for `MANGOHUD_CONFIG` or `;` for `WINEDLLOVERRIDES`.
@@ -404,8 +406,6 @@ For a typical launch option, the layout is:
 ```text
 [environment variables] [wrapper commands] %command% [app arguments]
 ```
-
-The bracketed labels describe optional parts; do not type the brackets themselves.
 
 - **Environment variables** are named settings made available to the launched processes, written as `NAME=value`.
 - **Wrapper commands**, also called prefixes, launch the next command in the chain. For example, `mangohud` starts the
