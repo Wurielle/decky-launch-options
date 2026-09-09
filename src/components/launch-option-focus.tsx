@@ -8,7 +8,7 @@ import {
   useState,
 } from "react"
 
-type Control = "value" | "up" | "down" | "actions"
+type Control = "value" | "up" | "down" | "actions" | "quick-select"
 
 const FocusContext = createContext<{
   control: Control
@@ -56,7 +56,7 @@ export function LaunchOptionControls(props: ComponentProps<typeof Focusable>) {
 }
 
 // Match the control's role across rows rather than its screen coordinates.
-// Toggle and dropdown controls both occupy the primary "value" column.
+// Text fields, toggles, and value dropdowns share the primary "value" column.
 export function LaunchOptionControl({
   control,
   children,
