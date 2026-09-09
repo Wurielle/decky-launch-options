@@ -12,12 +12,85 @@ import { SingleDropdownOption } from "@decky/ui/dist/components/Dropdown"
 import { useEffect, useMemo, useState } from "react"
 import { FaChevronDown, FaChevronUp } from "react-icons/fa"
 import { LaunchOption } from "../shared"
+import {
+  LaunchOptionControl,
+  LaunchOptionControls,
+  LaunchOptionFocusProvider,
+  useLaunchOptionFocus,
+} from "./launch-option-focus"
 import { usePlugin } from "./plugin-provider"
 
 const quickSelectLabel = "Quick select\u00A0\u00A0"
 
 const formatPriority = (priority: number) =>
   priority === 0 ? "" : String(priority)
+
+function QuickSelectField({
+  label,
+  description,
+  placeholder,
+  value,
+  options,
+  restoreFocus,
+  onQuickSelect,
+  onChange,
+}: {
+  label: string
+  description: string
+  placeholder: string
+  value: string
+  options: SingleDropdownOption[]
+  restoreFocus: boolean
+  onQuickSelect: () => void
+  onChange: (value: string) => void
+}) {
+  const { setControl } = useLaunchOptionFocus()
+  const [version, setVersion] = useState(0)
+
+  return (
+    <Focusable style={{ minWidth: 240 }}>
+      <Field
+        childrenLayout="below"
+        label={label}
+        description={<div style={{ textAlign: "left" }}>{description}</div>}
+      >
+        <LaunchOptionControls
+          key={version}
+          autoFocus={restoreFocus && version > 0}
+        >
+          <LaunchOptionControl
+            control="value"
+            style={{ flex: "0 0 calc(70% - 5px)" }}
+          >
+            <TextField
+              {...{ placeholder }}
+              style={{ width: "100%" }}
+              value={value}
+              onChange={(event) => onChange(event.target.value)}
+            />
+          </LaunchOptionControl>
+          <LaunchOptionControl
+            control="quick-select"
+            style={{ flex: "0 0 calc(30% - 5px)" }}
+          >
+            <Dropdown
+              rgOptions={options}
+              selectedOption={undefined}
+              strDefaultLabel={quickSelectLabel}
+              onChange={(option: SingleDropdownOption) => {
+                setControl("quick-select")
+                onQuickSelect()
+                onChange(option.data)
+                // Reset this picker to its prompt and restore its row's focus.
+                setVersion((current) => current + 1)
+              }}
+            />
+          </LaunchOptionControl>
+        </LaunchOptionControls>
+      </Field>
+    </Focusable>
+  )
+}
 
 interface LaunchOptionFieldsProps {
   data: LaunchOption
@@ -37,7 +110,10 @@ export function LaunchOptionFields({
   const { settings } = usePlugin().settings
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [enableGloballyKey, setEnableGloballyKey] = useState(0)
-  const [quickSelectKey, setQuickSelectKey] = useState(0)
+  const [quickSelectFocus, setQuickSelectFocus] = useState<{
+    id: string
+    field: "group" | "valueId"
+  } | null>(null)
   const [priorityInput, setPriorityInput] = useState(() =>
     formatPriority(data.priority),
   )
@@ -158,75 +234,38 @@ export function LaunchOptionFields({
       </DialogButton>
       {showAdvanced && (
         <>
-          <Focusable style={{ minWidth: 240 }}>
-            <Field
-              childrenLayout={"below"}
-              label={"Group"}
-              description={
-                <div style={{ textAlign: "left" }}>
-                  Groups this launch option under a named tab
-                </div>
+          <LaunchOptionFocusProvider key={data.id}>
+            <QuickSelectField
+              label="Group"
+              description="Groups this launch option under a named tab"
+              placeholder="E.g.: Favorites"
+              value={data.group}
+              options={groupQuickSelectOptions}
+              restoreFocus={
+                quickSelectFocus?.id === data.id &&
+                quickSelectFocus.field === "group"
               }
-            >
-              <div style={{ display: "flex", gap: 10 }}>
-                <div style={{ flex: "0 0 calc(70% - 5px)" }}>
-                  <TextField
-                    {...{ placeholder: "E.g.: Favorites" }}
-                    style={{ width: "100%" }}
-                    value={data.group}
-                    onChange={(e) => onChange("group", e.target.value)}
-                  />
-                </div>
-                <div style={{ flex: "0 0 calc(30% - 5px)" }}>
-                  <Dropdown
-                    key={`group-${quickSelectKey}`}
-                    rgOptions={groupQuickSelectOptions}
-                    selectedOption={undefined}
-                    strDefaultLabel={quickSelectLabel}
-                    onChange={(option: SingleDropdownOption) => {
-                      onChange("group", option.data)
-                      setQuickSelectKey((key) => key + 1)
-                    }}
-                  />
-                </div>
-              </div>
-            </Field>
-          </Focusable>
-          <Focusable style={{ minWidth: 240 }}>
-            <Field
-              childrenLayout={"below"}
-              label={"Value ID"}
-              description={
-                <div style={{ textAlign: "left" }}>
-                  Launch options sharing the same Value ID are displayed as a
-                  dropdown
-                </div>
+              onQuickSelect={() =>
+                setQuickSelectFocus({ id: data.id, field: "group" })
               }
-            >
-              <div style={{ display: "flex", gap: 10 }}>
-                <div style={{ flex: "0 0 calc(70% - 5px)" }}>
-                  <TextField
-                    {...{ placeholder: "E.g.: proton-version" }}
-                    style={{ width: "100%" }}
-                    value={data.valueId}
-                    onChange={(e) => onChange("valueId", e.target.value)}
-                  />
-                </div>
-                <div style={{ flex: "0 0 calc(30% - 5px)" }}>
-                  <Dropdown
-                    key={`valueId-${quickSelectKey}`}
-                    rgOptions={valueIdQuickSelectOptions}
-                    selectedOption={undefined}
-                    strDefaultLabel={quickSelectLabel}
-                    onChange={(option: SingleDropdownOption) => {
-                      onChange("valueId", option.data)
-                      setQuickSelectKey((key) => key + 1)
-                    }}
-                  />
-                </div>
-              </div>
-            </Field>
-          </Focusable>
+              onChange={(value) => onChange("group", value)}
+            />
+            <QuickSelectField
+              label="Value ID"
+              description="Launch options sharing the same Value ID are displayed as a dropdown"
+              placeholder="E.g.: proton-version"
+              value={data.valueId}
+              options={valueIdQuickSelectOptions}
+              restoreFocus={
+                quickSelectFocus?.id === data.id &&
+                quickSelectFocus.field === "valueId"
+              }
+              onQuickSelect={() =>
+                setQuickSelectFocus({ id: data.id, field: "valueId" })
+              }
+              onChange={(value) => onChange("valueId", value)}
+            />
+          </LaunchOptionFocusProvider>
           {!hidePerValue && (
             <Focusable>
               <Field

@@ -1,7 +1,11 @@
-import { Dropdown, Field, Focusable, Toggle } from "@decky/ui"
+import { Dropdown, Field, Toggle } from "@decky/ui"
 import { SingleDropdownOption } from "@decky/ui/dist/components/Dropdown"
 import { ReactNode } from "react"
 import { LaunchOptionActionButton } from "../../../components/launch-option-action-button"
+import {
+  LaunchOptionControl,
+  LaunchOptionControls,
+} from "../../../components/launch-option-focus"
 import { LaunchOption } from "../../../shared"
 import { HierarchicalLaunchOption } from "../../../utils"
 
@@ -58,23 +62,24 @@ function LaunchOptionItem({
       description={description}
       childrenLayout={"inline"}
     >
-      <Focusable
-        autoFocus={focusTargetId === focusId}
-        style={{ display: "flex", gap: 10, alignItems: "center" }}
-      >
-        <Toggle
-          value={isChecked}
-          onChange={(value) => {
-            setFocusTargetId(focusId)
-            onToggle(value)
-          }}
-        />
-        <LaunchOptionActionButton
-          onEdit={onEdit}
-          onDuplicate={onDuplicate}
-          onDelete={onDelete}
-        />
-      </Focusable>
+      <LaunchOptionControls autoFocus={focusTargetId === focusId}>
+        <LaunchOptionControl control="value">
+          <Toggle
+            value={isChecked}
+            onChange={(value) => {
+              setFocusTargetId(focusId)
+              onToggle(value)
+            }}
+          />
+        </LaunchOptionControl>
+        <LaunchOptionControl control="actions">
+          <LaunchOptionActionButton
+            onEdit={onEdit}
+            onDuplicate={onDuplicate}
+            onDelete={onDelete}
+          />
+        </LaunchOptionControl>
+      </LaunchOptionControls>
     </Field>
   )
 }
@@ -147,11 +152,8 @@ function ValueIdSelectItem({
       description={description}
       childrenLayout={"inline"}
     >
-      <Focusable
-        autoFocus={focusTargetId === focusId}
-        style={{ display: "flex", gap: 10, alignItems: "center" }}
-      >
-        <Focusable style={{ flex: 1 }}>
+      <LaunchOptionControls autoFocus={focusTargetId === focusId}>
+        <LaunchOptionControl control="value" style={{ flex: 1 }}>
           <div
             style={{
               display: "flex",
@@ -173,15 +175,17 @@ function ValueIdSelectItem({
               }}
             />
           </div>
-        </Focusable>
-        <LaunchOptionActionButton
-          onEdit={() => onEdit(selectedOption?.id ?? launchOptions[0].id)}
-          onDuplicate={() =>
-            onDuplicate(selectedOption?.id ?? launchOptions[0].id)
-          }
-          onDelete={() => onDelete(selectedOption?.id ?? launchOptions[0].id)}
-        />
-      </Focusable>
+        </LaunchOptionControl>
+        <LaunchOptionControl control="actions">
+          <LaunchOptionActionButton
+            onEdit={() => onEdit(selectedOption?.id ?? launchOptions[0].id)}
+            onDuplicate={() =>
+              onDuplicate(selectedOption?.id ?? launchOptions[0].id)
+            }
+            onDelete={() => onDelete(selectedOption?.id ?? launchOptions[0].id)}
+          />
+        </LaunchOptionControl>
+      </LaunchOptionControls>
     </Field>
   )
 }

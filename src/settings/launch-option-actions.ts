@@ -10,6 +10,19 @@ import { SetSettings } from "./types"
 
 export function createLaunchOptionActions(setSettings: SetSettings) {
   return {
+    swapLaunchOptions: (id: string, targetId: string) => {
+      setSettings((draft) => {
+        const index = draft.launchOptions.findIndex((item) => item.id === id)
+        const targetIndex = draft.launchOptions.findIndex(
+          (item) => item.id === targetId,
+        )
+        if (index === -1 || targetIndex === -1 || index === targetIndex) return
+
+        const launchOption = draft.launchOptions[index]
+        draft.launchOptions[index] = draft.launchOptions[targetIndex]
+        draft.launchOptions[targetIndex] = launchOption
+      })
+    },
     createLaunchOption: (launchOption: LaunchOption) => {
       setSettings((draft) => {
         const nextLaunchOption = launchOptionFactory(launchOption)
