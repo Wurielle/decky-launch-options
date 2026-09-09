@@ -18,6 +18,7 @@ import { useStore } from "@tanstack/react-store"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { CreateLaunchOptionForm } from "../../../../components/create-launch-option-form"
 import { showDeleteLaunchOptionModal } from "../../../../components/delete-launch-option-modal"
+import { LaunchOptionFocusList } from "../../../../components/launch-option-focus"
 import { UpdateLaunchOptionForm } from "../../../../components/update-launch-option-form"
 import { useSettings } from "../../../../hooks"
 import {
@@ -633,7 +634,7 @@ export function AppLaunchOptionsPage() {
               id: "local",
               title: "Local",
               content: readyToShow && (
-                <Focusable
+                <LaunchOptionFocusList
                   key={`local-${focusTarget?.version ?? 0}`}
                   navEntryPreferPosition={
                     NavEntryPositionPreferences.PREFERRED_CHILD
@@ -679,7 +680,7 @@ export function AppLaunchOptionsPage() {
                     onDuplicate: duplicateLaunchOption,
                     onDelete: confirmDeleteLaunchOption,
                   })}
-                </Focusable>
+                </LaunchOptionFocusList>
               ),
               renderTabAddon: () => {
                 const count = countActiveLaunchOptions(
@@ -699,7 +700,7 @@ export function AppLaunchOptionsPage() {
               id: "global",
               title: "Global",
               content: readyToShow && (
-                <Focusable
+                <LaunchOptionFocusList
                   key={`global-${focusTarget?.version ?? 0}`}
                   navEntryPreferPosition={
                     NavEntryPositionPreferences.PREFERRED_CHILD
@@ -734,7 +735,7 @@ export function AppLaunchOptionsPage() {
                     onDuplicate: duplicateLaunchOption,
                     onDelete: confirmDeleteLaunchOption,
                   })}
-                </Focusable>
+                </LaunchOptionFocusList>
               ),
               renderTabAddon: () => {
                 const count = countActiveLaunchOptions(
@@ -750,7 +751,7 @@ export function AppLaunchOptionsPage() {
               id: group,
               title: group,
               content: readyToShow && (
-                <Focusable
+                <LaunchOptionFocusList
                   key={`group-${group}-${focusTarget?.version ?? 0}`}
                   navEntryPreferPosition={
                     NavEntryPositionPreferences.PREFERRED_CHILD
@@ -799,7 +800,7 @@ export function AppLaunchOptionsPage() {
                       </div>
                     )
                   })}
-                </Focusable>
+                </LaunchOptionFocusList>
               ),
               renderTabAddon: () => {
                 const count = countActiveLaunchOptions(
