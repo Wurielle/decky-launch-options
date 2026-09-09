@@ -43,9 +43,12 @@ export function LaunchOptionFocusList(props: ComponentProps<typeof Focusable>) {
 }
 
 export function LaunchOptionControls(props: ComponentProps<typeof Focusable>) {
+  // Choose the changed row before a list-wide search reaches the
+  // preferred controls that every row exposes for vertical navigation.
   return (
     <Focusable
       {...props}
+      preferredFocus={props.autoFocus || props.preferredFocus}
       navEntryPreferPosition={NavEntryPositionPreferences.PREFERRED_CHILD}
       style={{ display: "flex", gap: 10, alignItems: "center", ...props.style }}
     />
