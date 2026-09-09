@@ -1,5 +1,6 @@
-import { Field, Focusable, Toggle } from "@decky/ui"
+import { DialogButton, Field, Focusable, Toggle } from "@decky/ui"
 import { useCallback, useMemo, useState } from "react"
+import { FaArrowDown, FaArrowUp } from "react-icons/fa"
 import { launchOptionFactory, LaunchOption } from "../shared"
 import { showDeleteLaunchOptionModal } from "./delete-launch-option-modal"
 import { LaunchOptionActionButton } from "./launch-option-action-button"
@@ -48,6 +49,7 @@ export function DropdownValueList({
     updateLaunchOption,
     createLaunchOption,
     deleteLaunchOption,
+    swapLaunchOptions,
   } = usePlugin().settings
   const activeColor = "oklch(80.9% 0.105 251.813)"
   const [focusTarget, setFocusTarget] = useState<FocusTarget | null>(null)
@@ -60,26 +62,18 @@ export function DropdownValueList({
   }, [])
   const siblings = useMemo(() => {
     const siblingIdSet = new Set(siblingIds)
-    const sortedSiblings = settings.launchOptions
+    return settings.launchOptions
       .filter((item) => siblingIdSet.has(item.id))
       .reverse()
-    const defaultSibling = sortedSiblings.find((item) => item.fallbackValue)
-
-    return defaultSibling
-      ? [
-          defaultSibling,
-          ...sortedSiblings.filter((item) => item.id !== defaultSibling.id),
-        ]
-      : sortedSiblings
   }, [settings.launchOptions, siblingIds])
 
-  if (!launchOption.valueId || siblings.length <= 1) return null
+  if (!launchOption.valueId || siblings.length === 0) return null
 
   return (
     <Focusable style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ fontWeight: "bold" }}>Dropdown values</div>
       <div key={focusTarget?.version ?? 0}>
-        {siblings.map((sibling) => {
+        {siblings.map((sibling, index) => {
           const focusId = `dropdown-value:${sibling.id}`
           const label =
             sibling.valueName || sibling.on || sibling.name || "Unnamed"
@@ -117,6 +111,35 @@ export function DropdownValueList({
                     updateLaunchOption(sibling, "fallbackValue", value, false)
                   }}
                 />
+                {([-1, 1] as const).map((direction) => {
+                  const target = siblings[index + direction]
+                  const Icon = direction === -1 ? FaArrowUp : FaArrowDown
+                  const action = direction === -1 ? "up" : "down"
+
+                  return (
+                    <DialogButton
+                      key={direction}
+                      disabled={!target}
+                      style={{
+                        minWidth: 40,
+                        width: 40,
+                        height: 40,
+                        flexShrink: 0,
+                        padding: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                      onClick={() => {
+                        if (!target) return
+                        setFocusTargetId(focusId)
+                        swapLaunchOptions(sibling.id, target.id)
+                      }}
+                    >
+                      <Icon />
+                    </DialogButton>
+                  )
+                })}
                 <LaunchOptionActionButton
                   onEdit={() => onEdit(sibling.id)}
                   onDuplicate={() => {
