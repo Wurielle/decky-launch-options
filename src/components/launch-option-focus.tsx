@@ -37,14 +37,16 @@ export function useLaunchOptionFocus() {
 export function LaunchOptionFocusList(props: ComponentProps<typeof Focusable>) {
   return (
     <LaunchOptionFocusProvider>
+      {/* Keep Steam's default entry behavior so closing an overlay restores the
+          active row. PREFERRED_CHILD here searches every row's controls and
+          overrides that history with the first match. */}
       <Focusable {...props} />
     </LaunchOptionFocusProvider>
   )
 }
 
 export function LaunchOptionControls(props: ComponentProps<typeof Focusable>) {
-  // Choose the changed row before a list-wide search reaches the
-  // preferred controls that every row exposes for vertical navigation.
+  // Scope preferred-column navigation to this row; the list retains row history.
   return (
     <Focusable
       {...props}
