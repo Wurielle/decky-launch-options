@@ -636,9 +636,6 @@ export function AppLaunchOptionsPage() {
               content: readyToShow && (
                 <LaunchOptionFocusList
                   key={`local-${focusTarget?.version ?? 0}`}
-                  navEntryPreferPosition={
-                    NavEntryPositionPreferences.PREFERRED_CHILD
-                  }
                   style={{ height: "100%" }}
                 >
                   {showInactiveAutoManageWarning && (
@@ -702,9 +699,6 @@ export function AppLaunchOptionsPage() {
               content: readyToShow && (
                 <LaunchOptionFocusList
                   key={`global-${focusTarget?.version ?? 0}`}
-                  navEntryPreferPosition={
-                    NavEntryPositionPreferences.PREFERRED_CHILD
-                  }
                   style={{ height: "100%" }}
                 >
                   {showInactiveAutoManageWarning && (
@@ -753,9 +747,6 @@ export function AppLaunchOptionsPage() {
               content: readyToShow && (
                 <LaunchOptionFocusList
                   key={`group-${group}-${focusTarget?.version ?? 0}`}
-                  navEntryPreferPosition={
-                    NavEntryPositionPreferences.PREFERRED_CHILD
-                  }
                   style={{ height: "100%" }}
                 >
                   {showInactiveAutoManageWarning && (
