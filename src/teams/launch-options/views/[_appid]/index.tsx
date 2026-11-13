@@ -7,7 +7,6 @@ import {
   findModule,
   Focusable,
   NavEntryPositionPreferences,
-  PanelSectionRow,
   showModal,
   Tabs,
   TextField,
@@ -40,6 +39,7 @@ import {
   toHierarchicalLaunchOptions,
 } from "../../../../utils"
 import { InactiveAutoManageWarning } from "../../components/inactive-auto-manage-warning"
+import { AddLaunchOptionRow } from "../../components/add-launch-option-row"
 import { renderLaunchOptionItems } from "../../components/launch-option-list"
 import { LaunchOptionsBackupsModal } from "../../components/launch-options-backups-modal"
 import { ModalWrapper } from "../../components/modal-wrapper"
@@ -673,16 +673,7 @@ export function AppLaunchOptionsPage() {
                   {showInactiveAutoManageWarning && (
                     <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
                   )}
-                  <PanelSectionRow>
-                    <ButtonItem
-                      layout="below"
-                      onClick={() => {
-                        showCreateLaunchOptionFormModal()
-                      }}
-                    >
-                      Add launch option
-                    </ButtonItem>
-                  </PanelSectionRow>
+                  <AddLaunchOptionRow onAdd={showCreateLaunchOptionFormModal} />
                   <Field
                     childrenLayout={"below"}
                     label={"Original launch options"}
@@ -736,16 +727,7 @@ export function AppLaunchOptionsPage() {
                   {showInactiveAutoManageWarning && (
                     <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
                   )}
-                  <PanelSectionRow>
-                    <ButtonItem
-                      layout="below"
-                      onClick={() => {
-                        showCreateLaunchOptionFormModal()
-                      }}
-                    >
-                      Add launch option
-                    </ButtonItem>
-                  </PanelSectionRow>
+                  <AddLaunchOptionRow onAdd={showCreateLaunchOptionFormModal} />
                   {renderLaunchOptionItems({
                     items: globalLaunchOptions,
                     savedLaunchOptions: settings.launchOptions,
@@ -784,32 +766,20 @@ export function AppLaunchOptionsPage() {
                   {showInactiveAutoManageWarning && (
                     <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
                   )}
-                  <PanelSectionRow>
-                    <Focusable
-                      style={{ display: "flex", gap: 10, alignItems: "center" }}
-                    >
-                      <DialogButton
-                        style={{ flex: 1 }}
-                        onClick={showCreateLaunchOptionFormModal}
-                      >
-                        Add launch option
-                      </DialogButton>
-                      <ActionMenuButton
-                        label="Group actions"
-                        actions={[
-                          {
-                            label: "Edit",
-                            onSelected: () => showUpdateGroupModal(group),
-                          },
-                          {
-                            label: "Delete",
-                            tone: "destructive",
-                            onSelected: () => confirmDeleteGroup(group),
-                          },
-                        ]}
-                      />
-                    </Focusable>
-                  </PanelSectionRow>
+                  <AddLaunchOptionRow
+                    onAdd={showCreateLaunchOptionFormModal}
+                    actions={[
+                      {
+                        label: "Edit",
+                        onSelected: () => showUpdateGroupModal(group),
+                      },
+                      {
+                        label: "Delete",
+                        tone: "destructive",
+                        onSelected: () => confirmDeleteGroup(group),
+                      },
+                    ]}
+                  />
                   {groupSectionOrder.map((scope) => {
                     const items = groupedLaunchOptions[group]?.[scope] ?? []
                     if (items.length === 0) return null
