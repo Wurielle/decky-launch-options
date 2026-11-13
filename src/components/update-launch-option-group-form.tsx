@@ -1,5 +1,7 @@
-import { DialogButton, Field, Focusable, TextField } from "@decky/ui"
+import { DialogButton } from "@decky/ui"
 import { useState } from "react"
+import { LaunchOptionGroupField } from "./launch-option-fields"
+import { LaunchOptionFocusList } from "./launch-option-focus"
 
 export function UpdateLaunchOptionGroupForm({
   group,
@@ -11,19 +13,15 @@ export function UpdateLaunchOptionGroupForm({
   const [nextGroup, setNextGroup] = useState(group)
 
   return (
-    <Focusable style={{ display: "flex", flexDirection: "column", gap: 22 }}>
-      <Field
-        label="Group"
+    <LaunchOptionFocusList
+      style={{ display: "flex", flexDirection: "column", gap: 22 }}
+    >
+      <LaunchOptionGroupField
         description="Move all launch options in this group together. Use an existing group to merge them, or leave empty to ungroup them."
-        childrenLayout="below"
-      >
-        <TextField
-          style={{ width: "100%" }}
-          value={nextGroup}
-          onChange={(event) => setNextGroup(event.target.value)}
-        />
-      </Field>
+        value={nextGroup}
+        onChange={setNextGroup}
+      />
       <DialogButton onClick={() => onSubmit(nextGroup)}>Save</DialogButton>
-    </Focusable>
+    </LaunchOptionFocusList>
   )
 }

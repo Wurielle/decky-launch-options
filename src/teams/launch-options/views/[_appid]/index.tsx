@@ -332,7 +332,7 @@ export function AppLaunchOptionsPage() {
     showModal(
       <ConfirmModal
         strTitle="Delete group"
-        strDescription={`Do you want to delete all ${ids.length} launch option${ids.length === 1 ? "" : "s"} in the "${group}" group? This affects all apps.`}
+        strDescription={`Do you want to delete all ${ids.length} launch option${ids.length === 1 ? "" : "s"} in the "${group}" group?`}
         strOKButtonText="Delete"
         strCancelButtonText="Cancel"
         onOK={() => deleteLaunchOptionsByIds(ids)}
