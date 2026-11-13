@@ -5,11 +5,18 @@ import {
   getCopyLabel,
   getCopyValueId,
   normalizeFallbackValues,
-} from "../utils"
+} from "../utils/settings"
 import { SetSettings } from "./types"
 
 export function createLaunchOptionActions(setSettings: SetSettings) {
   return {
+    updateLaunchOptionsGroup: (group: string, nextGroup: string) => {
+      setSettings((draft) => {
+        draft.launchOptions.forEach((item) => {
+          if (item.group === group) item.group = nextGroup
+        })
+      })
+    },
     swapLaunchOptions: (id: string, targetId: string) => {
       setSettings((draft) => {
         const index = draft.launchOptions.findIndex((item) => item.id === id)

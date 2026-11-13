@@ -5,7 +5,7 @@ import {
   useGetOriginalLaunchOptionsBackupsQuery,
 } from "../../../query"
 import { copyTextToClipboard } from "../../../utils"
-import { BackupActionButton } from "./backup-action-button"
+import { ActionMenuButton } from "../../../components/action-menu-button"
 
 interface LaunchOptionsBackupsModalProps {
   appid: string
@@ -61,7 +61,7 @@ export function LaunchOptionsBackupsModal({
           description={backup.command || "(empty)"}
           childrenLayout={"inline"}
         >
-          <BackupActionButton
+          <ActionMenuButton
             label="Backup actions"
             actions={[
               {

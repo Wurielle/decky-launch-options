@@ -16,10 +16,12 @@ import {
 } from "@decky/ui"
 import { useStore } from "@tanstack/react-store"
 import { useCallback, useEffect, useMemo, useState } from "react"
+import { ActionMenuButton } from "../../../../components/action-menu-button"
 import { CreateLaunchOptionForm } from "../../../../components/create-launch-option-form"
 import { showDeleteLaunchOptionModal } from "../../../../components/delete-launch-option-modal"
 import { LaunchOptionFocusList } from "../../../../components/launch-option-focus"
 import { UpdateLaunchOptionForm } from "../../../../components/update-launch-option-form"
+import { UpdateLaunchOptionGroupForm } from "../../../../components/update-launch-option-group-form"
 import { useSettings } from "../../../../hooks"
 import {
   useDeleteOriginalLaunchOptionsBackupsMutation,
@@ -37,7 +39,6 @@ import {
   setAppLaunchOptions,
   toHierarchicalLaunchOptions,
 } from "../../../../utils"
-import { BackupActionButton } from "../../components/backup-action-button"
 import { InactiveAutoManageWarning } from "../../components/inactive-auto-manage-warning"
 import { renderLaunchOptionItems } from "../../components/launch-option-list"
 import { LaunchOptionsBackupsModal } from "../../components/launch-options-backups-modal"
@@ -105,6 +106,8 @@ export function AppLaunchOptionsPage() {
     duplicateLaunchOption,
     deleteLaunchOption,
     deleteLaunchOptionsByValueId,
+    deleteLaunchOptionsByIds,
+    updateLaunchOptionsGroup,
   } = useSettings()
   const getInfoQuery = useGetInfoQuery()
   const setDloLaunchOptionsMutation = useSetDloLaunchOptionsMutation()
@@ -307,6 +310,35 @@ export function AppLaunchOptionsPage() {
     },
     [appid],
   )
+  const showUpdateGroupModal = (group: string) => {
+    const modalResult = showModal(
+      <ModalWrapper title="Edit group" onClose={() => modalResult.Close()}>
+        <UpdateLaunchOptionGroupForm
+          group={group}
+          onSubmit={(nextGroup) => {
+            updateLaunchOptionsGroup(group, nextGroup)
+            setFocusTarget(null)
+            setTab(nextGroup || "local")
+            modalResult.Close()
+          }}
+        />
+      </ModalWrapper>,
+    )
+  }
+  const confirmDeleteGroup = (group: string) => {
+    const ids = settings.launchOptions
+      .filter((item) => item.group === group)
+      .map((item) => item.id)
+    showModal(
+      <ConfirmModal
+        strTitle="Delete group"
+        strDescription={`Do you want to delete all ${ids.length} launch option${ids.length === 1 ? "" : "s"} in the "${group}" group? This affects all apps.`}
+        strOKButtonText="Delete"
+        strCancelButtonText="Cancel"
+        onOK={() => deleteLaunchOptionsByIds(ids)}
+      />,
+    )
+  }
   const showLaunchOptionsBackupsModal = useCallback(() => {
     const modalResult = showModal(
       <ModalWrapper
@@ -612,7 +644,7 @@ export function AppLaunchOptionsPage() {
                     description={"Show backed up original launch options"}
                     childrenLayout={"inline"}
                   >
-                    <BackupActionButton
+                    <ActionMenuButton
                       label="Backups actions"
                       actions={[
                         {
@@ -753,14 +785,30 @@ export function AppLaunchOptionsPage() {
                     <InactiveAutoManageWarning isNonSteamApp={isNonSteamApp} />
                   )}
                   <PanelSectionRow>
-                    <ButtonItem
-                      layout="below"
-                      onClick={() => {
-                        showCreateLaunchOptionFormModal()
-                      }}
+                    <Focusable
+                      style={{ display: "flex", gap: 10, alignItems: "center" }}
                     >
-                      Add launch option
-                    </ButtonItem>
+                      <DialogButton
+                        style={{ flex: 1 }}
+                        onClick={showCreateLaunchOptionFormModal}
+                      >
+                        Add launch option
+                      </DialogButton>
+                      <ActionMenuButton
+                        label="Group actions"
+                        actions={[
+                          {
+                            label: "Edit",
+                            onSelected: () => showUpdateGroupModal(group),
+                          },
+                          {
+                            label: "Delete",
+                            tone: "destructive",
+                            onSelected: () => confirmDeleteGroup(group),
+                          },
+                        ]}
+                      />
+                    </Focusable>
                   </PanelSectionRow>
                   {groupSectionOrder.map((scope) => {
                     const items = groupedLaunchOptions[group]?.[scope] ?? []
