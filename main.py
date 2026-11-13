@@ -85,7 +85,7 @@ class Plugin:
             with open(FULL_SH_COMMAND_PATH, "w") as file:
                 file.write("#!/bin/bash\n")
                 file.write(f"if command -v python &> /dev/null && [ -f \"{PY_LAUNCHER_PATH}\" ]; then\n")
-                file.write(f"    python \"{PY_LAUNCHER_PATH}\" \"$@\"\n")
+                file.write(f"    exec python \"{PY_LAUNCHER_PATH}\" \"$@\"\n")
                 file.write("else\n")
                 file.write("    exec \"$@\"\n")
                 file.write("fi\n")

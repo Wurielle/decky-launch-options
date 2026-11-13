@@ -91,6 +91,10 @@ class SettingsFolderBackupTests(unittest.TestCase):
                 (folder_path / "settings.json").read_text(encoding="utf-8"),
                 "current",
             )
+            self.assertIn(
+                f'exec python "{main.PY_LAUNCHER_PATH}" "$@"\n',
+                (folder_path / "run").read_text(encoding="utf-8"),
+            )
 
     def test_uninstall_replaces_backup_with_current_settings(self):
         with TemporaryDirectory() as temporary_directory:
