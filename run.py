@@ -69,6 +69,13 @@ def is_non_steam_appid(appid):
         return False
 
 
+def is_env_assignment(part):
+    # Looser than the shell on purpose: names like OptiScaler_V-Sync_X are
+    # valid for execve and already used in recipes. A / in the key means a path.
+    key, separator, _ = part.partition('=')
+    return bool(key and separator) and not part.startswith('-') and '/' not in key
+
+
 def split_command_args(raw_command):
     try:
         import shlex
@@ -180,13 +187,10 @@ def parse_launch_option(raw_command):
         temp_right = []
 
         for part in parts:
-            # Check if it's an env var
-            if '=' in part and not part.startswith('-'):
-                key_part = part.split('=', 1)[0]
-                if '/' not in key_part:
-                    # It's an env var, goes to left
-                    temp_left.append(part)
-                    continue
+            # Check if it's an env var, goes to left
+            if is_env_assignment(part):
+                temp_left.append(part)
+                continue
 
             # Not an env var - check if it looks like a game arg
             if part.startswith('-') or part.startswith('+'):
@@ -207,16 +211,13 @@ def parse_launch_option(raw_command):
     env_vars = {}
     prefix = []
 
-    for part in left_parts:
-        if '=' in part and not part.startswith('-'):
-            # Check if it looks like an env var (key part has no /)
-            key_part = part.split('=', 1)[0]
-            if '/' not in key_part:
-                key, value = part.split('=', 1)
-                env_vars[key] = value
-            else:
-                # Looks like a path with =, treat as prefix
-                prefix.append(part)
+    for index, part in enumerate(left_parts):
+        # The argument of -c is an inline script (bash -c 'X=1; exec "$@"'),
+        # not an assignment to hoist into the environment.
+        is_inline_script = index > 0 and left_parts[index - 1] == '-c'
+        if is_env_assignment(part) and not is_inline_script:
+            key, value = part.split('=', 1)
+            env_vars[key] = value
         else:
             prefix.append(part)
 

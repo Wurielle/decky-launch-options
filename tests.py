@@ -320,6 +320,31 @@ if __name__ == "__main__":
         "printf '%s' 'ready && waiting'"
     ]
 
+    # Test 25: Assignments inside an inline wrapper script are not env vars
+    inline_assignment = parse_launch_option(
+        "bash -c 'X=1; exec \"$@\"' -- %command%"
+    )
+    assert inline_assignment['env_vars'] == {}
+    assert inline_assignment['prefix'] == [
+        'bash', '-c', 'X=1; exec "$@"', '--'
+    ]
+
+    # Test 26: Assignments after a wrapper are still hoisted, as before
+    wrapper_args = parse_launch_option("FOO=1 gamemoderun BAR=2 %command%")
+    assert wrapper_args['env_vars'] == {'FOO': '1', 'BAR': '2'}
+    assert wrapper_args['prefix'] == ['gamemoderun']
+
+    # Test 27: Names the shell rejects stay env vars (recipes use them via env)
+    env_wrapper = parse_launch_option(
+        'env OptiScaler_V-Sync_SyncInterval="1" %command%'
+    )
+    assert env_wrapper['env_vars'] == {'OptiScaler_V-Sync_SyncInterval': '1'}
+    assert env_wrapper['prefix'] == ['env']
+
+    # Test 28: An empty name is not an env var (os.environ would reject it)
+    empty_name = parse_launch_option('=oops %command%')
+    assert empty_name['env_vars'] == {}
+
     # =========================================================
     # Priority ordering tests
     # =========================================================
