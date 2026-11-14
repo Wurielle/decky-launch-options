@@ -103,7 +103,9 @@ export function StoreRecipes({ store }: { store: GithubStore }) {
           />
         </div>
       ) : recipes.error ? (
-        <div role="alert">{recipes.error.message}</div>
+        <div role="alert" style={{ textAlign: "center" }}>
+          {recipes.error.message}
+        </div>
       ) : !filteredRecipes?.length ? (
         <div style={{ textAlign: "center" }}>
           {query ? "No matching recipes." : "No recipes found."}

@@ -100,7 +100,15 @@ export function RecipeStorePage() {
               id: "stores",
               title: "Stores",
               content: readyToShow && (
-                <Focusable key="stores" style={{ height: "100%" }}>
+                <Focusable
+                  key="stores"
+                  style={{
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                  }}
+                >
                   <PanelSectionRow>
                     <ButtonItem
                       layout="below"
