@@ -26,13 +26,16 @@ export const keys = {
   ],
 }
 
-export const useGetInfoQuery = () =>
-  useQuery({
-    queryKey: keys.info(),
-    queryFn() {
-      return get_info()
-    },
-  })
+export const getInfoQueryOptions = queryOptions({
+  queryKey: keys.info(),
+  queryFn() {
+    return get_info()
+  },
+  staleTime: Infinity,
+  gcTime: Infinity,
+})
+
+export const useGetInfoQuery = () => useQuery(getInfoQueryOptions)
 
 export const getSettingsQueryOptions = queryOptions({
   queryKey: keys.settings(),
@@ -48,7 +51,9 @@ export const useSetSettingsMutation = () =>
     mutationFn(data) {
       return set_settings(data)
     },
-    onSuccess() {
+    onSuccess(_, settings) {
+      // Unload must see saved originals immediately, before the refetch finishes.
+      queryClient.setQueryData(keys.settings(), settings)
       queryClient.refetchQueries({
         queryKey: keys.settings(),
       })
