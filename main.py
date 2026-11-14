@@ -7,6 +7,7 @@ import shutil
 import stat
 import struct
 import sys
+import tempfile
 import threading
 import uuid
 from pathlib import Path
@@ -56,7 +57,66 @@ def log(str):
     decky.logger.info(f"------- DLO: {str}")
 
 
+MAX_LOG_BYTES = 1024 * 1024
+
+
+def _atomic_write(path, content, mode):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as stream:
+            temporary = Path(stream.name)
+            stream.write(content)
+        temporary.chmod(mode)
+        temporary.replace(path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+def _install_runner():
+    # Decky flattens defaults/ into the plugin root when packaging.
+    # The fallback also supports running backend tests from the source checkout.
+    root = Path(__file__).resolve().parent
+    source = root / "dlor-run.sh"
+    if not source.is_file():
+        source = root / "defaults" / "dlor-run.sh"
+    target = Path(decky.DECKY_USER_HOME) / ".dlor" / "run"
+    _atomic_write(target, source.read_bytes().replace(b"\r\n", b"\n"), 0o755)
+
+
+def _logs_directory():
+    return Path(decky.DECKY_USER_HOME) / ".dlor" / "logs"
+
+
+def _read_log_file(path):
+    root = _logs_directory().resolve()
+    selected = Path(path).resolve()
+    if not selected.is_relative_to(root) or selected.suffix.lower() != ".log":
+        raise ValueError("Choose a .log file inside ~/.dlor/logs.")
+    if not selected.is_file():
+        raise FileNotFoundError("This log no longer exists or is not a regular file.")
+
+    with selected.open("rb") as stream:
+        size = stream.seek(0, os.SEEK_END)
+        stream.seek(max(0, size - MAX_LOG_BYTES))
+        content = stream.read(MAX_LOG_BYTES).decode("utf-8", errors="replace")
+    return {
+        "path": str(selected.relative_to(root)),
+        "content": content,
+        "truncated": size > MAX_LOG_BYTES,
+    }
+
+
 class Plugin:
+    async def get_logs_directory(self):
+        directory = _logs_directory()
+        await asyncio.to_thread(directory.mkdir, parents=True, exist_ok=True)
+        return str(directory)
+
+    async def read_log_file(self, path: str):
+        return await asyncio.to_thread(_read_log_file, path)
+
     def _restore_settings_folder_backup(self):
         folder_path = Path(SETTINGS_FOLDER_PATH)
         backup_folder_path = Path(SETTINGS_BACKUP_FOLDER_PATH)
@@ -506,6 +566,7 @@ class Plugin:
     async def _main(self):
         self.loop = asyncio.get_event_loop()
         await self.prepare()
+        await asyncio.to_thread(_install_runner)
 
     async def _unload(self):
         await self.cleanup()

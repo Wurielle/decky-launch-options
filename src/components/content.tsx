@@ -50,6 +50,17 @@ export function Content() {
           <ButtonItem
             layout="below"
             onClick={() => {
+              Navigation.Navigate(routes.recipeStore())
+              Navigation.CloseSideMenus()
+            }}
+          >
+            Open recipe store
+          </ButtonItem>
+        </PanelSectionRow>
+        <PanelSectionRow>
+          <ButtonItem
+            layout="below"
+            onClick={() => {
               Navigation.Navigate(routes.launchOptionsManagerItem("new"))
               Navigation.CloseSideMenus()
             }}

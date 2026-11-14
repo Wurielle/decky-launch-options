@@ -3,6 +3,7 @@ import { v4 as uuid } from "uuid"
 export const batchCreateLaunchOptionsEventType = "dlo-add-launch-options"
 
 export const routes = {
+  recipeStore: () => "/launch-options-store",
   appLaunchOptions: (appid: number | string = ":appid") =>
     `/launch-options/${appid}`,
   launchOptionsManagerItem: (page: number | string = ":page") =>

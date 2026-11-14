@@ -4,6 +4,7 @@ import { FaChevronDown, FaChevronUp } from "react-icons/fa"
 import { debugLaunchOptions } from "../debug-launch-options"
 import { batchCreateLaunchOptionsEventType } from "../shared"
 import { DebugLogModal } from "./debug-log-modal"
+import { BrowseLogsButton } from "./browse-logs-button"
 
 export function DeveloperOptions() {
   const [showMore, setShowMore] = useState(false)
@@ -33,6 +34,9 @@ export function DeveloperOptions() {
             >
               Debug log
             </ButtonItem>
+          </PanelSectionRow>
+          <PanelSectionRow>
+            <BrowseLogsButton />
           </PanelSectionRow>
           <PanelSectionRow>
             <ButtonItem

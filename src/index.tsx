@@ -26,8 +26,14 @@ import {
 } from "./utils"
 import { has_shell_script } from "./api"
 import { settingsStore } from "./stores"
+import { RecipeStorePage } from "./teams/recipe-store/views"
 
 export default definePlugin(() => {
+  routerHook.addRoute(routes.recipeStore(), () => (
+    <QueryClientProvider client={queryClient}>
+      <RecipeStorePage />
+    </QueryClientProvider>
+  ))
   routerHook.addRoute(routes.appLaunchOptions(), () => {
     return (
       <QueryClientProvider client={queryClient}>
