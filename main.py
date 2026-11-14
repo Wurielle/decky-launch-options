@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 from datetime import datetime
 import json
 import os
@@ -6,6 +7,8 @@ import shutil
 import stat
 import struct
 import sys
+import threading
+import uuid
 from pathlib import Path
 
 PLUGIN_DIR = Path(__file__).resolve().parent
@@ -25,6 +28,7 @@ SETTINGS_BACKUP_FOLDER_PATH = f"{SETTINGS_FOLDER_PATH}.backup"
 SETTINGS_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'settings.json')}"
 DEBUG_LOG_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'debug.log')}"
 BACKUPS_PATH = f"{os.path.join(SETTINGS_FOLDER_PATH, 'backups')}"
+JSON_FILE_LOCK = threading.RLock()
 
 PY_LAUNCHER_PATH = os.path.join(decky.DECKY_PLUGIN_DIR, "run.py")
 
@@ -247,27 +251,79 @@ class Plugin:
         log("Debug logs ------------")
         pass
 
+    def _sync_json_directory(self, directory):
+        fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+
+    def _preserve_corrupt_json(self, path, contents, mode):
+        backup_path = path.with_name(f"{path.name}.corrupt-{uuid.uuid4().hex}")
+        # Exclusive creation prevents a collision from replacing another backup.
+        with backup_path.open('xb') as backup:
+            try:
+                os.fchmod(backup.fileno(), mode)
+                backup.write(contents)
+                backup.flush()
+                os.fsync(backup.fileno())
+            except BaseException:
+                with contextlib.suppress(OSError):
+                    backup_path.unlink()
+                raise
+        self._sync_json_directory(path.parent)
+        log(f"Unreadable {path} copied to {backup_path}")
+
     def _write_json(self, file_path, data):
         try:
-            path = Path(file_path)
-            path.parent.mkdir(parents=True, exist_ok=True)
+            with JSON_FILE_LOCK:
+                # Replace a symlink's target, preserving the link itself.
+                path = Path(file_path).resolve()
+                path.parent.mkdir(parents=True, exist_ok=True)
+                try:
+                    mode = stat.S_IMODE(path.stat().st_mode)
+                except FileNotFoundError:
+                    mode = None
 
-            with open(path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, indent=4)
+                temporary_path = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+                # 'x' respects the creation umask, unlike a fixed chmod(0644).
+                temporary_file = temporary_path.open('x', encoding='utf-8')
+                try:
+                    with temporary_file as f:
+                        if mode is not None:
+                            os.fchmod(f.fileno(), mode)
+                        json.dump(data, f, indent=4)
+                        f.flush()
+                        os.fsync(f.fileno())
+                    # A failed preservation must also block direct saves, even
+                    # if the caller ignored an earlier read failure.
+                    self._read_json(path)
+                    os.replace(temporary_path, path)
+                    self._sync_json_directory(path.parent)
+                finally:
+                    with contextlib.suppress(OSError):
+                        temporary_path.unlink()
         except (OSError, IOError, TypeError) as e:
             log(f"Failed to write JSON to {file_path}: {e}")
             raise
 
     def _read_json(self, file_path):
-        path = Path(file_path)
-        if not path.exists():
-            return None
+        with JSON_FILE_LOCK:
+            path = Path(file_path).resolve()
+            try:
+                with path.open('rb') as f:
+                    contents = f.read()
+                    mode = stat.S_IMODE(os.fstat(f.fileno()).st_mode)
+            except FileNotFoundError:
+                return None
 
-        try:
-            with open(path, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except (json.JSONDecodeError, FileNotFoundError):
-            return None
+            try:
+                return json.loads(contents.decode('utf-8'))
+            except ValueError:
+                # Copy the bytes we read, never rename a possibly newer file.
+                # Keep the original in place until a successful atomic save.
+                self._preserve_corrupt_json(path, contents, mode)
+                return None
 
     async def has_shell_script(self):
         return os.path.exists(FULL_SH_COMMAND_PATH)
