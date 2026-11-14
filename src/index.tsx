@@ -11,11 +11,21 @@ import { AppLaunchOptionsPage } from "./teams/launch-options/views/[_appid]"
 import { EnvVariableMergesPage } from "./teams/env-variable-merges/views"
 import { QueryClientProvider } from "@tanstack/react-query"
 import contextMenuPatch, { LibraryContextMenu } from "./patches/context-menu"
-import { getSettingsQueryOptions, queryClient } from "./query"
+import {
+  getInfoQueryOptions,
+  getSettingsQueryOptions,
+  queryClient,
+} from "./query"
 import { libraryAppPatch } from "./patches/library-app"
 import { Content } from "./components/content"
 import { batchCreateLaunchOptions } from "./components/batch-add-launch-options"
-import { setAppLaunchOptions } from "./utils"
+import {
+  applyProfileLaunchOptions,
+  launchOptionsLifecycle,
+  restoreAppLaunchOptions,
+} from "./utils"
+import { has_shell_script } from "./api"
+import { settingsStore } from "./stores"
 
 export default definePlugin(() => {
   routerHook.addRoute(routes.appLaunchOptions(), () => {
@@ -42,7 +52,27 @@ export default definePlugin(() => {
   // shamefully stolen from the talented people at SteamGridDB
   const menuPatches = contextMenuPatch(LibraryContextMenu)
   const libraryAppPatchResult = libraryAppPatch()
-  void queryClient.prefetchQuery(getSettingsQueryOptions)
+  const previousRestoration = window.dloLaunchOptionsRestored
+  let startupWrites: Promise<unknown> = Promise.resolve()
+  void Promise.all([
+    previousRestoration,
+    queryClient.fetchQuery(getSettingsQueryOptions),
+    queryClient.fetchQuery(getInfoQueryOptions),
+    has_shell_script(),
+  ])
+    .then(([, settings, info, hasShellScript]) => {
+      if (!launchOptionsLifecycle.active || !settings || !hasShellScript) return
+      startupWrites = Promise.allSettled(
+        Object.entries(settings.profiles).map(([appid, profile]) =>
+          applyProfileLaunchOptions(Number(appid), profile, info, {
+            steam: settingsStore.state.autoManageLaunchOptions,
+            nonSteam: settingsStore.state.autoManageNonSteamLaunchOptions,
+          }),
+        ),
+      )
+      return startupWrites
+    })
+    .catch((error) => console.error("DLO startup recovery failed", error))
 
   function onBatchCreateLaunchOptions(
     event: CustomEvent<Partial<LaunchOption>[]>,
@@ -65,6 +95,7 @@ export default definePlugin(() => {
     ),
     icon: <FaTerminal />,
     onDismount() {
+      launchOptionsLifecycle.active = false
       Object.values(routes).forEach((route) => {
         routerHook.removeRoute(route())
       })
@@ -73,11 +104,19 @@ export default definePlugin(() => {
       const settings = queryClient.getQueryData(
         getSettingsQueryOptions.queryKey,
       )
-      if (settings) {
-        Object.entries(settings.profiles).forEach(([appid, profile]) => {
-          setAppLaunchOptions(Number(appid), profile.originalLaunchOptions)
-        })
-      }
+      const info = queryClient.getQueryData(getInfoQueryOptions.queryKey)
+      // Decky does not await onDismount. The next instance waits for these
+      // callbacks so an old restoration cannot overwrite startup recovery.
+      window.dloLaunchOptionsRestored = Promise.all([
+        previousRestoration,
+        startupWrites,
+      ]).then(() =>
+        Promise.allSettled(
+          Object.entries(settings?.profiles ?? {}).map(([appid, profile]) =>
+            restoreAppLaunchOptions(Number(appid), profile, info),
+          ),
+        ),
+      )
       window.removeEventListener(
         batchCreateLaunchOptionsEventType as any,
         onBatchCreateLaunchOptions,
