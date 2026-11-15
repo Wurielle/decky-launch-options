@@ -1,5 +1,5 @@
 import { callable } from "@decky/api"
-import { Settings } from "./shared"
+import { Settings, StoredSettings } from "./shared"
 
 export const get_info = callable<
   [],
@@ -17,7 +17,7 @@ export const get_info = callable<
     BACKUPS_PATH: string
   }
 >("get_info")
-export const get_settings = callable<[], Settings | null>("get_settings")
+export const get_settings = callable<[], StoredSettings | null>("get_settings")
 export const set_settings = callable<[Settings], void>("set_settings")
 export const has_shell_script = callable<[], boolean>("has_shell_script")
 export const get_debug_log = callable<[], string | null>("get_debug_log")

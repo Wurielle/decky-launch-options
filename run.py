@@ -8,7 +8,7 @@ from pathlib import Path
 from shared import SETTINGS_FOLDER_PATH, SETTINGS_PATH
 
 LOG_FILE = os.path.join(SETTINGS_FOLDER_PATH, 'debug.log')
-DEFAULT_ENV_VARIABLE_MERGES = [
+DEFAULT_ENVIRONMENT_VARIABLE_MERGES = [
     {"name": "WINEDLLOVERRIDES", "delimiter": ";"},
     {"name": "MANGOHUD_CONFIG", "delimiter": ","},
     {"name": "DXVK_CONFIG", "delimiter": ";"},
@@ -229,9 +229,12 @@ def parse_launch_option(raw_command):
     }
 
 
-def get_env_variable_merge_rules(settings):
+def get_environment_variable_merge_rules(settings):
     rules = {}
-    merge_rules = settings.get("envVariableMerges", DEFAULT_ENV_VARIABLE_MERGES)
+    merge_rules = settings.get(
+        "environmentVariableMerges",
+        settings.get("envVariableMerges", DEFAULT_ENVIRONMENT_VARIABLE_MERGES),
+    )
     for rule in merge_rules:
         name = str(rule.get("name", "")).strip()
         delimiter = rule.get("delimiter")
@@ -341,7 +344,7 @@ def get_final_args_details(settings, appid, skipped_prefixes=None):
     is_non_steam_app = is_non_steam_appid(appid)
 
     # Collections for all launch option components
-    env_merge_rules = get_env_variable_merge_rules(settings)
+    environment_merge_rules = get_environment_variable_merge_rules(settings)
     all_env_var_values = {}
     all_pre_commands = []
     all_prefixes = []
@@ -357,7 +360,7 @@ def get_final_args_details(settings, appid, skipped_prefixes=None):
                 all_suffix_groups.append(protected_original_args)
         else:
             parsed = parse_launch_option(profile_original_launch_options)
-            add_env_vars(all_env_var_values, env_merge_rules, parsed['env_vars'])
+            add_env_vars(all_env_var_values, environment_merge_rules, parsed['env_vars'])
             all_pre_commands.extend(parsed['pre_commands'])
             if parsed['prefix']:
                 all_prefixes.append(parsed['prefix'])
@@ -419,7 +422,7 @@ def get_final_args_details(settings, appid, skipped_prefixes=None):
     # lowest to highest priority. The stable sort preserves the existing behavior
     # where a later option wins when priorities are equal.
     for priority, parsed in sorted(launch_option_parts, key=lambda x: x[0]):
-        add_env_vars(all_env_var_values, env_merge_rules, parsed['env_vars'])
+        add_env_vars(all_env_var_values, environment_merge_rules, parsed['env_vars'])
 
     # Merge command parts in execution order.
     for priority, parsed in launch_option_parts:
@@ -429,7 +432,7 @@ def get_final_args_details(settings, appid, skipped_prefixes=None):
         if parsed['suffix']:
             all_suffix_groups.append(parsed['suffix'])
 
-    all_env_vars = finalize_env_vars(all_env_var_values, env_merge_rules)
+    all_env_vars = finalize_env_vars(all_env_var_values, environment_merge_rules)
 
     # Apply all environment variables
     for key, value in all_env_vars.items():

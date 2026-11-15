@@ -31,7 +31,7 @@ export function DeveloperOptions() {
                 )
               }}
             >
-              Debug log
+              Open run log
             </ButtonItem>
           </PanelSectionRow>
           <PanelSectionRow>

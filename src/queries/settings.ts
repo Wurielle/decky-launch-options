@@ -14,6 +14,7 @@ import {
   set_settings,
 } from "../api"
 import { Settings } from "../shared"
+import { normalizeSettings } from "../utils/settings"
 
 export const queryClient = new QueryClient()
 
@@ -40,7 +41,7 @@ export const useGetInfoQuery = () => useQuery(getInfoQueryOptions)
 export const getSettingsQueryOptions = queryOptions({
   queryKey: keys.settings(),
   queryFn() {
-    return get_settings()
+    return get_settings().then(normalizeSettings)
   },
 })
 
