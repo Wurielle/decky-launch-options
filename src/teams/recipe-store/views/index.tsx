@@ -154,7 +154,11 @@ export function RecipeStorePage() {
             },
             ...stores.map(({ url, store }) => ({
               id: `store:${url}`,
-              title: store.name,
+              title: stores.some(
+                (other) => other.url !== url && other.store.name === store.name,
+              )
+                ? `${store.name} (${store.github.branch})`
+                : store.name,
               content: readyToShow && (
                 <Focusable key={url} style={{ height: "100%" }}>
                   <StoreRecipes store={store} />

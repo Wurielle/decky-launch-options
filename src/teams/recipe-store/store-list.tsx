@@ -8,7 +8,7 @@ import {
   LaunchOptionFocusProvider,
   useLaunchOptionFocus,
 } from "../../components/launch-option-focus"
-import type { SavedStore } from "./store"
+import { defaultRecipeStore, type SavedStore } from "./store"
 
 interface StoreListProps {
   stores: SavedStore[]
@@ -102,11 +102,15 @@ function StoreRows({ stores, onMove, onUpdate, onDelete }: StoreListProps) {
                     label: "Update store metadata",
                     onSelected: () => onUpdate(url),
                   },
-                  {
-                    label: "Delete",
-                    tone: "destructive",
-                    onSelected: () => onDelete(url),
-                  },
+                  ...(url === defaultRecipeStore.url
+                    ? []
+                    : [
+                        {
+                          label: "Delete",
+                          tone: "destructive" as const,
+                          onSelected: () => onDelete(url),
+                        },
+                      ]),
                 ]}
               />
             </LaunchOptionControl>
