@@ -109,140 +109,149 @@ export function BatchAddLaunchOptions({
           onFocusNext={() => addButtonRef.current?.focus()}
         >
           <DialogBody>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 16,
-                marginBottom: 0,
-              }}
-            >
-              <h3 style={{ margin: 0, fontSize: 16, flexShrink: 0 }}>
-                Launch options
-              </h3>
-              <hr
-                style={{
-                  flex: 1,
-                  minWidth: 16,
-                  margin: 0,
-                  border: 0,
-                  borderTop: "1px solid #3d4450",
-                }}
-              />
-              {launchOptions.some((option) => option.enableGlobally) && (
+            {launchOptions.length > 0 && (
+              <>
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
-                    gap: 8,
-                    flexShrink: 0,
-                    fontSize: 14,
-                    color: "#b8bcbf",
+                    justifyContent: "space-between",
+                    gap: 16,
+                    marginBottom: 0,
                   }}
                 >
-                  <FaGlobe aria-hidden="true" style={{ color: "#66c0f4" }} />
-                  Enabled globally
-                </div>
-              )}
-            </div>
-            {launchOptions.length > 0 && (
-              <div role="list" aria-label="Launch options to add">
-                {launchOptions.map((launchOption, index) => (
-                  <div
-                    key={launchOption.id}
-                    role="listitem"
+                  <h3 style={{ margin: 0, fontSize: 16, flexShrink: 0 }}>
+                    Launch options
+                  </h3>
+                  <hr
                     style={{
-                      padding: "10px 0",
-                      borderBottom:
-                        index < launchOptions.length - 1
-                          ? "1px solid #3d4450"
-                          : undefined,
-                      minWidth: 0,
+                      flex: 1,
+                      minWidth: 16,
+                      margin: 0,
+                      border: 0,
+                      borderTop: "1px solid #3d4450",
                     }}
-                  >
+                  />
+                  {launchOptions.some((option) => option.enableGlobally) && (
                     <div
                       style={{
                         display: "flex",
-                        alignItems: "baseline",
+                        alignItems: "center",
                         gap: 8,
-                        fontSize: 18,
-                        fontWeight: 600,
-                        overflowWrap: "anywhere",
+                        flexShrink: 0,
+                        fontSize: 14,
+                        color: "#b8bcbf",
                       }}
                     >
-                      <span style={{ flex: 1, minWidth: 0 }}>
-                        {launchOption.name}
-                        {launchOption.valueName
-                          ? ` (${launchOption.valueName})`
-                          : ""}
-                      </span>
-                      {launchOption.enableGlobally && (
-                        <FaGlobe
-                          role="img"
-                          aria-label="Enable globally"
-                          title="Enable globally"
-                          style={{ flexShrink: 0, color: "#66c0f4" }}
-                        />
-                      )}
+                      <FaGlobe
+                        aria-hidden="true"
+                        style={{ color: "#66c0f4" }}
+                      />
+                      Enabled globally
                     </div>
-                    {launchOption.on || launchOption.off ? (
-                      <dl
+                  )}
+                </div>
+                <div role="list" aria-label="Launch options to add">
+                  {launchOptions.map((launchOption, index) => (
+                    <div
+                      key={launchOption.id}
+                      role="listitem"
+                      style={{
+                        padding: "10px 0",
+                        borderBottom:
+                          index < launchOptions.length - 1
+                            ? "1px solid #3d4450"
+                            : undefined,
+                        minWidth: 0,
+                      }}
+                    >
+                      <div
                         style={{
-                          display: "grid",
-                          gridTemplateColumns: "minmax(0, 1fr)",
-                          gap: 4,
-                          margin: "6px 0 0",
-                          fontSize: 16,
-                          lineHeight: 1.4,
+                          display: "flex",
+                          alignItems: "baseline",
+                          gap: 8,
+                          fontSize: 18,
+                          fontWeight: 600,
+                          overflowWrap: "anywhere",
                         }}
                       >
-                        {(["on", "off"] as const).map((state) =>
-                          launchOption[state] ? (
-                            <Command
-                              key={state}
-                              label={
-                                state === "on" ? "On command" : "Off command"
-                              }
-                              value={launchOption[state]}
-                            />
-                          ) : null,
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          {launchOption.name}
+                          {launchOption.valueName
+                            ? ` (${launchOption.valueName})`
+                            : ""}
+                        </span>
+                        {launchOption.enableGlobally && (
+                          <FaGlobe
+                            role="img"
+                            aria-label="Enable globally"
+                            title="Enable globally"
+                            style={{ flexShrink: 0, color: "#66c0f4" }}
+                          />
                         )}
-                      </dl>
-                    ) : (
-                      <div
-                        style={{ marginTop: 6, fontSize: 16, lineHeight: 1.4 }}
-                      >
-                        <CommandCode value="(Empty)" />
                       </div>
-                    )}
-                  </div>
-                ))}
-              </div>
+                      {launchOption.on || launchOption.off ? (
+                        <dl
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "minmax(0, 1fr)",
+                            gap: 4,
+                            margin: "6px 0 0",
+                            fontSize: 16,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          {(["on", "off"] as const).map((state) =>
+                            launchOption[state] ? (
+                              <Command
+                                key={state}
+                                label={
+                                  state === "on" ? "On command" : "Off command"
+                                }
+                                value={launchOption[state]}
+                              />
+                            ) : null,
+                          )}
+                        </dl>
+                      ) : (
+                        <div
+                          style={{
+                            marginTop: 6,
+                            fontSize: 16,
+                            lineHeight: 1.4,
+                          }}
+                        >
+                          <CommandCode value="(Empty)" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
-            <section style={{ marginTop: 16 }}>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 16,
-                  marginBottom: 0,
-                }}
-              >
-                <h3 style={{ margin: 0, fontSize: 16, flexShrink: 0 }}>
-                  Environment variable merges
-                </h3>
-                <hr
+            {environmentVariableMerges.length > 0 && (
+              <section style={{ marginTop: launchOptions.length ? 16 : 0 }}>
+                <div
                   style={{
-                    flex: 1,
-                    minWidth: 16,
-                    margin: 0,
-                    border: 0,
-                    borderTop: "1px solid #3d4450",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 16,
+                    marginBottom: 0,
                   }}
-                />
-              </div>
-              {environmentVariableMerges.length > 0 && (
+                >
+                  <h3 style={{ margin: 0, fontSize: 16, flexShrink: 0 }}>
+                    Environment variable merges
+                  </h3>
+                  <hr
+                    style={{
+                      flex: 1,
+                      minWidth: 16,
+                      margin: 0,
+                      border: 0,
+                      borderTop: "1px solid #3d4450",
+                    }}
+                  />
+                </div>
                 <div
                   role="list"
                   aria-label="Environment variable merges to add"
@@ -287,8 +296,8 @@ export function BatchAddLaunchOptions({
                     </div>
                   ))}
                 </div>
-              )}
-            </section>
+              </section>
+            )}
           </DialogBody>
         </ModalScrollContent>
         <DialogFooter>
