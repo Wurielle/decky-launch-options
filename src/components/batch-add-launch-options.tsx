@@ -209,6 +209,9 @@ export function BatchAddLaunchOptions({
                                   state === "on" ? "On command" : "Off command"
                                 }
                                 value={launchOption[state]}
+                                marginTop={
+                                  state === "off" && launchOption.on ? 8 : 0
+                                }
                               />
                             ) : null,
                           )}
@@ -323,10 +326,20 @@ export function BatchAddLaunchOptions({
   )
 }
 
-function Command({ label, value }: { label: string; value: string }) {
+function Command({
+  label,
+  value,
+  marginTop = 0,
+}: {
+  label: string
+  value: string
+  marginTop?: number
+}) {
   return (
     <>
-      <dt style={{ color: "#b8bcbf", whiteSpace: "nowrap" }}>{label}</dt>
+      <dt style={{ color: "#b8bcbf", whiteSpace: "nowrap", marginTop }}>
+        {label}
+      </dt>
       <dd style={{ margin: 0, minWidth: 0 }}>
         <CommandCode value={value} />
       </dd>
