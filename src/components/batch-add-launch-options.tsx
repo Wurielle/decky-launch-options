@@ -1,5 +1,5 @@
 import {
-  envVariableMergeFactory,
+  environmentVariableMergeFactory,
   LaunchOption,
   launchOptionFactory,
   Recipe,
@@ -25,33 +25,33 @@ import { ModalScrollContent } from "./modal-scroll-content"
 
 export function BatchAddLaunchOptions({
   data,
-  envVariableMerges: mergeData = [],
+  environmentVariableMerges: mergeData = [],
   onSubmit,
   onCancel,
 }: {
   data: Partial<LaunchOption>[]
-  envVariableMerges?: Recipe["envVariableMerges"]
+  environmentVariableMerges?: Recipe["environmentVariableMerges"]
   onSubmit: () => void
   onCancel: () => void
 }) {
   const [launchOptions] = useState(() =>
     sortBy(data.map(launchOptionFactory), ["name"]),
   )
-  const [envVariableMerges] = useState(() =>
-    sortBy(mergeData.map(envVariableMergeFactory), ["name"]),
+  const [environmentVariableMerges] = useState(() =>
+    sortBy(mergeData.map(environmentVariableMergeFactory), ["name"]),
   )
   const { batchCreateLaunchOptions, loading } = useSettings()
   const importItems =
-    launchOptions.length && envVariableMerges.length
+    launchOptions.length && environmentVariableMerges.length
       ? "launch options and environment variable merges"
-      : envVariableMerges.length
+      : environmentVariableMerges.length
         ? "environment variable merges"
         : "launch options"
   const addButtonRef = useRef<HTMLDivElement>(null)
   const addWithoutReviewButtonRef = useRef<HTMLDivElement>(null)
 
   const addAll = () => {
-    batchCreateLaunchOptions(launchOptions, envVariableMerges)
+    batchCreateLaunchOptions(launchOptions, environmentVariableMerges)
     onSubmit()
   }
 
@@ -59,7 +59,7 @@ export function BatchAddLaunchOptions({
     const confirmation = showModal(
       <ConfirmModal
         strTitle={
-          launchOptions.length && envVariableMerges.length
+          launchOptions.length && environmentVariableMerges.length
             ? "Add entire recipe?"
             : `Add all ${importItems}?`
         }
@@ -70,7 +70,7 @@ export function BatchAddLaunchOptions({
           (launchOptions.some((option) => option.enableGlobally)
             ? "Globally enabled launch options run for all applications. "
             : "") +
-          (envVariableMerges.length
+          (environmentVariableMerges.length
             ? "Environment variable merges affect how environment variables combine across active launch options. "
             : "") +
           `Only continue without reviewing the ${importItems} if you trust the source.`
@@ -109,11 +109,12 @@ export function BatchAddLaunchOptions({
           onFocusNext={() => addButtonRef.current?.focus()}
         >
           <DialogBody>
-            {envVariableMerges.length > 0 && launchOptions.length > 0 && (
-              <h3 style={{ margin: "0 0 12px", fontSize: 18 }}>
-                Launch options
-              </h3>
-            )}
+            {environmentVariableMerges.length > 0 &&
+              launchOptions.length > 0 && (
+                <h3 style={{ margin: "0 0 12px", fontSize: 18 }}>
+                  Launch options
+                </h3>
+              )}
             {launchOptions.some((option) => option.enableGlobally) && (
               <div
                 style={{
@@ -200,7 +201,7 @@ export function BatchAddLaunchOptions({
                 ))}
               </div>
             )}
-            {envVariableMerges.length > 0 && (
+            {environmentVariableMerges.length > 0 && (
               <section style={{ marginTop: launchOptions.length ? 16 : 0 }}>
                 <h3 style={{ margin: "0 0 6px", fontSize: 18 }}>
                   Environment variable merges
@@ -209,7 +210,7 @@ export function BatchAddLaunchOptions({
                   role="list"
                   aria-label="Environment variable merges to add"
                 >
-                  {envVariableMerges.map((merge) => (
+                  {environmentVariableMerges.map((merge) => (
                     <div
                       key={merge.id}
                       role="listitem"
@@ -312,13 +313,13 @@ export function batchCreateLaunchOptions(
 export function importRecipe(recipe: Recipe) {
   showImportDialog({
     data: recipe.launchOptions ?? [],
-    envVariableMerges: recipe.envVariableMerges,
+    environmentVariableMerges: recipe.environmentVariableMerges,
   })
 }
 
 function showImportDialog(data: {
   data: Partial<LaunchOption>[]
-  envVariableMerges?: Recipe["envVariableMerges"]
+  environmentVariableMerges?: Recipe["environmentVariableMerges"]
 }) {
   const modalResult = showModal(
     <QueryClientProvider client={queryClient}>

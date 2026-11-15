@@ -5,7 +5,10 @@ import { pathToFileURL } from "node:url"
 import path from "node:path"
 import ts from "typescript"
 import { produce } from "immer"
-import { defaultEnvVariableMerges, launchOptionFactory } from "../src/shared.ts"
+import {
+  defaultEnvironmentVariableMerges,
+  launchOptionFactory,
+} from "../src/shared.ts"
 
 const fileURL = (name) => pathToFileURL(path.resolve(name)).href
 const dataURL = (source) =>
@@ -28,6 +31,13 @@ const utils = await sourceModule("src/utils/settings.ts", {
   "../shared": shared,
   uuid: import.meta.resolve("uuid"),
 })
+const { normalizeSettings } = await import(utils)
+const { createEnvironmentVariableMergeActions } = await import(
+  await sourceModule("src/settings/environment-variable-merge-actions.ts", {
+    "../shared": shared,
+    "es-toolkit/compat": import.meta.resolve("es-toolkit/compat"),
+  })
+)
 const { createLaunchOptionActions } = await import(
   await sourceModule("src/settings/launch-option-actions.ts", {
     "../shared": shared,
@@ -76,7 +86,9 @@ beforeEach(() => {
     settings: {
       profiles: {},
       launchOptions: [],
-      envVariableMerges: structuredClone(defaultEnvVariableMerges),
+      environmentVariableMerges: structuredClone(
+        defaultEnvironmentVariableMerges,
+      ),
     },
     writes: [],
     modals: [],
@@ -109,7 +121,7 @@ const recipe = {
   launchOptions: [
     { id: "overlay", name: "Overlay", on: 'MANGOHUD_CONFIG="cpu_temp"' },
   ],
-  envVariableMerges: [
+  environmentVariableMerges: [
     { id: "mangohud-config", name: "MANGOHUD_CONFIG", delimiter: "," },
   ],
 }
@@ -130,7 +142,10 @@ test("recipe review shows commands and merge delimiters, then saves both in one 
   button(tree, "Add to Decky Launch Options").props.onClick()
   assert.equal(fixture.writes.length, 1)
   assert.equal(fixture.settings.launchOptions[0].on, recipe.launchOptions[0].on)
-  assert.deepEqual(fixture.settings.envVariableMerges, defaultEnvVariableMerges)
+  assert.deepEqual(
+    fixture.settings.environmentVariableMerges,
+    defaultEnvironmentVariableMerges,
+  )
   assert.equal(fixture.modals[0].closed, true)
 })
 
@@ -153,7 +168,7 @@ test("cancel and declining the shortcut confirmation import nothing", () => {
 test("Add all without review imports the rules along with the launch options", () => {
   const tree = openRecipe({
     ...recipe,
-    envVariableMerges: [
+    environmentVariableMerges: [
       { id: "custom", name: "EXAMPLE_CONFIG", delimiter: "::" },
     ],
   })
@@ -164,7 +179,7 @@ test("Add all without review imports the rules along with the launch options", (
   assert.ok(
     fixture.settings.launchOptions.some((option) => option.id === "overlay"),
   )
-  assert.deepEqual(fixture.settings.envVariableMerges[0], {
+  assert.deepEqual(fixture.settings.environmentVariableMerges[0], {
     id: "custom",
     name: "EXAMPLE_CONFIG",
     delimiter: "::",
@@ -184,7 +199,9 @@ test("reimport updates shared rules by ID without resetting app/global choices o
     fixture.modals = []
     const tree = openRecipe({
       ...recipe,
-      envVariableMerges: [{ ...recipe.envVariableMerges[0], delimiter: ";" }],
+      environmentVariableMerges: [
+        { ...recipe.environmentVariableMerges[0], delimiter: ";" },
+      ],
     })
     button(tree, "Add to Decky Launch Options").props.onClick()
   }
@@ -192,40 +209,42 @@ test("reimport updates shared rules by ID without resetting app/global choices o
   assert.equal(fixture.settings.launchOptions[0].enableGlobally, true)
   assert.deepEqual(fixture.settings.profiles, initialProfiles)
   assert.equal(
-    fixture.settings.envVariableMerges.length,
-    defaultEnvVariableMerges.length,
+    fixture.settings.environmentVariableMerges.length,
+    defaultEnvironmentVariableMerges.length,
   )
   assert.equal(
-    fixture.settings.envVariableMerges.find(
+    fixture.settings.environmentVariableMerges.find(
       (merge) => merge.id === "mangohud-config",
     ).delimiter,
     ";",
   )
   assert.deepEqual(
-    fixture.settings.envVariableMerges.filter(
+    fixture.settings.environmentVariableMerges.filter(
       (merge) => merge.id !== "mangohud-config",
     ),
-    defaultEnvVariableMerges.filter((merge) => merge.id !== "mangohud-config"),
+    defaultEnvironmentVariableMerges.filter(
+      (merge) => merge.id !== "mangohud-config",
+    ),
   )
 })
 
 test("missing IDs are generated and an empty delimiter is reviewed and preserved", () => {
   const tree = openRecipe({
     ...recipe,
-    envVariableMerges: [{ name: "EXAMPLE_FLAGS", delimiter: "" }],
+    environmentVariableMerges: [{ name: "EXAMPLE_FLAGS", delimiter: "" }],
   })
   assert.ok(tree.includes('\"\"'))
   button(tree, "Add to Decky Launch Options").props.onClick()
-  const rule = fixture.settings.envVariableMerges.find(
+  const rule = fixture.settings.environmentVariableMerges.find(
     (merge) => merge.name === "EXAMPLE_FLAGS",
   )
   assert.ok(rule.id)
   assert.equal(rule.delimiter, "")
 })
 
-for (const envVariableMerges of [undefined, []]) {
-  test(`recipes with ${envVariableMerges ? "empty" : "omitted"} merge lists preserve existing rules`, () => {
-    const tree = openRecipe({ ...recipe, envVariableMerges })
+for (const environmentVariableMerges of [undefined, []]) {
+  test(`recipes with ${environmentVariableMerges ? "empty" : "omitted"} merge lists preserve existing rules`, () => {
+    const tree = openRecipe({ ...recipe, environmentVariableMerges })
     assert.ok(
       !tree.some(
         (node) =>
@@ -234,8 +253,8 @@ for (const envVariableMerges of [undefined, []]) {
     )
     button(tree, "Add to Decky Launch Options").props.onClick()
     assert.deepEqual(
-      fixture.settings.envVariableMerges,
-      defaultEnvVariableMerges,
+      fixture.settings.environmentVariableMerges,
+      defaultEnvironmentVariableMerges,
     )
   })
 }
@@ -246,7 +265,10 @@ test("the legacy array importer still imports options without changing merge rul
   assert.ok(tree.includes("Decky Launch Options"))
   button(tree, "Add to Decky Launch Options").props.onClick()
   assert.equal(fixture.settings.launchOptions[0].id, "overlay")
-  assert.deepEqual(fixture.settings.envVariableMerges, defaultEnvVariableMerges)
+  assert.deepEqual(
+    fixture.settings.environmentVariableMerges,
+    defaultEnvironmentVariableMerges,
+  )
 })
 
 for (const launchOptions of [undefined, []]) {
@@ -258,7 +280,7 @@ for (const launchOptions of [undefined, []]) {
     const tree = openRecipe({
       name: "Merge rules",
       launchOptions,
-      envVariableMerges: [
+      environmentVariableMerges: [
         { id: "custom", name: "CUSTOM_CONFIG", delimiter: ";" },
       ],
     })
@@ -281,7 +303,7 @@ for (const launchOptions of [undefined, []]) {
     confirmation.props.onOK()
     assert.equal(fixture.writes.length, 1)
     assert.deepEqual(fixture.settings.launchOptions, before)
-    assert.deepEqual(fixture.settings.envVariableMerges[0], {
+    assert.deepEqual(fixture.settings.environmentVariableMerges[0], {
       id: "custom",
       name: "CUSTOM_CONFIG",
       delimiter: ";",
@@ -292,4 +314,76 @@ for (const launchOptions of [undefined, []]) {
 test("review text describes both lists when both are present", () => {
   const tree = openRecipe(recipe)
   assert.ok(tree.includes("launch options and environment variable merges"))
+})
+
+test("legacy merge settings retain IDs, order, empty delimiters, and app selections under the full property name", () => {
+  const legacy = {
+    profiles: {
+      42: { state: { overlay: true }, originalLaunchOptions: "--original" },
+    },
+    launchOptions: [launchOptionFactory(recipe.launchOptions[0])],
+    envVariableMerges: [
+      { id: "custom", name: "CUSTOM_CONFIG", delimiter: "::" },
+      { id: "flags", name: "CUSTOM_FLAGS", delimiter: "" },
+    ],
+  }
+  const before = structuredClone(legacy)
+  const migrated = normalizeSettings(legacy)
+  assert.deepEqual(migrated.environmentVariableMerges, legacy.envVariableMerges)
+  assert.deepEqual(migrated.profiles, legacy.profiles)
+  assert.deepEqual(migrated.launchOptions, legacy.launchOptions)
+  assert.equal(Object.hasOwn(migrated, "envVariableMerges"), false)
+  assert.deepEqual(legacy, before)
+})
+
+test("canonical merge settings take precedence and explicitly empty lists stay empty", () => {
+  const rule = { id: "custom", name: "CUSTOM_CONFIG", delimiter: ";" }
+  assert.deepEqual(
+    normalizeSettings({ envVariableMerges: [] }).environmentVariableMerges,
+    [],
+  )
+  assert.deepEqual(
+    normalizeSettings({
+      environmentVariableMerges: [],
+      envVariableMerges: [rule],
+    }).environmentVariableMerges,
+    [],
+  )
+  assert.deepEqual(
+    normalizeSettings({
+      environmentVariableMerges: [rule],
+      envVariableMerges: [],
+    }).environmentVariableMerges,
+    [rule],
+  )
+  for (const settings of [undefined, null, {}])
+    assert.deepEqual(
+      normalizeSettings(settings).environmentVariableMerges,
+      defaultEnvironmentVariableMerges,
+    )
+})
+
+test("renamed merge editor actions save canonical settings and preserve unrelated data", () => {
+  const rule = { id: "custom", name: "CUSTOM_CONFIG", delimiter: "::" }
+  fixture.settings = normalizeSettings({
+    profiles: { 42: { state: {}, originalLaunchOptions: "--original" } },
+    launchOptions: [launchOptionFactory(recipe.launchOptions[0])],
+    envVariableMerges: [rule],
+  })
+  const before = structuredClone(fixture.settings)
+  const actions = createEnvironmentVariableMergeActions((mutate) => {
+    fixture.settings = produce(fixture.settings, mutate)
+  })
+  actions.updateEnvironmentVariableMerge(rule, "delimiter", "")
+  assert.deepEqual(fixture.settings.environmentVariableMerges, [
+    { ...rule, delimiter: "" },
+  ])
+  const added = { id: "flags", name: "CUSTOM_FLAGS", delimiter: ";" }
+  actions.createEnvironmentVariableMerge(added)
+  assert.deepEqual(fixture.settings.environmentVariableMerges[0], added)
+  actions.deleteEnvironmentVariableMerge(rule.id)
+  assert.deepEqual(fixture.settings.environmentVariableMerges, [added])
+  assert.deepEqual(fixture.settings.profiles, before.profiles)
+  assert.deepEqual(fixture.settings.launchOptions, before.launchOptions)
+  assert.equal(Object.hasOwn(fixture.settings, "envVariableMerges"), false)
 })

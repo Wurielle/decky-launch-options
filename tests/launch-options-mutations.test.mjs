@@ -38,7 +38,11 @@ async function sourceModule(name, imports) {
 beforeEach(async () => {
   sequence++
   fixture = {
-    settings: { profiles: {}, launchOptions: [], envVariableMerges: [] },
+    settings: {
+      profiles: {},
+      launchOptions: [],
+      environmentVariableMerges: [],
+    },
     live: "",
     hasScript: true,
     nonSteam: false,
@@ -136,6 +140,7 @@ beforeEach(async () => {
   const settings = await sourceModule("src/queries/settings.ts", {
     "@tanstack/react-query": reactQuery,
     "../api": api,
+    "../utils/settings": normalization,
   })
   const store = dataURL(
     `export const settingsStore={state:globalThis.__dloMutationFixture.prefs}; // ${sequence}`,
@@ -232,7 +237,7 @@ test("manual Apply with auto-management off preserves existing profile and globa
       2: { state: {}, originalLaunchOptions: "--other" },
     },
     launchOptions: [{ id: "local", name: "Option", on: "--flag" }],
-    envVariableMerges: [],
+    environmentVariableMerges: [],
   }
   const before = structuredClone(fixture.settings)
   const applying = applyManual()

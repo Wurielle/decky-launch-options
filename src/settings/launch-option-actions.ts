@@ -1,7 +1,7 @@
 import { set } from "es-toolkit/compat"
 import {
-  EnvVariableMerge,
-  envVariableMergeFactory,
+  EnvironmentVariableMerge,
+  environmentVariableMergeFactory,
   LaunchOption,
   launchOptionFactory,
 } from "../shared"
@@ -44,7 +44,7 @@ export function createLaunchOptionActions(setSettings: SetSettings) {
     },
     batchCreateLaunchOptions: (
       launchOptions: LaunchOption[],
-      envVariableMerges: EnvVariableMerge[] = [],
+      environmentVariableMerges: EnvironmentVariableMerge[] = [],
     ) => {
       setSettings((draft) => {
         const nextLaunchOptions = launchOptions.map(launchOptionFactory)
@@ -89,13 +89,13 @@ export function createLaunchOptionActions(setSettings: SetSettings) {
         })
         normalizeFallbackValues(draft)
         // Save the recipe's controls and merge rules in the same settings write.
-        envVariableMerges.forEach((merge) => {
-          const nextMerge = envVariableMergeFactory(merge)
-          const index = draft.envVariableMerges.findIndex(
+        environmentVariableMerges.forEach((merge) => {
+          const nextMerge = environmentVariableMergeFactory(merge)
+          const index = draft.environmentVariableMerges.findIndex(
             (item) => item.id === nextMerge.id,
           )
-          if (index === -1) draft.envVariableMerges.unshift(nextMerge)
-          else draft.envVariableMerges[index] = nextMerge
+          if (index === -1) draft.environmentVariableMerges.unshift(nextMerge)
+          else draft.environmentVariableMerges[index] = nextMerge
         })
       })
     },

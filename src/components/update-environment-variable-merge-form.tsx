@@ -1,24 +1,27 @@
 import { ConfirmModal, DialogButton, showModal } from "@decky/ui"
 import { useMemo } from "react"
 import { usePlugin } from "./plugin-provider"
-import { EnvVariableMergeFields } from "./env-variable-merge-fields"
+import { EnvironmentVariableMergeFields } from "./environment-variable-merge-fields"
 
-export function UpdateEnvVariableMergeForm({
+export function UpdateEnvironmentVariableMergeForm({
   id,
   onDelete,
 }: {
   id: string
   onDelete?: () => void
 }) {
-  const { updateEnvVariableMerge, deleteEnvVariableMerge, settings } =
-    usePlugin().settings
+  const {
+    updateEnvironmentVariableMerge,
+    deleteEnvironmentVariableMerge,
+    settings,
+  } = usePlugin().settings
 
   const data = useMemo(
     () =>
-      settings.envVariableMerges.find(
-        (envVariableMerge) => envVariableMerge.id === id,
+      settings.environmentVariableMerges.find(
+        (environmentVariableMerge) => environmentVariableMerge.id === id,
       ),
-    [settings.envVariableMerges, id],
+    [settings.environmentVariableMerges, id],
   )
 
   if (!data) return null
@@ -32,7 +35,7 @@ export function UpdateEnvVariableMergeForm({
         strOKButtonText="Confirm"
         strCancelButtonText="Cancel"
         onOK={async () => {
-          deleteEnvVariableMerge(data.id)
+          deleteEnvironmentVariableMerge(data.id)
           onDelete?.()
         }}
       />,
@@ -41,9 +44,11 @@ export function UpdateEnvVariableMergeForm({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
-      <EnvVariableMergeFields
+      <EnvironmentVariableMergeFields
         data={data}
-        onChange={(field, value) => updateEnvVariableMerge(data, field, value)}
+        onChange={(field, value) =>
+          updateEnvironmentVariableMerge(data, field, value)
+        }
       />
       <DialogButton style={{ flex: 1 }} onClick={remove}>
         <div

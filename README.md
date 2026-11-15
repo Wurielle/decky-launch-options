@@ -129,7 +129,7 @@ For each launch option that should appear in a dropdown:
 Some environment variables accept multiple joined values. If several launch options set the same variable, you can configure
 a merge so their values are joined instead of one overriding another.
 
-Click on **Manage env variable merges** in the plugin tab and add a **New merge**:
+Click on **Manage environment variable merges** in the plugin tab and add a **New merge**:
 
 ![Environment Variable Merges page](./assets/env-variable-merges.jpg)
 
@@ -319,7 +319,7 @@ window.dispatchEvent(new CustomEvent('dlo-add-recipe', {
             { id: 'mangohud-cpu-temp', name: 'CPU temperature', on: 'MANGOHUD_CONFIG="cpu_temp"' },
             { id: 'mangohud-gpu-temp', name: 'GPU temperature', on: 'MANGOHUD_CONFIG="gpu_temp"' },
         ],
-        envVariableMerges: [
+        environmentVariableMerges: [
             { id: 'mangohud-config', name: 'MANGOHUD_CONFIG', delimiter: ',' },
         ],
     },
@@ -328,8 +328,12 @@ window.dispatchEvent(new CustomEvent('dlo-add-recipe', {
 
 Each merge has an optional stable `id`, a case-sensitive variable `name`, and a literal `delimiter` (including `''` for
 direct concatenation). Reimporting a matching ID updates that rule without duplicating it; use the same ID for a shared
-variable across recipes. Unrelated rules and per-app selections are preserved. Omitting `envVariableMerges` or providing
+variable across recipes. Unrelated rules and per-app selections are preserved. Omitting `environmentVariableMerges` or providing
 an empty list leaves existing rules unchanged. Nothing is imported until the user accepts the dialog.
+
+Saved settings also use `environmentVariableMerges`. Older `envVariableMerges` settings are read automatically and use
+the full name on the next save. If both properties are present, `environmentVariableMerges` takes precedence, including
+an explicitly empty list.
 
 ### `LaunchOption` properties:
 
