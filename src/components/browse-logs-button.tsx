@@ -119,7 +119,7 @@ export function BrowseLogsButton() {
 
   return (
     <ButtonItem layout="below" disabled={isBrowsing} onClick={browseLogs}>
-      {isBrowsing ? "Opening logs…" : "Browse logs"}
+      {isBrowsing ? "Opening logs…" : "Browse recipe logs"}
     </ButtonItem>
   )
 }

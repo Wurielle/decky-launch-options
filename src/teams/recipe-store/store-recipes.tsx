@@ -86,7 +86,7 @@ export function StoreRecipes({ store }: { store: GithubStore }) {
           </LaunchOptionControl>
         </LaunchOptionControls>
       </Field>
-      {recipes.isPending ? (
+      {recipes.isPending || recipes.isFetching ? (
         <div
           role="status"
           aria-label="Loading recipes"

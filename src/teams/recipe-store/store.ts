@@ -14,6 +14,7 @@ export interface SavedStore {
 }
 
 export const recipeStoresStorageKey = "decky-launch-options-recipe-stores"
+const defaultStoreRemovedStorageKey = `${recipeStoresStorageKey}-default-removed`
 
 export const defaultRecipeStore: SavedStore = {
   url: "https://raw.githubusercontent.com/Wurielle/decky-launch-options-recipes/refs/heads/dev/store.json",
@@ -70,7 +71,10 @@ export function getStores(storage: StoreStorage = localStorage): SavedStore[] {
       throw new Error("Saved stores could not be read.")
     parseStore(item.store)
   }
-  if (!saved.some(({ url }) => url === defaultRecipeStore.url)) {
+  if (
+    storage.getItem(defaultStoreRemovedStorageKey) !== "true" &&
+    !saved.some(({ url }) => url === defaultRecipeStore.url)
+  ) {
     saved.unshift({
       url: defaultRecipeStore.url,
       store: parseStore(defaultRecipeStore.store),
@@ -91,8 +95,9 @@ export function saveStore(
 }
 
 export function deleteStore(url: string, storage: StoreStorage = localStorage) {
-  if (url === defaultRecipeStore.url) return getStores(storage)
   const stores = getStores(storage).filter((item) => item.url !== url)
+  if (url === defaultRecipeStore.url)
+    storage.setItem(defaultStoreRemovedStorageKey, "true")
   storage.setItem(recipeStoresStorageKey, JSON.stringify(stores))
   return stores
 }

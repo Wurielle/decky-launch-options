@@ -1,10 +1,16 @@
 import { fetchNoCors, toaster } from "@decky/api"
 import { DialogButton, Field, Focusable, TextField } from "@decky/ui"
 import { useEffect, useRef, useState } from "react"
-import { parseStore, saveStore } from "./store"
+import { defaultRecipeStore, parseStore, saveStore } from "./store"
 import { readClipboardText } from "../../utils/clipboard"
 
-export function AddStoreForm({ onAdded }: { onAdded: () => void }) {
+export function AddStoreForm({
+  onAdded,
+  hasDefaultStore,
+}: {
+  onAdded: () => void
+  hasDefaultStore: boolean
+}) {
   const [url, setUrl] = useState("")
   const [busy, setBusy] = useState(false)
   const [pasting, setPasting] = useState(false)
@@ -35,11 +41,11 @@ export function AddStoreForm({ onAdded }: { onAdded: () => void }) {
     }
   }
 
-  const add = async () => {
+  const add = async (sourceUrl: string) => {
     setBusy(true)
     setError("")
     try {
-      const source = new URL(url.trim())
+      const source = new URL(sourceUrl.trim())
       if (!["http:", "https:"].includes(source.protocol)) {
         throw new Error("Enter an HTTP or HTTPS URL to a store JSON file.")
       }
@@ -79,12 +85,24 @@ export function AddStoreForm({ onAdded }: { onAdded: () => void }) {
         <DialogButton disabled={busy || pasting} onClick={paste}>
           {pasting ? "Reading clipboard…" : "Paste from clipboard"}
         </DialogButton>
+        {!hasDefaultStore && (
+          <DialogButton
+            disabled={busy || pasting}
+            onClick={() => add(defaultRecipeStore.url)}
+          >
+            Add default store
+          </DialogButton>
+        )}
       </Focusable>
-      {error && <div role="alert">{error}</div>}
+      {error && (
+        <div role="alert" style={{ textAlign: "center" }}>
+          {error}
+        </div>
+      )}
       <DialogButton
         style={{ flex: 1 }}
         disabled={busy || pasting || !url.trim()}
-        onClick={add}
+        onClick={() => add(url)}
       >
         {busy ? "Adding store…" : "Add store"}
       </DialogButton>

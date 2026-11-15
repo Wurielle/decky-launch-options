@@ -10,6 +10,7 @@ import { useEffect, useRef, useState } from "react"
 import { ModalWrapper } from "../../launch-options/components/modal-wrapper"
 import { AddStoreForm } from "../add-store-form"
 import {
+  defaultRecipeStore,
   deleteStore,
   getStores,
   moveStore,
@@ -115,10 +116,13 @@ export function RecipeStorePage() {
                       onClick={() => {
                         const modal = showModal(
                           <ModalWrapper
-                            title="Add recipe store from URL"
+                            title="Add recipe store"
                             onClose={() => modal.Close()}
                           >
                             <AddStoreForm
+                              hasDefaultStore={stores.some(
+                                ({ url }) => url === defaultRecipeStore.url,
+                              )}
                               onAdded={() => {
                                 refreshStores()
                                 modal.Close()
@@ -128,10 +132,14 @@ export function RecipeStorePage() {
                         )
                       }}
                     >
-                      Add recipe store from URL
+                      Add recipe store
                     </ButtonItem>
                   </PanelSectionRow>
-                  {storeError && <div role="alert">{storeError}</div>}
+                  {storeError && (
+                    <div role="alert" style={{ textAlign: "center" }}>
+                      {storeError}
+                    </div>
+                  )}
                   <StoreList
                     stores={stores}
                     onMove={(url, direction) => {

@@ -257,7 +257,7 @@ test("moving stores persists their order without changing metadata or crossing b
   assert.deepEqual(getStores(storage), original)
 })
 
-test("the built-in dev store is available without saved data and cannot be deleted", () => {
+test("the default dev store can be deleted and stays removed when no stores remain", () => {
   const values = new Map()
   const storage = {
     getItem: (key) => values.get(key) ?? null,
@@ -265,11 +265,13 @@ test("the built-in dev store is available without saved data and cannot be delet
   }
   assert.deepEqual(getStores(storage), [defaultRecipeStore])
   assert.equal(defaultRecipeStore.store.github.branch, "dev")
-  assert.deepEqual(deleteStore(defaultRecipeStore.url, storage), [
-    defaultRecipeStore,
-  ])
-  storage.setItem(recipeStoresStorageKey, "[]")
+  assert.deepEqual(deleteStore(defaultRecipeStore.url, storage), [])
+  assert.deepEqual(getStores(storage), [])
+  assert.deepEqual(updateStore(defaultRecipeStore.url, manifest, storage), [])
+  saveStore(defaultRecipeStore.url, defaultRecipeStore.store, storage)
   assert.deepEqual(getStores(storage), [defaultRecipeStore])
+  assert.deepEqual(deleteStore(defaultRecipeStore.url, storage), [])
+  assert.deepEqual(getStores(storage), [])
 })
 
 test("the default is added to existing stores once and retains its reordered position and updates", () => {
@@ -286,7 +288,10 @@ test("the default is added to existing stores once and retains its reordered pos
   updateStore(defaultRecipeStore.url, updated, storage)
   const expected = [custom, { ...defaultRecipeStore, store: updated }]
   assert.deepEqual(getStores(storage), expected)
-  assert.deepEqual(deleteStore(defaultRecipeStore.url, storage), expected)
+  assert.deepEqual(deleteStore(defaultRecipeStore.url, storage), [custom])
+  assert.deepEqual(getStores(storage), [custom])
+  updateStore(custom.url, { ...manifest, name: "Updated custom" }, storage)
+  assert.equal(getStores(storage).length, 1)
   saveStore(defaultRecipeStore.url, updated, storage)
   assert.equal(
     getStores(storage).filter((item) => item.url === defaultRecipeStore.url)
