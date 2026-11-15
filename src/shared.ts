@@ -1,6 +1,7 @@
 import { v4 as uuid } from "uuid"
 
 export const batchCreateLaunchOptionsEventType = "dlo-add-launch-options"
+export const importRecipeEventType = "dlo-add-recipe"
 
 export const routes = {
   appLaunchOptions: (appid: number | string = ":appid") =>
@@ -75,6 +76,12 @@ export type EnvVariableMerge = {
   id: string
   name: string
   delimiter: string
+}
+
+export type Recipe = {
+  name: string
+  launchOptions?: Partial<LaunchOption>[]
+  envVariableMerges?: (Omit<EnvVariableMerge, "id"> & { id?: string })[]
 }
 
 export type Settings = {

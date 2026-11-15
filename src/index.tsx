@@ -3,7 +3,9 @@ import { definePlugin, routerHook } from "@decky/api"
 import { FaTerminal } from "react-icons/fa"
 import {
   batchCreateLaunchOptionsEventType,
+  importRecipeEventType,
   LaunchOption,
+  Recipe,
   routes,
 } from "./shared"
 import { LaunchOptionsPage } from "./teams/launch-options/views"
@@ -18,7 +20,10 @@ import {
 } from "./query"
 import { libraryAppPatch } from "./patches/library-app"
 import { Content } from "./components/content"
-import { batchCreateLaunchOptions } from "./components/batch-add-launch-options"
+import {
+  batchCreateLaunchOptions,
+  importRecipe,
+} from "./components/batch-add-launch-options"
 import {
   applyProfileLaunchOptions,
   launchOptionsLifecycle,
@@ -80,10 +85,15 @@ export default definePlugin(() => {
     batchCreateLaunchOptions(event.detail)
   }
 
+  function onImportRecipe(event: CustomEvent<Recipe>) {
+    importRecipe(event.detail)
+  }
+
   window.addEventListener(
     batchCreateLaunchOptionsEventType as any,
     onBatchCreateLaunchOptions,
   )
+  window.addEventListener(importRecipeEventType as any, onImportRecipe)
   ;(window as any).hasDeckyLaunchOptions = true
   return {
     name: "Launch Options",
@@ -121,6 +131,7 @@ export default definePlugin(() => {
         batchCreateLaunchOptionsEventType as any,
         onBatchCreateLaunchOptions,
       )
+      window.removeEventListener(importRecipeEventType as any, onImportRecipe)
       delete (window as any).hasDeckyLaunchOptions
     },
   }

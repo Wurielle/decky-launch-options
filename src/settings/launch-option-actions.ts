@@ -1,5 +1,10 @@
 import { set } from "es-toolkit/compat"
-import { LaunchOption, launchOptionFactory } from "../shared"
+import {
+  EnvVariableMerge,
+  envVariableMergeFactory,
+  LaunchOption,
+  launchOptionFactory,
+} from "../shared"
 import {
   clearProfileState,
   getCopyLabel,
@@ -37,7 +42,10 @@ export function createLaunchOptionActions(setSettings: SetSettings) {
         normalizeFallbackValues(draft)
       })
     },
-    batchCreateLaunchOptions: (launchOptions: LaunchOption[]) => {
+    batchCreateLaunchOptions: (
+      launchOptions: LaunchOption[],
+      envVariableMerges: EnvVariableMerge[] = [],
+    ) => {
       setSettings((draft) => {
         const nextLaunchOptions = launchOptions.map(launchOptionFactory)
         const existingGlobalIds = new Set(
@@ -80,6 +88,15 @@ export function createLaunchOptionActions(setSettings: SetSettings) {
           }
         })
         normalizeFallbackValues(draft)
+        // Save the recipe's controls and merge rules in the same settings write.
+        envVariableMerges.forEach((merge) => {
+          const nextMerge = envVariableMergeFactory(merge)
+          const index = draft.envVariableMerges.findIndex(
+            (item) => item.id === nextMerge.id,
+          )
+          if (index === -1) draft.envVariableMerges.unshift(nextMerge)
+          else draft.envVariableMerges[index] = nextMerge
+        })
       })
     },
     updateLaunchOption: (

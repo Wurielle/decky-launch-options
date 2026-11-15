@@ -305,6 +305,32 @@ You can also check if Decky Launch Options is available with:
 (window as any).hasDeckyLaunchOptions
 ```
 
+### Import a recipe
+
+Dispatch `dlo-add-recipe` with a recipe object to review and import its launch options and environment variable merges
+together. Either list can be omitted: a recipe can contain launch options, merge rules, or both. The existing
+`dlo-add-launch-options` event remains available for importing a launch option array.
+
+```typescript
+window.dispatchEvent(new CustomEvent('dlo-add-recipe', {
+    detail: {
+        name: 'MangoHud',
+        launchOptions: [
+            { id: 'mangohud-cpu-temp', name: 'CPU temperature', on: 'MANGOHUD_CONFIG="cpu_temp"' },
+            { id: 'mangohud-gpu-temp', name: 'GPU temperature', on: 'MANGOHUD_CONFIG="gpu_temp"' },
+        ],
+        envVariableMerges: [
+            { id: 'mangohud-config', name: 'MANGOHUD_CONFIG', delimiter: ',' },
+        ],
+    },
+}));
+```
+
+Each merge has an optional stable `id`, a case-sensitive variable `name`, and a literal `delimiter` (including `''` for
+direct concatenation). Reimporting a matching ID updates that rule without duplicating it; use the same ID for a shared
+variable across recipes. Unrelated rules and per-app selections are preserved. Omitting `envVariableMerges` or providing
+an empty list leaves existing rules unchanged. Nothing is imported until the user accepts the dialog.
+
 ### `LaunchOption` properties:
 
 | Property         | Type      | Description                                                                                                |
