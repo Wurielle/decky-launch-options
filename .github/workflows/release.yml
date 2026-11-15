@@ -158,7 +158,7 @@ jobs:
           version: 10.34.4
 
       - name: Set store build version
-        run: npm pkg set "version=${RELEASE_TAG#v}"
+        run: npm pkg set "version=${RELEASE_TAG#v}-with-store"
 
       - name: Decky CLI Build
         run: |
