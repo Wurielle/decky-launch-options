@@ -1,15 +1,27 @@
 import { set } from "es-toolkit/compat"
-import { LaunchOption, launchOptionFactory } from "../shared"
+import {
+  EnvironmentVariableMerge,
+  environmentVariableMergeFactory,
+  LaunchOption,
+  launchOptionFactory,
+} from "../shared"
 import {
   clearProfileState,
   getCopyLabel,
   getCopyValueId,
   normalizeFallbackValues,
-} from "../utils"
+} from "../utils/settings"
 import { SetSettings } from "./types"
 
 export function createLaunchOptionActions(setSettings: SetSettings) {
   return {
+    updateLaunchOptionsGroup: (group: string, nextGroup: string) => {
+      setSettings((draft) => {
+        draft.launchOptions.forEach((item) => {
+          if (item.group === group) item.group = nextGroup
+        })
+      })
+    },
     swapLaunchOptions: (id: string, targetId: string) => {
       setSettings((draft) => {
         const index = draft.launchOptions.findIndex((item) => item.id === id)
@@ -30,7 +42,10 @@ export function createLaunchOptionActions(setSettings: SetSettings) {
         normalizeFallbackValues(draft)
       })
     },
-    batchCreateLaunchOptions: (launchOptions: LaunchOption[]) => {
+    batchCreateLaunchOptions: (
+      launchOptions: LaunchOption[],
+      environmentVariableMerges: EnvironmentVariableMerge[] = [],
+    ) => {
       setSettings((draft) => {
         const nextLaunchOptions = launchOptions.map(launchOptionFactory)
         const existingGlobalIds = new Set(
@@ -73,6 +88,15 @@ export function createLaunchOptionActions(setSettings: SetSettings) {
           }
         })
         normalizeFallbackValues(draft)
+        // Save the recipe's controls and merge rules in the same settings write.
+        environmentVariableMerges.forEach((merge) => {
+          const nextMerge = environmentVariableMergeFactory(merge)
+          const index = draft.environmentVariableMerges.findIndex(
+            (item) => item.id === nextMerge.id,
+          )
+          if (index === -1) draft.environmentVariableMerges.unshift(nextMerge)
+          else draft.environmentVariableMerges[index] = nextMerge
+        })
       })
     },
     updateLaunchOption: (

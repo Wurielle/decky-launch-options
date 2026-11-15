@@ -1,18 +1,18 @@
 import { DialogButton, Menu, MenuItem, showContextMenu } from "@decky/ui"
 import { FaEllipsisV } from "react-icons/fa"
 
-export interface BackupAction {
+export interface MenuAction {
   label: string
   tone?: "destructive"
   onSelected: () => void
 }
 
-export function BackupActionButton({
+export function ActionMenuButton({
   label,
   actions,
 }: {
   label: string
-  actions: BackupAction[]
+  actions: MenuAction[]
 }) {
   const showActions = (event: any) => {
     let menu: ReturnType<typeof showContextMenu>
@@ -39,6 +39,7 @@ export function BackupActionButton({
 
   return (
     <DialogButton
+      aria-label={label}
       style={{
         minWidth: 40,
         width: 40,

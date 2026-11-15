@@ -8,7 +8,7 @@ from pathlib import Path
 from shared import SETTINGS_FOLDER_PATH, SETTINGS_PATH
 
 LOG_FILE = os.path.join(SETTINGS_FOLDER_PATH, 'debug.log')
-DEFAULT_ENV_VARIABLE_MERGES = [
+DEFAULT_ENVIRONMENT_VARIABLE_MERGES = [
     {"name": "WINEDLLOVERRIDES", "delimiter": ";"},
     {"name": "MANGOHUD_CONFIG", "delimiter": ","},
     {"name": "DXVK_CONFIG", "delimiter": ";"},
@@ -67,6 +67,13 @@ def is_non_steam_appid(appid):
         return _to_uint32(appid) >= 0x80000000
     except (TypeError, ValueError):
         return False
+
+
+def is_env_assignment(part):
+    # Looser than the shell on purpose: names like OptiScaler_V-Sync_X are
+    # valid for execve and already used in recipes. A / in the key means a path.
+    key, separator, _ = part.partition('=')
+    return bool(key and separator) and not part.startswith('-') and '/' not in key
 
 
 def split_command_args(raw_command):
@@ -180,13 +187,10 @@ def parse_launch_option(raw_command):
         temp_right = []
 
         for part in parts:
-            # Check if it's an env var
-            if '=' in part and not part.startswith('-'):
-                key_part = part.split('=', 1)[0]
-                if '/' not in key_part:
-                    # It's an env var, goes to left
-                    temp_left.append(part)
-                    continue
+            # Check if it's an env var, goes to left
+            if is_env_assignment(part):
+                temp_left.append(part)
+                continue
 
             # Not an env var - check if it looks like a game arg
             if part.startswith('-') or part.startswith('+'):
@@ -207,16 +211,13 @@ def parse_launch_option(raw_command):
     env_vars = {}
     prefix = []
 
-    for part in left_parts:
-        if '=' in part and not part.startswith('-'):
-            # Check if it looks like an env var (key part has no /)
-            key_part = part.split('=', 1)[0]
-            if '/' not in key_part:
-                key, value = part.split('=', 1)
-                env_vars[key] = value
-            else:
-                # Looks like a path with =, treat as prefix
-                prefix.append(part)
+    for index, part in enumerate(left_parts):
+        # The argument of -c is an inline script (bash -c 'X=1; exec "$@"'),
+        # not an assignment to hoist into the environment.
+        is_inline_script = index > 0 and left_parts[index - 1] == '-c'
+        if is_env_assignment(part) and not is_inline_script:
+            key, value = part.split('=', 1)
+            env_vars[key] = value
         else:
             prefix.append(part)
 
@@ -228,9 +229,12 @@ def parse_launch_option(raw_command):
     }
 
 
-def get_env_variable_merge_rules(settings):
+def get_environment_variable_merge_rules(settings):
     rules = {}
-    merge_rules = settings.get("envVariableMerges", DEFAULT_ENV_VARIABLE_MERGES)
+    merge_rules = settings.get(
+        "environmentVariableMerges",
+        settings.get("envVariableMerges", DEFAULT_ENVIRONMENT_VARIABLE_MERGES),
+    )
     for rule in merge_rules:
         name = str(rule.get("name", "")).strip()
         delimiter = rule.get("delimiter")
@@ -320,7 +324,7 @@ def get_shell_command_log_details(executable_args):
     }
 
 
-def get_final_args_details(settings, appid):
+def get_final_args_details(settings, appid, skipped_prefixes=None):
     base_args = sys.argv[1:]
 
     # Safely access settings structure
@@ -340,7 +344,7 @@ def get_final_args_details(settings, appid):
     is_non_steam_app = is_non_steam_appid(appid)
 
     # Collections for all launch option components
-    env_merge_rules = get_env_variable_merge_rules(settings)
+    environment_merge_rules = get_environment_variable_merge_rules(settings)
     all_env_var_values = {}
     all_pre_commands = []
     all_prefixes = []
@@ -356,7 +360,7 @@ def get_final_args_details(settings, appid):
                 all_suffix_groups.append(protected_original_args)
         else:
             parsed = parse_launch_option(profile_original_launch_options)
-            add_env_vars(all_env_var_values, env_merge_rules, parsed['env_vars'])
+            add_env_vars(all_env_var_values, environment_merge_rules, parsed['env_vars'])
             all_pre_commands.extend(parsed['pre_commands'])
             if parsed['prefix']:
                 all_prefixes.append(parsed['prefix'])
@@ -418,7 +422,7 @@ def get_final_args_details(settings, appid):
     # lowest to highest priority. The stable sort preserves the existing behavior
     # where a later option wins when priorities are equal.
     for priority, parsed in sorted(launch_option_parts, key=lambda x: x[0]):
-        add_env_vars(all_env_var_values, env_merge_rules, parsed['env_vars'])
+        add_env_vars(all_env_var_values, environment_merge_rules, parsed['env_vars'])
 
     # Merge command parts in execution order.
     for priority, parsed in launch_option_parts:
@@ -428,7 +432,7 @@ def get_final_args_details(settings, appid):
         if parsed['suffix']:
             all_suffix_groups.append(parsed['suffix'])
 
-    all_env_vars = finalize_env_vars(all_env_var_values, env_merge_rules)
+    all_env_vars = finalize_env_vars(all_env_var_values, environment_merge_rules)
 
     # Apply all environment variables
     for key, value in all_env_vars.items():
@@ -439,8 +443,8 @@ def get_final_args_details(settings, appid):
 
     # Add all prefixes
     for prefix in all_prefixes:
-        # Expand ~ in paths
-        expanded_prefix = [part.replace("~", os.path.expanduser("~")) for part in prefix]
+        # Expand a leading ~ like the shell does, leaving e.g. PROGRA~1 alone
+        expanded_prefix = [os.path.expanduser(part) for part in prefix]
 
         # Check if the command/executable exists
         if expanded_prefix:
@@ -448,7 +452,9 @@ def get_final_args_details(settings, appid):
             # Check if it's an executable in PATH or an existing file
             if shutil.which(first_part) or os.path.isfile(first_part):
                 final_args.extend(expanded_prefix)
-        # else: skip this prefix silently if command doesn't exist
+            # Skip a missing wrapper so the game still starts, but report it
+            elif skipped_prefixes is not None:
+                skipped_prefixes.append(expanded_prefix)
         else:
             final_args.extend(expanded_prefix)
 
@@ -480,13 +486,17 @@ if __name__ == "__main__":
 
         executable_args = args
         applied_env_vars = {}
+        skipped_prefixes = []
         if settings:
             try:
-                executable_args, applied_env_vars = get_final_args_details(settings, appid)
+                executable_args, applied_env_vars = get_final_args_details(
+                    settings, appid, skipped_prefixes
+                )
             except Exception:
                 # Failed to apply launch options, fall back to original command
                 executable_args = args
                 applied_env_vars = {}
+                skipped_prefixes = []
 
         # Try to write logs, but don't let it block execution
         try:
@@ -525,6 +535,12 @@ if __name__ == "__main__":
                     for i, arg in enumerate(executable_args):
                         f.write(f"{i:02d}: {arg}\n")
                     f.write("\n")
+
+                    if skipped_prefixes:
+                        f.write("[Skipped Wrappers (command not found)]\n")
+                        for i, prefix in enumerate(skipped_prefixes):
+                            f.write(f"{i:02d}: {' '.join(prefix)}\n")
+                        f.write("\n")
 
                     f.write("[Applied Environment Variables]\n")
                     if applied_env_vars:

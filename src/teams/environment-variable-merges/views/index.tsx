@@ -2,37 +2,40 @@ import { DialogBody, SidebarNavigation, SteamSpinner } from "@decky/ui"
 import { useEffect, useMemo, useState } from "react"
 import { FaPlus, FaCodeBranch } from "react-icons/fa"
 import { PluginProvider } from "../../../components/plugin-provider"
-import { CreateEnvVariableMergeForm } from "../../../components/create-env-variable-merge-form"
-import { UpdateEnvVariableMergeForm } from "../../../components/update-env-variable-merge-form"
+import { CreateEnvironmentVariableMergeForm } from "../../../components/create-environment-variable-merge-form"
+import { UpdateEnvironmentVariableMergeForm } from "../../../components/update-environment-variable-merge-form"
 import { useSettings } from "../../../hooks"
 import { routes } from "../../../shared"
 
-export function EnvVariableMergesPage() {
+export function EnvironmentVariableMergesPage() {
   const { settings, loading } = useSettings()
-  const newEnvVariableMergeRoute = routes.envVariableMergesManagerItem("new")
-  const [activePage, setActivePage] = useState<string>(newEnvVariableMergeRoute)
+  const newEnvironmentVariableMergeRoute =
+    routes.environmentVariableMergesManagerItem("new")
+  const [activePage, setActivePage] = useState<string>(
+    newEnvironmentVariableMergeRoute,
+  )
 
   const navKey = useMemo(
-    () => settings.envVariableMerges.map(({ id }) => id).join("|"),
-    [settings.envVariableMerges],
+    () => settings.environmentVariableMerges.map(({ id }) => id).join("|"),
+    [settings.environmentVariableMerges],
   )
 
   const pageRoutes = useMemo(
     () =>
       new Set<string>([
-        newEnvVariableMergeRoute,
-        ...settings.envVariableMerges.map((item) =>
-          routes.envVariableMergesManagerItem(item.id),
+        newEnvironmentVariableMergeRoute,
+        ...settings.environmentVariableMerges.map((item) =>
+          routes.environmentVariableMergesManagerItem(item.id),
         ),
       ]),
-    [newEnvVariableMergeRoute, settings.envVariableMerges],
+    [newEnvironmentVariableMergeRoute, settings.environmentVariableMerges],
   )
 
   useEffect(() => {
     if (!pageRoutes.has(activePage)) {
-      setActivePage(newEnvVariableMergeRoute)
+      setActivePage(newEnvironmentVariableMergeRoute)
     }
-  }, [activePage, newEnvVariableMergeRoute, pageRoutes])
+  }, [activePage, newEnvironmentVariableMergeRoute, pageRoutes])
 
   return (
     <PluginProvider>
@@ -50,22 +53,22 @@ export function EnvVariableMergesPage() {
             {
               icon: <FaPlus />,
               title: "New merge",
-              identifier: "new-env-variable-merge",
-              route: routes.envVariableMergesManagerItem("new"),
+              identifier: "new-environment-variable-merge",
+              route: routes.environmentVariableMergesManagerItem("new"),
               content: (
                 <DialogBody>
-                  <CreateEnvVariableMergeForm />
+                  <CreateEnvironmentVariableMergeForm />
                 </DialogBody>
               ),
             },
-            ...settings.envVariableMerges.map(({ id, name }) => ({
+            ...settings.environmentVariableMerges.map(({ id, name }) => ({
               icon: <FaCodeBranch />,
               title: name || "Unnamed",
               identifier: id,
-              route: routes.envVariableMergesManagerItem(id),
+              route: routes.environmentVariableMergesManagerItem(id),
               content: (
                 <DialogBody>
-                  <UpdateEnvVariableMergeForm key={id || ""} id={id} />
+                  <UpdateEnvironmentVariableMergeForm key={id || ""} id={id} />
                 </DialogBody>
               ),
             })),

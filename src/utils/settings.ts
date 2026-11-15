@@ -1,17 +1,20 @@
 import { WritableDraft } from "immer"
 import { v4 as uuid } from "uuid"
 import {
-  defaultEnvVariableMerges,
-  envVariableMergeFactory,
+  defaultEnvironmentVariableMerges,
+  environmentVariableMergeFactory,
   LaunchOption,
   Settings,
+  StoredSettings,
 } from "../shared"
 
-export function normalizeSettings(nextSettings?: Settings | null): Settings {
-  const envVariableMerges =
-    nextSettings?.envVariableMerges === undefined
-      ? defaultEnvVariableMerges
-      : nextSettings.envVariableMerges
+export function normalizeSettings(
+  nextSettings?: StoredSettings | null,
+): Settings {
+  const environmentVariableMerges =
+    nextSettings?.environmentVariableMerges ??
+    nextSettings?.envVariableMerges ??
+    defaultEnvironmentVariableMerges
 
   return {
     profiles: nextSettings?.profiles || {},
@@ -22,8 +25,8 @@ export function normalizeSettings(nextSettings?: Settings | null): Settings {
       fallbackValue: !!item.fallbackValue,
       priority: item.priority || 0,
     })),
-    envVariableMerges: envVariableMerges.map((item) =>
-      envVariableMergeFactory(item),
+    environmentVariableMerges: environmentVariableMerges.map((item) =>
+      environmentVariableMergeFactory(item),
     ),
   }
 }

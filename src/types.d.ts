@@ -1,3 +1,7 @@
+interface Window {
+  dloLaunchOptionsRestored?: Promise<unknown>
+}
+
 declare module "*.svg" {
   const content: string
   export default content

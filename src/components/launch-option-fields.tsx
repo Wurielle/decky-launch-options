@@ -41,7 +41,7 @@ function QuickSelectField({
   value: string
   options: SingleDropdownOption[]
   restoreFocus: boolean
-  onQuickSelect: () => void
+  onQuickSelect?: () => void
   onChange: (value: string) => void
 }) {
   const { setControl } = useLaunchOptionFocus()
@@ -79,7 +79,7 @@ function QuickSelectField({
               strDefaultLabel={quickSelectLabel}
               onChange={(option: SingleDropdownOption) => {
                 setControl("quick-select")
-                onQuickSelect()
+                onQuickSelect?.()
                 onChange(option.data)
                 // Reset this picker to its prompt and restore its row's focus.
                 setVersion((current) => current + 1)
@@ -89,6 +89,48 @@ function QuickSelectField({
         </LaunchOptionControls>
       </Field>
     </Focusable>
+  )
+}
+
+export function LaunchOptionGroupField({
+  value,
+  onChange,
+  description = "Groups this launch option under a named tab",
+  restoreFocus = true,
+  onQuickSelect,
+}: {
+  value: string
+  onChange: (value: string) => void
+  description?: string
+  restoreFocus?: boolean
+  onQuickSelect?: () => void
+}) {
+  const { settings } = usePlugin().settings
+  const options = useMemo(
+    () => [
+      { data: "", label: "None\u00A0\u00A0" },
+      ...Array.from(
+        new Set(
+          settings.launchOptions.map((item) => item.group).filter(Boolean),
+        ),
+      )
+        .sort((a, b) => a.localeCompare(b))
+        .map((group) => ({ data: group, label: `${group}\u00A0\u00A0` })),
+    ],
+    [settings.launchOptions],
+  )
+
+  return (
+    <QuickSelectField
+      label="Group"
+      description={description}
+      placeholder="E.g.: Favorites"
+      value={value}
+      options={options}
+      restoreFocus={restoreFocus}
+      onQuickSelect={onQuickSelect}
+      onChange={onChange}
+    />
   )
 }
 
@@ -123,19 +165,6 @@ export function LaunchOptionFields({
   useEffect(() => {
     setPriorityInput(formatPriority(data.priority))
   }, [data.id, data.priority])
-  const groupQuickSelectOptions = useMemo(
-    () => [
-      { data: "", label: "None\u00A0\u00A0" },
-      ...Array.from(
-        new Set(
-          settings.launchOptions.map((item) => item.group).filter(Boolean),
-        ),
-      )
-        .sort((a, b) => a.localeCompare(b))
-        .map((group) => ({ data: group, label: `${group}\u00A0\u00A0` })),
-    ],
-    [settings.launchOptions],
-  )
   const valueIdQuickSelectOptions = useMemo(
     () => [
       { data: "", label: "None\u00A0\u00A0" },
@@ -235,12 +264,8 @@ export function LaunchOptionFields({
       {showAdvanced && (
         <>
           <LaunchOptionFocusProvider key={data.id}>
-            <QuickSelectField
-              label="Group"
-              description="Groups this launch option under a named tab"
-              placeholder="E.g.: Favorites"
+            <LaunchOptionGroupField
               value={data.group}
-              options={groupQuickSelectOptions}
               restoreFocus={
                 quickSelectFocus?.id === data.id &&
                 quickSelectFocus.field === "group"

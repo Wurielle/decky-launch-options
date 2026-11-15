@@ -4,11 +4,19 @@ import { useStore } from "@tanstack/react-store"
 import { get_shortcut_launch_options, has_shell_script } from "../api"
 import { useSettings } from "../hooks"
 import { settingsStore } from "../stores"
+import { profileFactory } from "../shared"
 import {
   appLaunchOptionsIncludesDloCommand,
+  launchOptionsLifecycle,
+  normalizeSettings,
   setAppLaunchOptions,
 } from "../utils"
-import { useBackupOriginalLaunchOptionsMutation } from "./settings"
+import {
+  getSettingsQueryOptions,
+  queryClient,
+  useBackupOriginalLaunchOptionsMutation,
+  useSetSettingsMutation,
+} from "./settings"
 
 type SetDloLaunchOptionsData = {
   appid: number
@@ -45,33 +53,45 @@ function getDloLaunchOptionsContext(
 }
 
 const useDloLaunchOptionsActions = () => {
-  const {
-    setAppOriginalLaunchOptions,
-    getAppOriginalLaunchOptions,
-    getAppDisableAutoManageLaunchOptions,
-  } = useSettings()
+  const { getAppOriginalLaunchOptions, getAppDisableAutoManageLaunchOptions } =
+    useSettings()
   const backupOriginalLaunchOptionsMutation =
     useBackupOriginalLaunchOptionsMutation()
+  const setSettingsMutation = useSetSettingsMutation()
 
   return {
     getAppDisableAutoManageLaunchOptions,
-    saveOriginalLaunchOptions(
+    async saveOriginalLaunchOptions(
       appid: number,
       partialContext: PartialSetDloLaunchOptionsContext,
       hasShellScript: boolean,
-    ): SetDloLaunchOptionsContext {
-      if (partialContext.originalLaunchOptions?.trim()) {
-        backupOriginalLaunchOptionsMutation.mutate(
-          {
-            appid: String(appid),
-            command: partialContext.originalLaunchOptions,
+    ): Promise<SetDloLaunchOptionsContext> {
+      const originalLaunchOptions = partialContext.originalLaunchOptions
+      if (
+        originalLaunchOptions !== null &&
+        (hasShellScript || originalLaunchOptions.trim())
+      ) {
+        if (originalLaunchOptions.trim())
+          backupOriginalLaunchOptionsMutation.mutate(
+            {
+              appid: String(appid),
+              command: originalLaunchOptions,
+            },
+            { onError: () => undefined },
+          )
+        const settings = normalizeSettings(
+          await queryClient.ensureQueryData(getSettingsQueryOptions),
+        )
+        await setSettingsMutation.mutateAsync({
+          ...settings,
+          profiles: {
+            ...settings.profiles,
+            [appid]: profileFactory({
+              ...settings.profiles[String(appid)],
+              originalLaunchOptions,
+            }),
           },
-          { onError: () => undefined },
-        )
-        setAppOriginalLaunchOptions(
-          String(appid),
-          partialContext.originalLaunchOptions,
-        )
+        })
       }
 
       return {
@@ -84,7 +104,7 @@ const useDloLaunchOptionsActions = () => {
       data: Pick<SetDloLaunchOptionsData, "appid">,
       missingShellLaunchOptions?: string,
     ) {
-      if (!context) return
+      if (!context || !launchOptionsLifecycle.active) return
 
       if (context.hasShellScript) {
         setAppLaunchOptions(data.appid, context.currentLaunchOptions)
@@ -92,6 +112,7 @@ const useDloLaunchOptionsActions = () => {
         setAppLaunchOptions(
           data.appid,
           missingShellLaunchOptions ??
+            context.originalLaunchOptions ??
             getAppOriginalLaunchOptions(String(data.appid)),
         )
       }
