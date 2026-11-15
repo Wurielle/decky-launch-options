@@ -11,6 +11,11 @@ export interface DloCommandInfo {
   FULL_SH_COMMAND_PATH: string
 }
 
+export interface RestoredAppLaunchOptions {
+  originalLaunchOptions: string
+  managedLaunchOptions: string
+}
+
 export type AppLaunchOptionsUpdatedEvent = CustomEvent<{
   appid: number
   launchOptions: string
@@ -113,17 +118,22 @@ function updateAppLaunchOptions(
   })
 }
 
-export function restoreAppLaunchOptions(
+export async function restoreAppLaunchOptions(
   appid: number,
   profile: Profile,
   info?: DloCommandInfo,
-): Promise<void> {
-  if (!info) return Promise.resolve()
-  return updateAppLaunchOptions(appid, (current) =>
-    appLaunchOptionsIncludesSupportedDloCommand(current, info)
-      ? profile.originalLaunchOptions
-      : undefined,
-  )
+): Promise<RestoredAppLaunchOptions | undefined> {
+  if (!info) return
+  let restored: RestoredAppLaunchOptions | undefined
+  await updateAppLaunchOptions(appid, (current) => {
+    if (!appLaunchOptionsIncludesSupportedDloCommand(current, info)) return
+    restored = {
+      originalLaunchOptions: profile.originalLaunchOptions,
+      managedLaunchOptions: current,
+    }
+    return profile.originalLaunchOptions
+  })
+  return restored
 }
 
 export function applyProfileLaunchOptions(
@@ -131,13 +141,19 @@ export function applyProfileLaunchOptions(
   profile: Profile,
   info: DloCommandInfo,
   autoManage: { steam: boolean; nonSteam: boolean },
+  restored?: RestoredAppLaunchOptions,
 ): Promise<void> {
   return updateAppLaunchOptions(appid, (current, isNonSteamApp) => {
+    if (!launchOptionsLifecycle.active) return undefined
+    // Reload resumes commands that were already applied, including manual
+    // Apply with auto-management off. Do not replace edits made since unload.
     if (
-      !launchOptionsLifecycle.active ||
-      profile.disableAutoManageLaunchOptions
+      restored &&
+      current === restored.originalLaunchOptions &&
+      profile.originalLaunchOptions === restored.originalLaunchOptions
     )
-      return undefined
+      return restored.managedLaunchOptions
+    if (profile.disableAutoManageLaunchOptions) return undefined
     if (!(isNonSteamApp ? autoManage.nonSteam : autoManage.steam))
       return undefined
     // Only recover the original value left by unload. Other edits still go
