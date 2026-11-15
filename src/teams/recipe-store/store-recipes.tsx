@@ -11,7 +11,7 @@ import {
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import { FaSyncAlt } from "react-icons/fa"
-import { batchCreateLaunchOptions } from "../../components/batch-add-launch-options"
+import { importRecipeEventType } from "../../shared"
 import {
   LaunchOptionControl,
   LaunchOptionControls,
@@ -123,7 +123,13 @@ export function StoreRecipes({ store }: { store: GithubStore }) {
               <PanelSectionRow>
                 <ButtonItem
                   layout="below"
-                  onClick={() => batchCreateLaunchOptions(recipe.launchOptions)}
+                  onClick={() =>
+                    window.dispatchEvent(
+                      new CustomEvent(importRecipeEventType, {
+                        detail: recipe,
+                      }),
+                    )
+                  }
                 >
                   {recipe.name}
                 </ButtonItem>

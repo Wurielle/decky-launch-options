@@ -1,10 +1,5 @@
-import type { LaunchOption } from "../../shared"
+import type { Recipe } from "../../shared"
 import type { GithubStore } from "./store"
-
-export interface Recipe {
-  name: string
-  launchOptions: Partial<LaunchOption>[]
-}
 
 export function getRecipesUrl(store: GithubStore): string {
   const repository = store.github.repository
@@ -25,11 +20,18 @@ export function parseRecipes(value: unknown): Recipe[] {
       !item ||
       typeof item.name !== "string" ||
       !item.name.trim() ||
-      !Array.isArray(item.launchOptions)
+      (item.launchOptions === undefined &&
+        item.environmentVariableMerges === undefined) ||
+      (item.launchOptions !== undefined &&
+        !Array.isArray(item.launchOptions)) ||
+      (item.environmentVariableMerges !== undefined &&
+        !Array.isArray(item.environmentVariableMerges))
     ) {
-      throw new Error("Each recipe must have a name and a launchOptions array.")
+      throw new Error(
+        "Each recipe must have a name and a launchOptions or environmentVariableMerges array.",
+      )
     }
-    for (const option of item.launchOptions) {
+    for (const option of item.launchOptions ?? []) {
       if (
         !option ||
         typeof option !== "object" ||
@@ -51,6 +53,29 @@ export function parseRecipes(value: unknown): Recipe[] {
         throw new Error(`Invalid launch option in recipe "${item.name}".`)
       }
     }
-    return { name: item.name, launchOptions: item.launchOptions }
+    for (const merge of item.environmentVariableMerges ?? []) {
+      if (
+        !merge ||
+        typeof merge !== "object" ||
+        Array.isArray(merge) ||
+        ("id" in merge && typeof merge.id !== "string") ||
+        typeof merge.name !== "string" ||
+        !merge.name.trim() ||
+        typeof merge.delimiter !== "string"
+      ) {
+        throw new Error(
+          `Invalid environment variable merge in recipe "${item.name}".`,
+        )
+      }
+    }
+    return {
+      name: item.name,
+      ...(item.launchOptions === undefined
+        ? {}
+        : { launchOptions: item.launchOptions }),
+      ...(item.environmentVariableMerges === undefined
+        ? {}
+        : { environmentVariableMerges: item.environmentVariableMerges }),
+    }
   })
 }

@@ -6,9 +6,12 @@ import path from "node:path"
 import ts from "typescript"
 import { produce } from "immer"
 import {
+  batchCreateLaunchOptionsEventType,
   defaultEnvironmentVariableMerges,
+  importRecipeEventType,
   launchOptionFactory,
 } from "../src/shared.ts"
+import { parseRecipes } from "../src/teams/recipe-store/recipes.ts"
 
 const fileURL = (name) => pathToFileURL(path.resolve(name)).href
 const dataURL = (source) =>
@@ -80,8 +83,31 @@ const dialog = await import(
   })
 )
 
+const { StoreRecipes } = await import(
+  await sourceModule("src/teams/recipe-store/store-recipes.tsx", {
+    "../../shared": shared,
+    "./recipes": fileURL("src/teams/recipe-store/recipes.ts"),
+    "@decky/api": dataURL(
+      `export const fetchNoCors = () => { throw new Error('Unexpected network call'); };`,
+    ),
+    "@decky/ui": dataURL(
+      `export * from '${ui}'; export const ButtonItem='ButtonItem', Field='Field', PanelSectionRow='PanelSectionRow', SteamSpinner='SteamSpinner', TextField='TextField';`,
+    ),
+    "@tanstack/react-query": dataURL(
+      `export const useQuery = options => ({data:options.select(globalThis.__dloRecipeFixture.catalog),isPending:false,isFetching:false});`,
+    ),
+    react,
+    "react/jsx-runtime": jsx,
+    "react-icons/fa": dataURL(`export const FaSyncAlt='FaSyncAlt';`),
+    "../../components/launch-option-focus": dataURL(
+      `export const LaunchOptionControl='LaunchOptionControl', LaunchOptionControls='LaunchOptionControls', LaunchOptionFocusList='LaunchOptionFocusList';`,
+    ),
+  })
+)
+
 let fixture
 beforeEach(() => {
+  globalThis.window = new EventTarget()
   fixture = {
     settings: {
       profiles: {},
@@ -147,6 +173,50 @@ test("recipe review shows commands and merge delimiters, then saves both in one 
     defaultEnvironmentVariableMerges,
   )
   assert.equal(fixture.modals[0].closed, true)
+})
+
+test("clicking a store recipe sends the whole recipe through the new event into the review and save", () => {
+  const source = {
+    ...recipe,
+    environmentVariableMerges: [
+      { id: "custom", name: "CUSTOM_CONFIG", delimiter: "::" },
+    ],
+  }
+  fixture.catalog = parseRecipes([source])
+  let received
+  let legacyEvents = 0
+  window.addEventListener(
+    batchCreateLaunchOptionsEventType,
+    () => legacyEvents++,
+  )
+  window.addEventListener(importRecipeEventType, (event) => {
+    received = event.detail
+    dialog.importRecipe(event.detail)
+  })
+  const list = nodes(
+    StoreRecipes({
+      store: {
+        name: "Store",
+        description: "",
+        type: "github",
+        github: { repository: "example/recipes", branch: "main" },
+      },
+    }),
+  )
+  button(list, source.name).props.onClick()
+  assert.deepEqual(received, source)
+  assert.equal(legacyEvents, 0)
+  const review = nodes(fixture.modals[0].element)
+  assert.ok(review.includes("CUSTOM_CONFIG"))
+  assert.ok(review.includes('"::"'))
+  assert.equal(fixture.writes.length, 0)
+  button(review, "Add to Decky Launch Options").props.onClick()
+  assert.equal(fixture.writes.length, 1)
+  assert.equal(fixture.settings.launchOptions[0].id, source.launchOptions[0].id)
+  assert.deepEqual(
+    fixture.settings.environmentVariableMerges[0],
+    source.environmentVariableMerges[0],
+  )
 })
 
 test("cancel and declining the shortcut confirmation import nothing", () => {

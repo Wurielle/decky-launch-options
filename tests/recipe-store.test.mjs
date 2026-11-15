@@ -64,6 +64,66 @@ test("recipe parsing keeps launch options unchanged and rejects malformed catalo
   }
 })
 
+test("recipe parsing preserves both lists, either list alone, and literal delimiters", () => {
+  const rule = { id: "config", name: "CUSTOM_CONFIG", delimiter: "" }
+  const recipes = [
+    {
+      name: "Both",
+      launchOptions: [{ on: 'CUSTOM_CONFIG="first" %command%' }],
+      environmentVariableMerges: [rule],
+    },
+    {
+      name: "Merges only",
+      environmentVariableMerges: [
+        rule,
+        { name: "CUSTOM_PATHS", delimiter: "::" },
+      ],
+    },
+    {
+      name: "Options only",
+      launchOptions: [{ on: "%command% --flag", priority: -1 }],
+    },
+    { name: "Empty", launchOptions: [], environmentVariableMerges: [] },
+  ]
+  assert.deepEqual(parseRecipes(recipes), recipes)
+})
+
+test("malformed merge declarations are rejected instead of silently importing partial recipes", () => {
+  for (const rules of [
+    null,
+    {},
+    "invalid",
+    [null],
+    [[]],
+    [{}],
+    [{ name: "CONFIG" }],
+    [{ name: "", delimiter: ";" }],
+    [{ name: "  ", delimiter: ";" }],
+    [{ name: "CONFIG", delimiter: 1 }],
+    [{ id: 1, name: "CONFIG", delimiter: ";" }],
+  ]) {
+    assert.throws(() =>
+      parseRecipes([
+        {
+          name: "Invalid",
+          launchOptions: [],
+          environmentVariableMerges: rules,
+        },
+      ]),
+    )
+  }
+  assert.throws(() => parseRecipes([{ name: "Missing lists" }]))
+  assert.throws(() =>
+    parseRecipes([
+      {
+        name: "Invalid options",
+        launchOptions: null,
+        environmentVariableMerges: [],
+      },
+    ]),
+  )
+})
+
 test("deleting a store persists the change and keeps other saved stores", () => {
   const values = new Map()
   const storage = {
@@ -154,9 +214,10 @@ test("updating metadata preserves the saved URL, store order, and other stores",
     github: { ...manifest.github, branch: "main" },
   }
   const stores = updateStore(url, updated, storage)
-  assert.deepEqual(stores, before.map((item) =>
-    item.url === url ? { url, store: updated } : item,
-  ))
+  assert.deepEqual(
+    stores,
+    before.map((item) => (item.url === url ? { url, store: updated } : item)),
+  )
   assert.deepEqual(getStores(storage), stores)
 })
 
@@ -180,7 +241,11 @@ test("moving stores persists their order without changing metadata or crossing b
     setItem: (key, value) => values.set(key, value),
   }
   for (const name of ["First", "Second", "Third"])
-    saveStore(`https://example.test/${name}.json`, { ...manifest, name }, storage)
+    saveStore(
+      `https://example.test/${name}.json`,
+      { ...manifest, name },
+      storage,
+    )
   const original = getStores(storage)
   const moved = moveStore(original[1].url, -1, storage)
   assert.deepEqual(moved, [original[1], original[0], ...original.slice(2)])
@@ -200,7 +265,9 @@ test("the built-in dev store is available without saved data and cannot be delet
   }
   assert.deepEqual(getStores(storage), [defaultRecipeStore])
   assert.equal(defaultRecipeStore.store.github.branch, "dev")
-  assert.deepEqual(deleteStore(defaultRecipeStore.url, storage), [defaultRecipeStore])
+  assert.deepEqual(deleteStore(defaultRecipeStore.url, storage), [
+    defaultRecipeStore,
+  ])
   storage.setItem(recipeStoresStorageKey, "[]")
   assert.deepEqual(getStores(storage), [defaultRecipeStore])
 })
@@ -221,5 +288,9 @@ test("the default is added to existing stores once and retains its reordered pos
   assert.deepEqual(getStores(storage), expected)
   assert.deepEqual(deleteStore(defaultRecipeStore.url, storage), expected)
   saveStore(defaultRecipeStore.url, updated, storage)
-  assert.equal(getStores(storage).filter(item => item.url === defaultRecipeStore.url).length, 1)
+  assert.equal(
+    getStores(storage).filter((item) => item.url === defaultRecipeStore.url)
+      .length,
+    1,
+  )
 })
