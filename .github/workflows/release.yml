@@ -176,3 +176,57 @@ jobs:
         run: |
           gh release upload "$RELEASE_TAG" \
             out/decky-launch-options-with-store.zip --clobber
+
+      - name: Add both download links to release description
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          notes_file="$RUNNER_TEMP/release-notes.md"
+          gh release view "$RELEASE_TAG" --json body --jq '.body' > "$notes_file"
+
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          notes_file = Path(os.environ["RUNNER_TEMP"]) / "release-notes.md"
+          body = notes_file.read_text()
+          base_url = f"https://github.com/{os.environ['GH_REPO']}/releases/download/{os.environ['RELEASE_TAG']}"
+          regular_url = f"{base_url}/decky-launch-options.zip"
+          store_url = f"{base_url}/decky-launch-options-with-store.zip"
+          links = "\n".join([
+              "<!-- decky-download-links:start -->",
+              "## 🔗 Artifact links",
+              "",
+              "### Regular version",
+              "",
+              "```",
+              regular_url,
+              "```",
+              "",
+              "### With store version",
+              "",
+              "```",
+              store_url,
+              "```",
+              "<!-- decky-download-links:end -->",
+          ])
+          managed = re.compile(
+              r"<!-- decky-download-links:start -->[\s\S]*?<!-- decky-download-links:end -->"
+          )
+          original = re.compile(
+              r"^## 🔗 Artifact link\r?\n(?:\r?\n)+```\r?\n"
+              + re.escape(regular_url) + r"\r?\n```",
+              re.MULTILINE,
+          )
+          if managed.search(body):
+              body = managed.sub(lambda _: links, body, count=1)
+          elif original.search(body):
+              body = original.sub(lambda _: links, body, count=1)
+          else:
+              body = f"{links}\n\n{body}"
+          notes_file.write_text(body)
+          PY
+
+          gh release edit "$RELEASE_TAG" --notes-file "$notes_file"
