@@ -78,7 +78,7 @@ export function Content() {
               Navigation.CloseSideMenus()
             }}
           >
-            Manage environment variable merges
+            Manage env. variable merges
           </ButtonItem>
         </PanelSectionRow>
         <PanelSectionRow>
