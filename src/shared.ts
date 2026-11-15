@@ -1,6 +1,7 @@
 import { v4 as uuid } from "uuid"
 
 export const batchCreateLaunchOptionsEventType = "dlo-add-launch-options"
+export const importRecipeEventType = "dlo-add-recipe"
 
 export const routes = {
   recipeStore: () => "/launch-options-store",
@@ -8,8 +9,8 @@ export const routes = {
     `/launch-options/${appid}`,
   launchOptionsManagerItem: (page: number | string = ":page") =>
     `/launch-options-manager/${page}`,
-  envVariableMergesManagerItem: (page: number | string = ":page") =>
-    `/env-variable-merges-manager/${page}`,
+  environmentVariableMergesManagerItem: (page: number | string = ":page") =>
+    `/environment-variable-merges-manager/${page}`,
 }
 
 export const profileFactory = (profile: Partial<Profile> = {}): Profile => ({
@@ -34,15 +35,15 @@ export const launchOptionFactory = (
   priority: launchOption.priority || 0,
 })
 
-export const envVariableMergeFactory = (
-  envVariableMerge: Partial<EnvVariableMerge> = {},
-): EnvVariableMerge => ({
-  id: envVariableMerge.id || uuid(),
-  name: envVariableMerge.name || "",
-  delimiter: envVariableMerge.delimiter ?? "",
+export const environmentVariableMergeFactory = (
+  environmentVariableMerge: Partial<EnvironmentVariableMerge> = {},
+): EnvironmentVariableMerge => ({
+  id: environmentVariableMerge.id || uuid(),
+  name: environmentVariableMerge.name || "",
+  delimiter: environmentVariableMerge.delimiter ?? "",
 })
 
-export const defaultEnvVariableMerges: EnvVariableMerge[] = [
+export const defaultEnvironmentVariableMerges: EnvironmentVariableMerge[] = [
   { id: "winedlloverrides", name: "WINEDLLOVERRIDES", delimiter: ";" },
   { id: "mangohud-config", name: "MANGOHUD_CONFIG", delimiter: "," },
   { id: "dxvk-config", name: "DXVK_CONFIG", delimiter: ";" },
@@ -72,14 +73,27 @@ export type LaunchOption = {
   priority: number
 }
 
-export type EnvVariableMerge = {
+export type EnvironmentVariableMerge = {
   id: string
   name: string
   delimiter: string
 }
 
+export type Recipe = {
+  name: string
+  launchOptions?: Partial<LaunchOption>[]
+  environmentVariableMerges?: (Omit<EnvironmentVariableMerge, "id"> & {
+    id?: string
+  })[]
+}
+
 export type Settings = {
   profiles: Record<string, Profile>
   launchOptions: LaunchOption[]
-  envVariableMerges: EnvVariableMerge[]
+  environmentVariableMerges: EnvironmentVariableMerge[]
+}
+
+export type StoredSettings = Partial<Settings> & {
+  /** Compatibility with settings saved before the property was renamed. */
+  envVariableMerges?: EnvironmentVariableMerge[]
 }

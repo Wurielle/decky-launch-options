@@ -1,18 +1,18 @@
 import { Field, Focusable, TextField } from "@decky/ui"
-import { EnvVariableMerge } from "../shared"
+import { EnvironmentVariableMerge } from "../shared"
 
-interface EnvVariableMergeFieldsProps {
-  data: EnvVariableMerge
-  onChange: <K extends keyof EnvVariableMerge>(
+interface EnvironmentVariableMergeFieldsProps {
+  data: EnvironmentVariableMerge
+  onChange: <K extends keyof EnvironmentVariableMerge>(
     field: K,
-    value: EnvVariableMerge[K],
+    value: EnvironmentVariableMerge[K],
   ) => void
 }
 
-export function EnvVariableMergeFields({
+export function EnvironmentVariableMergeFields({
   data,
   onChange,
-}: EnvVariableMergeFieldsProps) {
+}: EnvironmentVariableMergeFieldsProps) {
   return (
     <Focusable style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <Focusable>

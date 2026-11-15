@@ -72,11 +72,13 @@ export function Content() {
           <ButtonItem
             layout="below"
             onClick={() => {
-              Navigation.Navigate(routes.envVariableMergesManagerItem("new"))
+              Navigation.Navigate(
+                routes.environmentVariableMergesManagerItem("new"),
+              )
               Navigation.CloseSideMenus()
             }}
           >
-            Manage env variable merges
+            Manage environment variable merges
           </ButtonItem>
         </PanelSectionRow>
         <PanelSectionRow>

@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from unittest.mock import patch
 from run import (
+    get_environment_variable_merge_rules,
     get_final_args_details,
     get_shell_command_log_details,
     is_non_steam_appid,
@@ -353,13 +354,13 @@ if __name__ == "__main__":
     print("="*60)
 
     # Helper to build mock settings for priority tests
-    OMIT_ENV_VARIABLE_MERGES = object()
+    OMIT_ENVIRONMENT_VARIABLE_MERGES = object()
 
     def make_settings(
         launch_options,
         appid="123",
         state=None,
-        env_variable_merges=OMIT_ENV_VARIABLE_MERGES,
+        environment_variable_merges=OMIT_ENVIRONMENT_VARIABLE_MERGES,
         original_launch_options="",
         override_command_enabled=False,
         override_command="",
@@ -375,8 +376,8 @@ if __name__ == "__main__":
             },
             "launchOptions": launch_options,
         }
-        if env_variable_merges is not OMIT_ENV_VARIABLE_MERGES:
-            settings["envVariableMerges"] = env_variable_merges or []
+        if environment_variable_merges is not OMIT_ENVIRONMENT_VARIABLE_MERGES:
+            settings["environmentVariableMerges"] = environment_variable_merges or []
         return settings
 
     def make_opt(opt_id, on, priority=0):
@@ -484,7 +485,7 @@ if __name__ == "__main__":
         settings_d2 = make_settings([
             make_opt("low", "CUSTOM_ENV=low low-wrapper %command%", priority=0),
             make_opt("high", "CUSTOM_ENV=high high-wrapper %command%", priority=10),
-        ], env_variable_merges=[])
+        ], environment_variable_merges=[])
         final_args_d2, env_vars_d2 = get_final_args_details(settings_d2, "123")
         expected_args_d2 = ["high-wrapper", "low-wrapper", "/path/to/game"]
         expected_env_d2 = {"CUSTOM_ENV": "high"}
@@ -498,14 +499,14 @@ if __name__ == "__main__":
 
         # Test E: Merge configured env var values with a semicolon delimiter
         print(f"\n{'='*60}")
-        print("Test: Env variable merge - WINEDLLOVERRIDES uses semicolon")
+        print("Test: Environment variable merge - WINEDLLOVERRIDES uses semicolon")
         print(f"{'='*60}")
         settings_e = make_settings(
             [
                 make_opt("wine-a", 'WINEDLLOVERRIDES="dinput8=n,b"', priority=0),
                 make_opt("wine-b", 'WINEDLLOVERRIDES="dxgi=n,b"', priority=0),
             ],
-            env_variable_merges=[
+            environment_variable_merges=[
                 {
                     "id": "winedlloverrides",
                     "name": "WINEDLLOVERRIDES",
@@ -522,7 +523,7 @@ if __name__ == "__main__":
 
         # Test F: Merge configured env var values with a comma delimiter
         print(f"\n{'='*60}")
-        print("Test: Env variable merge - MANGOHUD_CONFIG uses comma")
+        print("Test: Environment variable merge - MANGOHUD_CONFIG uses comma")
         print(f"{'='*60}")
         settings_f = make_settings(
             [
@@ -533,7 +534,7 @@ if __name__ == "__main__":
                     priority=0,
                 ),
             ],
-            env_variable_merges=[
+            environment_variable_merges=[
                 {
                     "id": "mangohud-config",
                     "name": "MANGOHUD_CONFIG",
@@ -552,14 +553,14 @@ if __name__ == "__main__":
 
         # Test G: Without a merge rule, repeated env vars keep last-value-wins behavior
         print(f"\n{'='*60}")
-        print("Test: Env variable merge - unconfigured variables still replace")
+        print("Test: Environment variable merge - unconfigured variables still replace")
         print(f"{'='*60}")
         settings_g = make_settings(
             [
                 make_opt("custom-a", "CUSTOM_ENV=fps", priority=0),
                 make_opt("custom-b", "CUSTOM_ENV=compiler", priority=0),
             ],
-            env_variable_merges=[],
+            environment_variable_merges=[],
         )
         _, env_vars_g = get_final_args_details(settings_g, "123")
         expected_g = {"CUSTOM_ENV": "compiler"}
@@ -570,14 +571,14 @@ if __name__ == "__main__":
 
         # Test H: Original launch options participate in configured env var merges
         print(f"\n{'='*60}")
-        print("Test: Env variable merge - original launch options merge first")
+        print("Test: Environment variable merge - original launch options merge first")
         print(f"{'='*60}")
         settings_h = make_settings(
             [
                 make_opt("wine-a", 'WINEDLLOVERRIDES="dxgi=n,b"', priority=0),
             ],
             original_launch_options='WINEDLLOVERRIDES="dinput8=n,b"',
-            env_variable_merges=[
+            environment_variable_merges=[
                 {
                     "id": "winedlloverrides",
                     "name": "WINEDLLOVERRIDES",
@@ -603,7 +604,7 @@ if __name__ == "__main__":
             ],
             appid=non_steam_appid,
             original_launch_options='WINEDLLOVERRIDES="dinput8=n,b"',
-            env_variable_merges=[
+            environment_variable_merges=[
                 {
                     "id": "winedlloverrides",
                     "name": "WINEDLLOVERRIDES",
@@ -858,9 +859,9 @@ if __name__ == "__main__":
         print(f"\n{'PASS' if match_h8 else 'FAIL'}")
         assert match_h8
 
-        # Test I: Default merge rules apply when older settings omit envVariableMerges
+        # Test I: Default merge rules apply when older settings omit environmentVariableMerges
         print(f"\n{'='*60}")
-        print("Test: Env variable merge - defaults apply to older settings")
+        print("Test: Environment variable merge - defaults apply to older settings")
         print(f"{'='*60}")
         settings_i = make_settings([
             make_opt("hud-a", "DXVK_HUD=fps", priority=0),
@@ -896,6 +897,32 @@ if __name__ == "__main__":
         final_args_k, _ = get_final_args_details(settings_k, "123", skipped_k)
         assert final_args_k == ["mangohud", "/path/to/game"]
         assert skipped_k == [["missing-wrapper", "--flag"]]
+
+    # Old settings retain custom rules until saved with the canonical property.
+    legacy_rule = {"id": "custom", "name": "CUSTOM_CONFIG", "delimiter": "::"}
+    legacy_settings = make_settings([
+        make_opt("custom-a", "CUSTOM_CONFIG=a"),
+        make_opt("custom-b", "CUSTOM_CONFIG=b"),
+    ])
+    legacy_settings["envVariableMerges"] = [legacy_rule]
+    assert get_environment_variable_merge_rules(legacy_settings) == {
+        "CUSTOM_CONFIG": "::"
+    }
+    _, legacy_env = get_final_args_details(legacy_settings, "123")
+    assert legacy_env == {"CUSTOM_CONFIG": "a::b"}
+
+    # The canonical property wins, even when an older key is still present.
+    for rules, expected in (
+        ([], "b"),
+        ([{**legacy_rule, "delimiter": ";"}], "a;b"),
+        ([{**legacy_rule, "delimiter": ""}], "ab"),
+    ):
+        settings = {**legacy_settings, "environmentVariableMerges": rules}
+        _, env = get_final_args_details(settings, "123")
+        assert env == {"CUSTOM_CONFIG": expected}, (rules, env)
+    assert get_environment_variable_merge_rules({"envVariableMerges": []}) == {}
+    assert get_environment_variable_merge_rules({})["WINEDLLOVERRIDES"] == ";"
+    print("Legacy and canonical environment variable merge settings: PASS")
 
     # Restore sys.argv
     sys.argv = original_argv

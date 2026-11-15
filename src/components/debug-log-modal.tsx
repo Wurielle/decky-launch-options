@@ -30,7 +30,7 @@ export function DebugLogModal({ onClose }: { onClose: () => void }) {
             {log}
           </pre>
         ) : (
-          <div>No debug log found. Launch a game to generate one.</div>
+          <div>No run log found. Launch a game to generate one.</div>
         )}
       </ModalScrollContent>
     </ModalRoot>

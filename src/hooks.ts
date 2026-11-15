@@ -1,7 +1,7 @@
 import { produce } from "immer"
 import { useEffect, useRef, useState } from "react"
 import { useGetSettingsQuery, useSetSettingsMutation } from "./queries/settings"
-import { createEnvVariableMergeActions } from "./settings/env-variable-merge-actions"
+import { createEnvironmentVariableMergeActions } from "./settings/environment-variable-merge-actions"
 import { createLaunchOptionActions } from "./settings/launch-option-actions"
 import { createProfileActions } from "./settings/profile-actions"
 import { SetSettings } from "./settings/types"
@@ -12,7 +12,7 @@ export function useSettings() {
   const [settings, _setSettings] = useState<Settings>({
     profiles: {},
     launchOptions: [],
-    envVariableMerges: [],
+    environmentVariableMerges: [],
   })
 
   const getSettingsQuery = useGetSettingsQuery()
@@ -46,7 +46,7 @@ export function useSettings() {
     settings,
     loading: getSettingsQuery.isLoading,
     ...createLaunchOptionActions(setSettings),
-    ...createEnvVariableMergeActions(setSettings),
+    ...createEnvironmentVariableMergeActions(setSettings),
     ...createProfileActions(settings, setSettings),
   }
 }
