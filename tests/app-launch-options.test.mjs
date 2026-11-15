@@ -76,19 +76,86 @@ test("reload restores and reapplies an open and a closed Steam game without a pa
   assert.equal(registrations, 0)
 })
 
-test("manual shortcut Apply is restored even with auto-management disabled", async () => {
+test("reload resumes manual shortcut Apply even with auto-management disabled", async () => {
   apps.set(1, {
     strShortcutExe: "/bin/game",
     strShortcutLaunchOptions: info.COMMAND,
     strLaunchOptions: "",
   })
-  await restoreAppLaunchOptions(1, profile("--original"), info)
+  const restored = await restoreAppLaunchOptions(1, profile("--original"), info)
   assert.equal(apps.get(1).strShortcutLaunchOptions, "--original")
-  await applyProfileLaunchOptions(1, profile("--original"), info, {
-    steam: false,
-    nonSteam: false,
+  await applyProfileLaunchOptions(
+    1,
+    profile("--original"),
+    info,
+    { steam: false, nonSteam: false },
+    restored,
+  )
+  assert.equal(apps.get(1).strShortcutLaunchOptions, info.COMMAND)
+  assert.equal(writes.length, 2)
+})
+
+test("reload resumes manual Apply with empty original arguments and a per-app opt-out", async () => {
+  const saved = { ...profile(), disableAutoManageLaunchOptions: true }
+  const command = "/home/deck/.dlo/run %command%"
+  apps.set(1, {
+    strShortcutExe: "/bin/game",
+    strShortcutLaunchOptions: command,
   })
-  assert.equal(apps.get(1).strShortcutLaunchOptions, "--original")
+  const restored = await restoreAppLaunchOptions(1, saved, info)
+  assert.equal(apps.get(1).strShortcutLaunchOptions, "")
+  await applyProfileLaunchOptions(
+    1,
+    saved,
+    info,
+    { steam: false, nonSteam: false },
+    restored,
+  )
+  assert.equal(apps.get(1).strShortcutLaunchOptions, command)
+  assert.equal(registrations, 0)
+})
+
+test("reload handoff cannot overwrite external edits or a changed saved original", async () => {
+  for (const changedProfile of [false, true]) {
+    apps.set(1, {
+      strShortcutExe: "/bin/game",
+      strShortcutLaunchOptions: info.COMMAND,
+    })
+    const restored = await restoreAppLaunchOptions(
+      1,
+      profile("--original"),
+      info,
+    )
+    if (!changedProfile) apps.get(1).strShortcutLaunchOptions = "--external"
+    const before = apps.get(1).strShortcutLaunchOptions
+    await applyProfileLaunchOptions(
+      1,
+      profile(changedProfile ? "--changed" : "--original"),
+      info,
+      { steam: false, nonSteam: false },
+      restored,
+    )
+    assert.equal(apps.get(1).strShortcutLaunchOptions, before)
+  }
+  assert.equal(writes.length, 2)
+})
+
+test("a late reload handoff callback cannot write after dismount", async () => {
+  apps.set(1, {
+    strShortcutExe: "/bin/game",
+    strShortcutLaunchOptions: info.COMMAND,
+  })
+  const restored = await restoreAppLaunchOptions(1, profile(), info)
+  const applying = applyProfileLaunchOptions(
+    1,
+    profile(),
+    info,
+    autoManage,
+    restored,
+  )
+  launchOptionsLifecycle.active = false
+  await applying
+  assert.equal(apps.get(1).strShortcutLaunchOptions, "")
   assert.equal(writes.length, 1)
 })
 

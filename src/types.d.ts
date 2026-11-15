@@ -1,5 +1,10 @@
 interface Window {
-  dloLaunchOptionsRestored?: Promise<unknown>
+  dloLaunchOptionsRestored?: Promise<
+    Record<
+      string,
+      import("./utils/app-launch-options").RestoredAppLaunchOptions
+    >
+  >
 }
 
 declare module "*.svg" {

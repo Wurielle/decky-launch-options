@@ -28,6 +28,7 @@ import {
   applyProfileLaunchOptions,
   launchOptionsLifecycle,
   restoreAppLaunchOptions,
+  type RestoredAppLaunchOptions,
 } from "./utils"
 import { has_shell_script } from "./api"
 import { settingsStore } from "./stores"
@@ -58,26 +59,37 @@ export default definePlugin(() => {
   const menuPatches = contextMenuPatch(LibraryContextMenu)
   const libraryAppPatchResult = libraryAppPatch()
   const previousRestoration = window.dloLaunchOptionsRestored
-  let startupWrites: Promise<unknown> = Promise.resolve()
-  void Promise.all([
-    previousRestoration,
-    queryClient.fetchQuery(getSettingsQueryOptions),
-    queryClient.fetchQuery(getInfoQueryOptions),
-    has_shell_script(),
-  ])
-    .then(([, settings, info, hasShellScript]) => {
-      if (!launchOptionsLifecycle.active || !settings || !hasShellScript) return
-      startupWrites = Promise.allSettled(
-        Object.entries(settings.profiles).map(([appid, profile]) =>
-          applyProfileLaunchOptions(Number(appid), profile, info, {
-            steam: settingsStore.state.autoManageLaunchOptions,
-            nonSteam: settingsStore.state.autoManageNonSteamLaunchOptions,
-          }),
-        ),
-      )
-      return startupWrites
-    })
-    .catch((error) => console.error("DLO startup recovery failed", error))
+  const startupWrites: Promise<Record<string, RestoredAppLaunchOptions>> =
+    Promise.all([
+      previousRestoration,
+      queryClient.fetchQuery(getSettingsQueryOptions),
+      queryClient.fetchQuery(getInfoQueryOptions),
+      has_shell_script(),
+    ])
+      .then(async ([restored, settings, info, hasShellScript]) => {
+        if (!launchOptionsLifecycle.active) return restored ?? {}
+        if (!settings || !hasShellScript) return {}
+        await Promise.allSettled(
+          Object.entries(settings.profiles).map(([appid, profile]) =>
+            applyProfileLaunchOptions(
+              Number(appid),
+              profile,
+              info,
+              {
+                steam: settingsStore.state.autoManageLaunchOptions,
+                nonSteam: settingsStore.state.autoManageNonSteamLaunchOptions,
+              },
+              restored?.[appid],
+            ),
+          ),
+        )
+        // Carry the handoff through another reload if startup was interrupted.
+        return launchOptionsLifecycle.active ? {} : (restored ?? {})
+      })
+      .catch((error) => {
+        console.error("DLO startup recovery failed", error)
+        return {}
+      })
 
   function onBatchCreateLaunchOptions(
     event: CustomEvent<Partial<LaunchOption>[]>,
@@ -117,16 +129,22 @@ export default definePlugin(() => {
       const info = queryClient.getQueryData(getInfoQueryOptions.queryKey)
       // Decky does not await onDismount. The next instance waits for these
       // callbacks so an old restoration cannot overwrite startup recovery.
-      window.dloLaunchOptionsRestored = Promise.all([
-        previousRestoration,
-        startupWrites,
-      ]).then(() =>
-        Promise.allSettled(
-          Object.entries(settings?.profiles ?? {}).map(([appid, profile]) =>
-            restoreAppLaunchOptions(Number(appid), profile, info),
+      window.dloLaunchOptionsRestored = startupWrites.then(async (pending) => {
+        const restored = { ...pending }
+        await Promise.allSettled(
+          Object.entries(settings?.profiles ?? {}).map(
+            async ([appid, profile]) => {
+              const result = await restoreAppLaunchOptions(
+                Number(appid),
+                profile,
+                info,
+              )
+              if (result) restored[appid] = result
+            },
           ),
-        ),
-      )
+        )
+        return restored
+      })
       window.removeEventListener(
         batchCreateLaunchOptionsEventType as any,
         onBatchCreateLaunchOptions,
