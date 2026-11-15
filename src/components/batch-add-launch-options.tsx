@@ -109,36 +109,55 @@ export function BatchAddLaunchOptions({
           onFocusNext={() => addButtonRef.current?.focus()}
         >
           <DialogBody>
-            {environmentVariableMerges.length > 0 &&
-              launchOptions.length > 0 && (
-                <h3 style={{ margin: "0 0 12px", fontSize: 18 }}>
-                  Launch options
-                </h3>
-              )}
-            {launchOptions.some((option) => option.enableGlobally) && (
-              <div
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 16,
+                marginBottom: 0,
+              }}
+            >
+              <h3 style={{ margin: 0, fontSize: 16, flexShrink: 0 }}>
+                Launch options
+              </h3>
+              <hr
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginBottom: 12,
-                  fontSize: 14,
-                  color: "#b8bcbf",
+                  flex: 1,
+                  minWidth: 16,
+                  margin: 0,
+                  border: 0,
+                  borderTop: "1px solid #3d4450",
                 }}
-              >
-                <FaGlobe aria-hidden="true" style={{ color: "#66c0f4" }} />
-                Enabled globally
-              </div>
-            )}
+              />
+              {launchOptions.some((option) => option.enableGlobally) && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    flexShrink: 0,
+                    fontSize: 14,
+                    color: "#b8bcbf",
+                  }}
+                >
+                  <FaGlobe aria-hidden="true" style={{ color: "#66c0f4" }} />
+                  Enabled globally
+                </div>
+              )}
+            </div>
             {launchOptions.length > 0 && (
               <div role="list" aria-label="Launch options to add">
-                {launchOptions.map((launchOption) => (
+                {launchOptions.map((launchOption, index) => (
                   <div
                     key={launchOption.id}
                     role="listitem"
                     style={{
                       padding: "10px 0",
-                      borderBottom: "1px solid #3d4450",
+                      borderBottom:
+                        index < launchOptions.length - 1
+                          ? "1px solid #3d4450"
+                          : undefined,
                       minWidth: 0,
                     }}
                   >
@@ -201,22 +220,43 @@ export function BatchAddLaunchOptions({
                 ))}
               </div>
             )}
-            {environmentVariableMerges.length > 0 && (
-              <section style={{ marginTop: launchOptions.length ? 16 : 0 }}>
-                <h3 style={{ margin: "0 0 6px", fontSize: 18 }}>
+            <section style={{ marginTop: 16 }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                  marginBottom: 0,
+                }}
+              >
+                <h3 style={{ margin: 0, fontSize: 16, flexShrink: 0 }}>
                   Environment variable merges
                 </h3>
+                <hr
+                  style={{
+                    flex: 1,
+                    minWidth: 16,
+                    margin: 0,
+                    border: 0,
+                    borderTop: "1px solid #3d4450",
+                  }}
+                />
+              </div>
+              {environmentVariableMerges.length > 0 && (
                 <div
                   role="list"
                   aria-label="Environment variable merges to add"
                 >
-                  {environmentVariableMerges.map((merge) => (
+                  {environmentVariableMerges.map((merge, index) => (
                     <div
                       key={merge.id}
                       role="listitem"
                       style={{
                         padding: "10px 0",
-                        borderBottom: "1px solid #3d4450",
+                        borderBottom:
+                          index < environmentVariableMerges.length - 1
+                            ? "1px solid #3d4450"
+                            : undefined,
                         minWidth: 0,
                       }}
                     >
@@ -247,8 +287,8 @@ export function BatchAddLaunchOptions({
                     </div>
                   ))}
                 </div>
-              </section>
-            )}
+              )}
+            </section>
           </DialogBody>
         </ModalScrollContent>
         <DialogFooter>
