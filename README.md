@@ -54,7 +54,7 @@ If you wish to import a pre-defined set of
 launch options to quickstart your use of this plugin or create your own
 collection that you can share with others, I recommend checking out
 the [Decky Launch Options Recipes](https://github.com/Wurielle/decky-launch-options-recipes)
-plugin.
+plugin or downloading the version with the recipe store on the [releases page](https://github.com/Wurielle/decky-launch-options/releases).
 
 ## How to use
 
