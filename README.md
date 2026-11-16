@@ -8,6 +8,9 @@
 
 ![Screenshot of the Decky Launch Options plugin on the Steam Deck](./assets/screenshot.png)
 
+> [!IMPORTANT]
+> Decky Plugin Store updates have been [halted until further notice](https://github.com/Wurielle/decky-launch-options/issues/111), please download the plugin from the [releases page](https://github.com/Wurielle/decky-launch-options/releases).
+
 ## Features
 
 - [x] Manage all your most used launch options in one place
