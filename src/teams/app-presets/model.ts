@@ -250,8 +250,8 @@ export function applyPreset(
   }
   if (changed) settings.profiles[preset.appid] = profile
   return {
-    selected: selected.filter((option) =>
-      getLaunchOptionState(settings, preset.appid, option.id),
+    selected: selected.filter(
+      (option) => !getGlobalPreference(settings, option),
     ).length,
     skipped,
   }

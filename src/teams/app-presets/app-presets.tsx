@@ -1,4 +1,4 @@
-import { fetchNoCors } from "@decky/api"
+import { fetchNoCors, toaster } from "@decky/api"
 import {
   ButtonItem,
   DialogBody,
@@ -6,8 +6,10 @@ import {
   DialogButtonPrimary,
   DialogFooter,
   DialogHeader,
+  Field,
   Focusable,
   ModalRoot,
+  PanelSectionRow,
   showModal,
   SteamSpinner,
 } from "@decky/ui"
@@ -16,7 +18,7 @@ import {
   useQueries,
   useQuery,
 } from "@tanstack/react-query"
-import { useEffect, useRef, useState } from "react"
+import { type ReactNode, useEffect, useRef, useState } from "react"
 import { FaCheckCircle } from "react-icons/fa"
 import { importRecipe } from "../../components/batch-add-launch-options"
 import { LaunchOptionFocusList } from "../../components/launch-option-focus"
@@ -24,7 +26,6 @@ import { ModalScrollContent } from "../../components/modal-scroll-content"
 import { useSettings } from "../../hooks"
 import { queryClient } from "../../queries/settings"
 import { launchOptionFactory, type Recipe } from "../../shared"
-import { getLaunchOptionState } from "../../utils/settings"
 import { getRecipesUrl, parseRecipes } from "../recipe-store/recipes"
 import { getStores } from "../recipe-store/store"
 import {
@@ -32,13 +33,45 @@ import {
   presetHttpError,
   presetQueryOptions,
 } from "./discovery"
-import {
-  isPresetSelected,
-  prepareRecipeImport,
-  resolvePreset,
-  storeKey,
-} from "./model"
-import type { AppPreset, PresetSkip } from "./model"
+import { isPresetSelected, prepareRecipeImport, resolvePreset } from "./model"
+import type { AppPreset } from "./model"
+
+function PresetMessage({
+  children,
+  role,
+  align = "center",
+}: {
+  children: ReactNode
+  role?: "alert" | "status"
+  align?: "left" | "center"
+}) {
+  return (
+    <div role={role} style={{ textAlign: align, overflowWrap: "anywhere" }}>
+      {children}
+    </div>
+  )
+}
+
+function PresetLoading({ label }: { label: string }) {
+  return (
+    <div
+      role="status"
+      aria-label={label}
+      style={{
+        flex: 1,
+        minHeight: 64,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <SteamSpinner
+        background="transparent"
+        style={{ width: 64, height: 64 }}
+      />
+    </div>
+  )
+}
 
 function readStores() {
   try {
@@ -69,88 +102,132 @@ export function AppPresets({ appid }: { appid: string }) {
     ),
   })
   const pending = queries.some((query) => query.isFetching || query.isPending)
-  const presets = queries.flatMap((query) => query.data?.presets ?? [])
-  const errors = queries.flatMap((query, index) =>
-    [
-      ...(query.error ? [query.error.message] : []),
-      ...(query.data?.errors ?? []),
-    ].map((message) => `${configuration.stores[index].store.name}: ${message}`),
+  const stores = configuration.stores.map((source, index) => {
+    const query = queries[index]
+    return {
+      ...source,
+      presets: query.data?.presets ?? [],
+      errors: [
+        ...(query.error ? [query.error.message] : []),
+        ...(query.data?.errors ?? []),
+      ],
+    }
+  })
+  const hasContent = stores.some(
+    ({ presets, errors }) => presets.length || errors.length,
   )
 
   return (
-    <LaunchOptionFocusList style={{ height: "100%" }}>
-      <DialogButton
-        disabled={pending}
-        onClick={() => {
-          setConfiguration(readStores())
-          for (const query of queries) void query.refetch()
-        }}
-      >
-        Refresh presets
-      </DialogButton>
-      {configuration.error && <div role="alert">{configuration.error}</div>}
-      {pending && (
-        <div role="status" aria-label="Loading presets">
-          <SteamSpinner />
-        </div>
+    <LaunchOptionFocusList
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100%",
+      }}
+    >
+      <PanelSectionRow>
+        <ButtonItem
+          layout="below"
+          disabled={pending}
+          onClick={() => {
+            setConfiguration(readStores())
+            for (const query of queries) void query.refetch()
+          }}
+        >
+          Refresh presets
+        </ButtonItem>
+      </PanelSectionRow>
+      {pending ? (
+        <PresetLoading label="Loading presets" />
+      ) : (
+        <>
+          {configuration.error && (
+            <PresetMessage role="alert">{configuration.error}</PresetMessage>
+          )}
+          {!hasContent && !configuration.error && (
+            <PresetMessage>No presets found for this app.</PresetMessage>
+          )}
+          {stores.map(({ url, store, presets, errors }) => {
+            if (!presets.length && !errors.length) return null
+            return (
+              <div key={url}>
+                <div style={{ marginTop: "16px" }}>
+                  <strong>
+                    {store.name}
+                    <span
+                      style={{
+                        marginLeft: 6,
+                        color: "oklch(80.9% 0.105 251.813)",
+                      }}
+                    >
+                      {store.github.branch}
+                    </span>
+                  </strong>
+                </div>
+                {errors.map((error, index) => (
+                  <PresetMessage role="alert" key={index}>
+                    {error}
+                  </PresetMessage>
+                ))}
+                {presets.map((preset) => {
+                  let selected = false
+                  try {
+                    selected = isPresetSelected(preset, settings)
+                  } catch {
+                    /* The review dialog explains invalid references. */
+                  }
+                  return (
+                    <Field
+                      key={preset.key}
+                      childrenLayout="inline"
+                      label={
+                        <span
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          {preset.name}
+                          {selected && (
+                            <FaCheckCircle
+                              role="img"
+                              aria-label="Preset selected"
+                              style={{ color: "#a4d007" }}
+                            />
+                          )}
+                        </span>
+                      }
+                      description={preset.description}
+                    >
+                      <DialogButton
+                        aria-label={`Use ${preset.name}`}
+                        disabled={loading}
+                        onClick={() => {
+                          operation.current?.abort()
+                          operation.current = new AbortController()
+                          const modal = showModal(
+                            <QueryClientProvider client={queryClient}>
+                              <PresetDialog
+                                preset={preset}
+                                signal={operation.current.signal}
+                                onClose={() => modal.Close()}
+                              />
+                            </QueryClientProvider>,
+                          )
+                          dialog.current = modal
+                        }}
+                      >
+                        Use
+                      </DialogButton>
+                    </Field>
+                  )
+                })}
+              </div>
+            )
+          })}
+        </>
       )}
-      {errors.map((error, index) => (
-        <div role="alert" key={index}>
-          {error}
-        </div>
-      ))}
-      {!pending &&
-        !presets.length &&
-        !errors.length &&
-        !configuration.error && <p>No presets found for this app.</p>}
-      {presets.map((preset) => {
-        let selected = false
-        try {
-          selected = isPresetSelected(preset, settings)
-        } catch {
-          /* The review dialog explains invalid references. */
-        }
-        return (
-          <div key={preset.key}>
-            <ButtonItem
-              disabled={loading}
-              description={
-                <>
-                  <div>{preset.description}</div>
-                  <div>
-                    {preset.store.store.name} ·{" "}
-                    {preset.store.store.github.repository} ·{" "}
-                    {preset.store.store.github.branch}
-                  </div>
-                </>
-              }
-              onClick={() => {
-                operation.current?.abort()
-                operation.current = new AbortController()
-                const modal = showModal(
-                  <QueryClientProvider client={queryClient}>
-                    <PresetDialog
-                      preset={preset}
-                      signal={operation.current.signal}
-                      onClose={() => modal.Close()}
-                    />
-                  </QueryClientProvider>,
-                )
-                dialog.current = modal
-              }}
-            >
-              {preset.name}
-            </ButtonItem>
-            {selected && (
-              <FaCheckCircle
-                role="img"
-                aria-label="Preset selected"
-                style={{ color: "#a4d007" }}
-              />
-            )}
-          </div>
-        )
-      })}
     </LaunchOptionFocusList>
   )
 }
@@ -170,10 +247,6 @@ export function PresetDialog({
   const applyButtonRef = useRef<HTMLDivElement>(null)
   const reviewButtonRef = useRef<HTMLDivElement>(null)
   const [error, setError] = useState("")
-  const [result, setResult] = useState<{
-    selected: number
-    skipped: PresetSkip[]
-  } | null>(null)
   const controller = useRef(new AbortController())
   useEffect(() => {
     const abort = () => controller.current.abort()
@@ -228,14 +301,13 @@ export function PresetDialog({
   const missingRecipeIds = [
     ...new Set(resolution.missing.map((reference) => reference.recipeId)),
   ]
-  const globalConflicts = resolution.protectedOptions.filter(
-    ({ option }) => !getLaunchOptionState(settings, preset.appid, option.id),
+  const firstAvailableRecipeId = missingRecipeIds.find((id) =>
+    recipes.some((recipe) => recipe.id === id),
   )
   const run = async (action: () => Promise<void>) => {
     if (
       loading ||
       validationError ||
-      (resolution.missing.length > 0 && catalog.isFetching) ||
       busyRef.current ||
       controller.current.signal.aborted
     )
@@ -262,97 +334,103 @@ export function PresetDialog({
       bAllowFullSize
     >
       <Focusable flow-children="column">
-        <DialogHeader>{preset.name}</DialogHeader>
-        <DialogBody style={{ maxHeight: "55vh", overflowY: "auto" }}>
+        <DialogHeader>{preset.name} Preset</DialogHeader>
+        <DialogBody
+          style={{
+            textAlign: "left",
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+          }}
+        >
           <ModalScrollContent
             onFocusNext={() =>
               (reviewButtonRef.current ?? applyButtonRef.current)?.focus()
             }
           >
-            <p>{preset.description}</p>
-            <p>
-              Selections apply only to this app. Unrelated options and global
-              selections are preserved. Globally enabled controls take priority;
-              presets never change their app overrides or definitions. Commands
-              run when the app launches, not now.
-            </p>
-            {preset.launchOptions.map((reference) => {
-              const option =
-                resolution.selected.find(
-                  (option) =>
-                    option.source?.recipeId === reference.recipeId &&
-                    option.source.launchOptionId === reference.launchOptionId,
-                ) ??
-                previews
-                  .flatMap((recipe) => recipe.launchOptions ?? [])
-                  .find(
-                    (option) =>
-                      option.source?.recipeId === reference.recipeId &&
-                      option.source.launchOptionId === reference.launchOptionId,
-                  )
-              const protection = globalConflicts.find(
-                (item) => item.reference === reference,
-              )
-              return (
-                <section
-                  key={JSON.stringify(reference)}
-                  style={{ overflowWrap: "anywhere", marginBottom: 12 }}
-                >
-                  <strong>
-                    {option?.name || reference.launchOptionId}
-                    {option?.valueName ? `: ${option.valueName}` : ""}
-                  </strong>
-                  <div>
-                    {reference.recipeId} / {reference.launchOptionId}
-                  </div>
-                  {option?.on && (
-                    <>
-                      <div>On command</div>
-                      <pre style={{ whiteSpace: "pre-wrap" }}>{option.on}</pre>
-                    </>
-                  )}
-                  {resolution.missing.includes(reference) && (
-                    <div>
-                      Not imported — will be skipped unless imported below.
-                    </div>
-                  )}
-                  {protection && (
-                    <div>
-                      Protected by global preference:{" "}
-                      {protection.globalOption.valueName ||
-                        protection.globalOption.name ||
-                        protection.globalOption.id}
-                      . This control and its existing app overrides will not be
-                      changed.
-                    </div>
-                  )}
-                </section>
-              )
-            })}
-          </ModalScrollContent>
-          {resolution.missing.length > 0 && (
-            <>
-              <p>
-                Some references are unavailable. Review their recipes below, or
-                apply only available options. An incomplete preset will not be
-                checked.
-              </p>
-              {catalog.isFetching && (
-                <div role="status" aria-label="Loading referenced recipes">
-                  <SteamSpinner />
-                </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {preset.description && (
+                <p style={{ margin: "0 0 12px", fontSize: 16 }}>
+                  {preset.description}
+                </p>
               )}
-              {catalog.error && <div role="alert">{catalog.error.message}</div>}
-              {missingRecipeIds.map((recipeId, index) => {
+              <ul
+                aria-label="Preset launch options"
+                style={{ margin: "0 0 12px", paddingLeft: 24, lineHeight: 1.5 }}
+              >
+                {preset.launchOptions.map((reference) => {
+                  const option =
+                    resolution.selected.find(
+                      (option) =>
+                        option.source?.recipeId === reference.recipeId &&
+                        option.source.launchOptionId ===
+                          reference.launchOptionId,
+                    ) ??
+                    previews
+                      .flatMap((recipe) => recipe.launchOptions ?? [])
+                      .find(
+                        (option) =>
+                          option.source?.recipeId === reference.recipeId &&
+                          option.source.launchOptionId ===
+                            reference.launchOptionId,
+                      )
+                  const skipped = resolution.protectedOptions.some(
+                    (item) => item.reference === reference,
+                  )
+                  return (
+                    <li key={JSON.stringify(reference)}>
+                      {option?.name || reference.launchOptionId}
+                      {option?.valueName ? ` (${option.valueName})` : ""}
+                      {resolution.missing.includes(reference) && (
+                        <span> — Not imported</span>
+                      )}
+                      {skipped && <span> — Skipped</span>}
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+            {resolution.missing.length > 0 && (
+              <>
+                <PresetMessage align="left">
+                  Some launch options have not been imported yet. Add their
+                  corresponding recipes to import them.
+                </PresetMessage>
+                {catalog.isFetching && (
+                  <PresetLoading label="Loading referenced recipes" />
+                )}
+                {catalog.error && (
+                  <PresetMessage align="left" role="alert">
+                    {catalog.error.message}
+                  </PresetMessage>
+                )}
+              </>
+            )}
+            {(validationError || error) && (
+              <PresetMessage align="left" role="alert">
+                {validationError || error}
+              </PresetMessage>
+            )}
+          </ModalScrollContent>
+          {missingRecipeIds.length > 0 && (
+            <Focusable
+              flow-children="column"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+                marginBottom: 8,
+              }}
+            >
+              {missingRecipeIds.map((recipeId) => {
                 const recipe = recipes.find((recipe) => recipe.id === recipeId)
-                const reimport = settings.launchOptions.some(
-                  (option) =>
-                    option.source?.storeKey === storeKey(preset.store) &&
-                    option.source.recipeId === recipeId,
-                )
                 return recipe ? (
                   <DialogButton
-                    ref={index === 0 ? reviewButtonRef : undefined}
+                    ref={
+                      recipeId === firstAvailableRecipeId
+                        ? reviewButtonRef
+                        : undefined
+                    }
                     key={recipeId}
                     disabled={busy || loading || !!validationError}
                     onClick={() =>
@@ -366,72 +444,53 @@ export function PresetDialog({
                         )
                       })
                     }
-                  >{`Review ${reimport ? "re-import" : "import"}: ${recipe.name}`}</DialogButton>
+                  >{`Add ${recipe.name} recipe`}</DialogButton>
                 ) : (
                   !catalog.isFetching && (
-                    <p key={recipeId}>Recipe unavailable: {recipeId}</p>
+                    <PresetMessage align="left" key={recipeId}>
+                      Recipe unavailable: {recipeId}
+                    </PresetMessage>
                   )
                 )
               })}
-            </>
-          )}
-          {(validationError || error) && (
-            <div role="alert">{validationError || error}</div>
-          )}
-          {result && (
-            <div role="status">
-              <p>
-                {result.skipped.length
-                  ? "Applied available options only."
-                  : "Preset applied."}{" "}
-                Selected: {result.selected}.
-              </p>
-              {result.skipped.length > 0 && (
-                <>
-                  <p>Skipped references:</p>
-                  <ul>
-                    {result.skipped.map((reference) => (
-                      <li key={JSON.stringify(reference)}>
-                        {reference.recipeId} / {reference.launchOptionId}
-                        {reference.reason === "global-preference"
-                          ? " — protected by global preference"
-                          : ""}
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
+            </Focusable>
           )}
         </DialogBody>
         <DialogFooter>
-          <DialogButtonPrimary
-            ref={applyButtonRef}
-            disabled={
-              loading ||
-              busy ||
-              !!validationError ||
-              (resolution.missing.length > 0 && catalog.isFetching)
-            }
-            onClick={() =>
-              void run(async () => {
-                const outcome = await applyAppPreset(preset, previewOptions)
-                if (!controller.current.signal.aborted) setResult(outcome)
-              })
-            }
+          <Focusable
+            flow-children="column"
+            style={{ display: "flex", flexDirection: "column", gap: 10 }}
           >
-            {resolution.missing.length || globalConflicts.length
-              ? "Apply available options"
-              : "Apply preset"}
-          </DialogButtonPrimary>
-          <DialogButton
-            onClick={() => {
-              controller.current.abort()
-              onClose()
-            }}
-          >
-            Close
-          </DialogButton>
+            <DialogButtonPrimary
+              style={{ flex: 1 }}
+              ref={applyButtonRef}
+              disabled={loading || busy || !!validationError}
+              onClick={() =>
+                void run(async () => {
+                  const outcome = await applyAppPreset(preset, previewOptions)
+                  if (controller.current.signal.aborted) return
+                  onClose()
+                  toaster.toast({
+                    title: `Applied ${preset.name} preset`,
+                    body: `${outcome.selected} launch option${outcome.selected === 1 ? "" : "s"} applied`,
+                  })
+                })
+              }
+            >
+              {resolution.missing.length
+                ? "Apply preset anyway"
+                : "Apply preset"}
+            </DialogButtonPrimary>
+            <DialogButton
+              style={{ flex: 1 }}
+              onClick={() => {
+                controller.current.abort()
+                onClose()
+              }}
+            >
+              Close
+            </DialogButton>
+          </Focusable>
         </DialogFooter>
       </Focusable>
     </ModalRoot>

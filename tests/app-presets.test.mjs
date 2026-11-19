@@ -561,7 +561,7 @@ test("presets never override global dropdown preferences or remove existing manu
     )
     assert.deepEqual(settings.launchOptions, before.launchOptions)
     assert.deepEqual(settings.profiles[77], before.profiles[77])
-    assert.equal(result.selected, alreadyEffective ? 2 : 1)
+    assert.equal(result.selected, 1)
     assert.deepEqual(
       result.skipped,
       alreadyEffective ? [] : [{ ...reference, reason: "global-preference" }],
@@ -625,7 +625,7 @@ test("matching inherited globals satisfy completion without writes while explici
     const result = await actions.applyAppPreset(preset)
     assert.deepEqual(settings, before)
     assert.equal(writes, 0)
-    assert.equal(result.selected, manualOverride ? 0 : 2)
+    assert.equal(result.selected, 0)
     assert.equal(result.skipped.length, manualOverride ? 2 : 0)
     for (const skipped of result.skipped)
       assert.equal(skipped.reason, "global-preference")
