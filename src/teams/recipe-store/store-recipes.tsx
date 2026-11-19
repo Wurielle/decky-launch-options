@@ -19,8 +19,15 @@ import {
 } from "../../components/launch-option-focus"
 import { getRecipesUrl, parseRecipes } from "./recipes"
 import type { GithubStore } from "./store"
+import { prepareRecipeImport } from "../app-presets/model"
 
-export function StoreRecipes({ store }: { store: GithubStore }) {
+export function StoreRecipes({
+  store,
+  storeUrl,
+}: {
+  store: GithubStore
+  storeUrl?: string
+}) {
   const [search, setSearch] = useState("")
   const url = getRecipesUrl(store)
   const recipes = useQuery({
@@ -126,7 +133,13 @@ export function StoreRecipes({ store }: { store: GithubStore }) {
                   onClick={() =>
                     window.dispatchEvent(
                       new CustomEvent(importRecipeEventType, {
-                        detail: recipe,
+                        detail:
+                          storeUrl && recipe.id
+                            ? prepareRecipeImport(recipe, {
+                                url: storeUrl,
+                                store,
+                              })
+                            : recipe,
                       }),
                     )
                   }

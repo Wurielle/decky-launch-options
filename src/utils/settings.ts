@@ -135,9 +135,11 @@ export function getSelectedValueIdLaunchOptionId(
   const globallyEnabled = siblings.find((item) => item.enableGlobally)
   if (globallyEnabled) return globallyEnabled.id
 
-  // Last resort: the fallbackValue option, or the first sibling.
-  const fallback = siblings.find((item) => item.fallbackValue)
-  return fallback?.id || siblings[0].id
+  // Preset imports must stay inert until explicitly selected; ordinary controls
+  // retain their existing fallback/first-sibling behavior.
+  const implicit = siblings.filter((item) => !item.requireExplicitSelection)
+  const fallback = implicit.find((item) => item.fallbackValue)
+  return fallback?.id || implicit[0]?.id || null
 }
 
 export function getLaunchOptionState(

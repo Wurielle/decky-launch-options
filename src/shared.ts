@@ -33,6 +33,10 @@ export const launchOptionFactory = (
   valueName: launchOption.valueName || "",
   fallbackValue: launchOption.fallbackValue || false,
   priority: launchOption.priority || 0,
+  ...(launchOption.requireExplicitSelection
+    ? { requireExplicitSelection: true }
+    : {}),
+  ...(launchOption.source ? { source: { ...launchOption.source } } : {}),
 })
 
 export const environmentVariableMergeFactory = (
@@ -61,6 +65,13 @@ export type Profile = {
 }
 
 export type LaunchOption = {
+  /** Suppress implicit defaults (and unselected off commands) until selected. */
+  requireExplicitSelection?: boolean
+  source?: {
+    storeKey: string
+    recipeId: string
+    launchOptionId: string
+  }
   id: string
   name: string
   on: string
@@ -80,6 +91,7 @@ export type EnvironmentVariableMerge = {
 }
 
 export type Recipe = {
+  id?: string
   name: string
   launchOptions?: Partial<LaunchOption>[]
   environmentVariableMerges?: (Omit<EnvironmentVariableMerge, "id"> & {

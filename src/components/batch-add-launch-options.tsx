@@ -28,11 +28,18 @@ export function BatchAddLaunchOptions({
   environmentVariableMerges: mergeData = [],
   onSubmit,
   onCancel,
+  save,
+  signal,
 }: {
   data: Partial<LaunchOption>[]
   environmentVariableMerges?: Recipe["environmentVariableMerges"]
   onSubmit: () => void
   onCancel: () => void
+  signal?: AbortSignal
+  save?: (
+    options: LaunchOption[],
+    merges: ReturnType<typeof environmentVariableMergeFactory>[],
+  ) => Promise<void>
 }) {
   const [launchOptions] = useState(() =>
     sortBy(data.map(launchOptionFactory), ["name"]),
@@ -41,6 +48,9 @@ export function BatchAddLaunchOptions({
     sortBy(mergeData.map(environmentVariableMergeFactory), ["name"]),
   )
   const { batchCreateLaunchOptions, loading } = useSettings()
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+  const savingRef = useRef(false)
   const importItems =
     launchOptions.length && environmentVariableMerges.length
       ? "launch options and environment variable merges"
@@ -51,11 +61,35 @@ export function BatchAddLaunchOptions({
   const addWithoutReviewButtonRef = useRef<HTMLDivElement>(null)
 
   const addAll = () => {
-    batchCreateLaunchOptions(launchOptions, environmentVariableMerges)
-    onSubmit()
+    if (signal?.aborted || savingRef.current) return
+    if (!save) {
+      batchCreateLaunchOptions(launchOptions, environmentVariableMerges)
+      onSubmit()
+      return
+    }
+    savingRef.current = true
+    setSaving(true)
+    setError("")
+    void save(launchOptions, environmentVariableMerges)
+      .then(onSubmit)
+      .catch((error) => {
+        setError(error instanceof Error ? error.message : String(error))
+      })
+      .finally(() => {
+        savingRef.current = false
+        setSaving(false)
+      })
   }
 
   const confirmAddAll = () => {
+    if (signal?.aborted || savingRef.current) return
+    let finished = false
+    const close = () => {
+      if (finished) return
+      finished = true
+      signal?.removeEventListener("abort", close)
+      confirmation.Close()
+    }
     const confirmation = showModal(
       <ConfirmModal
         strTitle={
@@ -78,12 +112,14 @@ export function BatchAddLaunchOptions({
         strOKButtonText="Add all"
         strCancelButtonText="Cancel"
         onOK={() => {
-          confirmation.Close()
+          if (finished || signal?.aborted) return
+          close()
           addAll()
         }}
-        onCancel={() => confirmation.Close()}
+        onCancel={close}
       />,
     )
+    signal?.addEventListener("abort", close, { once: true })
   }
 
   return (
@@ -97,7 +133,7 @@ export function BatchAddLaunchOptions({
         <DialogButton
           ref={addWithoutReviewButtonRef}
           preferredFocus
-          disabled={loading}
+          disabled={loading || saving}
           style={{ marginBottom: 12 }}
           onClick={confirmAddAll}
         >
@@ -304,6 +340,7 @@ export function BatchAddLaunchOptions({
           </DialogBody>
         </ModalScrollContent>
         <DialogFooter>
+          {error && <div role="alert">{error}</div>}
           <Focusable
             flow-children="column"
             style={{ display: "flex", flexDirection: "column", gap: 10 }}
@@ -311,12 +348,16 @@ export function BatchAddLaunchOptions({
             <DialogButtonPrimary
               ref={addButtonRef}
               style={{ flex: 1 }}
-              disabled={loading}
+              disabled={loading || saving}
               onClick={addAll}
             >
               Add to Decky Launch Options
             </DialogButtonPrimary>
-            <DialogButton style={{ flex: 1 }} onClick={onCancel}>
+            <DialogButton
+              style={{ flex: 1 }}
+              disabled={saving}
+              onClick={onCancel}
+            >
               Cancel
             </DialogButton>
           </Focusable>
@@ -372,24 +413,70 @@ export function batchCreateLaunchOptions(
   showImportDialog({ data: launchOptions })
 }
 
-export function importRecipe(recipe: Recipe) {
-  showImportDialog({
-    data: recipe.launchOptions ?? [],
-    environmentVariableMerges: recipe.environmentVariableMerges,
-  })
+type RecipeImportSave = (
+  options: LaunchOption[],
+  merges: ReturnType<typeof environmentVariableMergeFactory>[],
+) => Promise<void>
+
+export function importRecipe(
+  recipe: Recipe,
+  options: { save?: RecipeImportSave; signal?: AbortSignal } = {},
+) {
+  return showImportDialog(
+    {
+      data: recipe.launchOptions ?? [],
+      environmentVariableMerges: recipe.environmentVariableMerges,
+      save: options.save,
+    },
+    options.signal,
+  )
 }
 
-function showImportDialog(data: {
-  data: Partial<LaunchOption>[]
-  environmentVariableMerges?: Recipe["environmentVariableMerges"]
-}) {
-  const modalResult = showModal(
-    <QueryClientProvider client={queryClient}>
-      <BatchAddLaunchOptions
-        {...data}
-        onSubmit={() => modalResult.Close()}
-        onCancel={() => modalResult.Close()}
-      />
-    </QueryClientProvider>,
-  )
+function showImportDialog(
+  data: {
+    data: Partial<LaunchOption>[]
+    environmentVariableMerges?: Recipe["environmentVariableMerges"]
+    save?: RecipeImportSave
+  },
+  signal?: AbortSignal,
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    if (signal?.aborted) {
+      resolve(false)
+      return
+    }
+    const lifecycle = new AbortController()
+    let finished = false
+    const finish = (accepted: boolean) => {
+      if (finished) return
+      finished = true
+      signal?.removeEventListener("abort", abort)
+      // Every independently hosted shortcut confirmation belongs to this
+      // review operation, including after route cancellation or completion.
+      lifecycle.abort()
+      modalResult.Close()
+      resolve(accepted)
+    }
+    const abort = () => finish(false)
+    const modalResult = showModal(
+      <QueryClientProvider client={queryClient}>
+        <BatchAddLaunchOptions
+          {...data}
+          signal={lifecycle.signal}
+          save={
+            data.save
+              ? async (options, merges) => {
+                  // Guard the exact persistence boundary against captured callbacks.
+                  if (finished || signal?.aborted) return
+                  await data.save!(options, merges)
+                }
+              : undefined
+          }
+          onSubmit={() => finish(true)}
+          onCancel={() => finish(false)}
+        />
+      </QueryClientProvider>,
+    )
+    signal?.addEventListener("abort", abort, { once: true })
+  })
 }

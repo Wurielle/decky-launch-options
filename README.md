@@ -53,6 +53,59 @@ collection that you can share with others, I recommend checking out
 the [Decky Launch Options Recipes](https://github.com/Wurielle/decky-launch-options-recipes)
 plugin.
 
+## App presets
+
+Each app's **Launch Options → Presets** tab discovers presets from every configured
+recipe store, including recipes you have not imported. Open a preset to review its
+launch options and exact dropdown choices, then confirm the selections for that app.
+Unrelated options, other apps, and global selections are preserved. Importing or
+applying a preset does not run its commands; normal app launching remains responsible
+for execution.
+
+Globally enabled controls are the highest user preference. Presets do not change
+those definitions, create per-app overrides for them, or erase existing manual app
+overrides. A conflicting dropdown choice is reported as **protected by global
+preference**, not as a missing recipe. Matching inherited globals already satisfy
+the preset; protected conflicts remain unchecked unless the requested values are
+already effectively selected. This protection also applies during preset recipe
+recovery imports and re-imports; ordinary manual settings behavior is unchanged.
+
+Missing references offer **Review import** or **Review re-import** through the existing
+recipe import dialog. Review and accept each recipe before it is saved. Cancelling an
+import leaves the preset dialog open: **Apply available options** selects only the
+available subset and explicitly lists skipped references. The green check appears only
+when **all** referenced options are effectively selected, including inherited globals
+and manually selected choices; there is no stored “applied” flag. Older imports without
+store provenance require a reviewed import from the originating store and are not
+matched by name or by an unscoped ID.
+
+Store authors can publish one JSON file per preset at
+`presets/steam/<app-id>/<preset-id>.json`:
+
+```json
+{
+  "id": "handheld",
+  "name": "Handheld",
+  "description": "Enable the renderer's low quality choice.",
+  "launchOptions": [
+    { "recipeId": "renderer", "launchOptionId": "renderer-quality-low" }
+  ]
+}
+```
+
+The ID must match the filename. References use stable recipe IDs and individual
+launch-option IDs, **not** the shared dropdown `valueId`. Presets contain references,
+not commands or store URLs. References resolve only against their originating store's
+repository and branch; colliding IDs from other stores do not satisfy them. Duplicate
+references, ambiguous IDs, malformed files, and conflicting dropdown choices are rejected.
+
+Discovery uses GitHub's Contents API, caches by store configuration and app ID for five
+minutes, and limits preset/catalog requests to four in flight. **Refresh presets**
+bypasses the cache. A missing app directory is an empty result; other store errors are
+shown without hiding successful stores. No GitHub login or bundled token is required.
+GitHub's unauthenticated rate limit is shared by IP, so rate-limit errors may require
+waiting before retrying. Preset export, sharing, and submission are not included.
+
 ## How to use
 
 ### 1. Create a launch option

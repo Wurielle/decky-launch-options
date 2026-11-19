@@ -44,8 +44,10 @@ import { renderLaunchOptionItems } from "../../components/launch-option-list"
 import { LaunchOptionsBackupsModal } from "../../components/launch-options-backups-modal"
 import { ModalWrapper } from "../../components/modal-wrapper"
 import { useAppLaunchOptionsState } from "../../hooks/use-app-launch-options-state"
+import { AppPresets } from "../../../app-presets/app-presets"
 
 const advancedTabId = "__advanced"
+const presetsTabId = "__presets"
 
 const formatExecutablePath = (path: string) =>
   /\s|'/.test(path) ? `'${path.split("'").join(`'"'"'`)}'` : path
@@ -159,6 +161,7 @@ export function AppLaunchOptionsPage() {
   }, [settings])
   const activeTab =
     tab === advancedTabId ||
+    tab === presetsTabId ||
     tab === "local" ||
     tab === "global" ||
     groups.includes(tab)
@@ -661,6 +664,11 @@ export function AppLaunchOptionsPage() {
                   </Field>
                 </Focusable>
               ),
+            },
+            {
+              id: presetsTabId,
+              title: "Presets",
+              content: readyToShow && <AppPresets key={appid} appid={appid} />,
             },
             {
               id: "local",

@@ -14,10 +14,13 @@ export function parseRecipes(value: unknown): Recipe[] {
   if (!Array.isArray(value)) throw new Error("Expected a recipes.json array.")
   const strings = ["id", "name", "group", "on", "off", "valueId", "valueName"]
   const booleans = ["enableGlobally", "fallbackValue"]
+  const ids = new Set<string>()
   return value.map((recipe: unknown) => {
     const item = recipe as Partial<Recipe> | null
     if (
       !item ||
+      (item.id !== undefined &&
+        (typeof item.id !== "string" || !item.id.trim())) ||
       typeof item.name !== "string" ||
       !item.name.trim() ||
       (item.launchOptions === undefined &&
@@ -31,6 +34,11 @@ export function parseRecipes(value: unknown): Recipe[] {
         "Each recipe must have a name and a launchOptions or environmentVariableMerges array.",
       )
     }
+    if (item.id) {
+      if (ids.has(item.id)) throw new Error(`Duplicate recipe ID: ${item.id}.`)
+      ids.add(item.id)
+    }
+    const optionIds = new Set<string>()
     for (const option of item.launchOptions ?? []) {
       if (
         !option ||
@@ -52,6 +60,13 @@ export function parseRecipes(value: unknown): Recipe[] {
       ) {
         throw new Error(`Invalid launch option in recipe "${item.name}".`)
       }
+      if (option.id) {
+        if (optionIds.has(option.id))
+          throw new Error(
+            `Duplicate launch option ID in recipe "${item.name}": ${option.id}.`,
+          )
+        optionIds.add(option.id)
+      }
     }
     for (const merge of item.environmentVariableMerges ?? []) {
       if (
@@ -69,10 +84,21 @@ export function parseRecipes(value: unknown): Recipe[] {
       }
     }
     return {
+      ...(item.id === undefined ? {} : { id: item.id }),
       name: item.name,
       ...(item.launchOptions === undefined
         ? {}
-        : { launchOptions: item.launchOptions }),
+        : {
+            // Provenance and activation policy are trusted local metadata,
+            // never assertions accepted from a remote catalog (even legacy IDs).
+            launchOptions: item.launchOptions.map(
+              ({
+                source: _source,
+                requireExplicitSelection: _policy,
+                ...option
+              }) => option,
+            ),
+          }),
       ...(item.environmentVariableMerges === undefined
         ? {}
         : { environmentVariableMerges: item.environmentVariableMerges }),

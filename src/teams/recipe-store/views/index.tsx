@@ -169,7 +169,7 @@ export function RecipeStorePage() {
                 : store.name,
               content: readyToShow && (
                 <Focusable key={url} style={{ height: "100%" }}>
-                  <StoreRecipes store={store} />
+                  <StoreRecipes store={store} storeUrl={url} />
                 </Focusable>
               ),
             })),
