@@ -10,7 +10,7 @@ const react = dataURL(
   `export const useState=init=>globalThis.__presetUI.useState(init); export const useRef=init=>globalThis.__presetUI.useRef(init); export const useEffect=(fn,deps)=>globalThis.__presetUI.useEffect(fn,deps); export const useMemo=fn=>fn(); export const useCallback=fn=>fn;`,
 )
 const ui = dataURL(
-  `export const ButtonItem='ButtonItem', DialogBody='DialogBody', DialogButton='DialogButton', DialogButtonPrimary='DialogButtonPrimary', DialogFooter='DialogFooter', DialogHeader='DialogHeader', Field='Field', Focusable='Focusable', ModalRoot='ModalRoot', PanelSectionRow='PanelSectionRow', SteamSpinner='SteamSpinner', ConfirmModal='ConfirmModal'; export function showModal(element){const modal={element,closed:false,Close(){this.closed=true}}; globalThis.__presetUI.modals.push(modal); return modal;}`,
+  `export const ButtonItem='ButtonItem', DialogBody='DialogBody', DialogButton='DialogButton', DialogButtonPrimary='DialogButtonPrimary', DialogFooter='DialogFooter', DialogHeader='DialogHeader', Field='Field', Focusable='Focusable', ModalRoot='ModalRoot', PanelSectionRow='PanelSectionRow', SteamSpinner='SteamSpinner', ConfirmModal='ConfirmModal', Menu='Menu', MenuItem='MenuItem'; export function showContextMenu(element){const menu={element,hidden:false,Hide(){this.hidden=true}};globalThis.__presetUI.menus.push(menu);return menu;} export function showModal(element){const modal={element,closed:false,Close(){this.closed=true}}; globalThis.__presetUI.modals.push(modal); return modal;}`,
 )
 const boundaries = {
   react,
@@ -37,10 +37,10 @@ const boundaries = {
     `export const ModalScrollContent='ModalScrollContent';`,
   ),
   "react-icons/fa": dataURL(
-    `export const FaGlobe='FaGlobe', FaCheckCircle='FaCheckCircle';`,
+    `export const FaGlobe='FaGlobe', FaCheckCircle='FaCheckCircle', FaEllipsisV='FaEllipsisV';`,
   ),
   "../../components/launch-option-focus": dataURL(
-    `export const LaunchOptionFocusList='LaunchOptionFocusList';`,
+    `export const LaunchOptionFocusList='LaunchOptionFocusList', LaunchOptionControls='LaunchOptionControls', LaunchOptionControl='LaunchOptionControl';`,
   ),
 }
 
@@ -49,6 +49,7 @@ function harness(settings, catalogs = new Map()) {
   let current, cursor
   const fixture = {
     modals: [],
+    menus: [],
     notifications: [],
     writes: [],
     settings,
@@ -292,7 +293,7 @@ test("the real settings hook exposes awaited preset actions backed by the curren
   assert.equal(isPresetSelected(preset, f.settings), true)
 })
 
-test("the per-app launch options page exposes a Presets tab wired to its exact app", async () => {
+test("the per-app launch options page wires Presets and the Advanced selection reset to its exact app", async () => {
   const stub = (names) =>
     dataURL(names.map((name) => `export const ${name}='${name}';`).join(""))
   const mocks = {
@@ -359,8 +360,16 @@ test("the per-app launch options page exposes a Presets tab wired to its exact a
     launchOptions: [],
     environmentVariableMerges: [],
   })
+  let resetAppid
   f.actions = new Proxy(
-    { settings: f.settings, getAppOriginalLaunchOptions: () => "" },
+    {
+      settings: f.settings,
+      loading: false,
+      getAppOriginalLaunchOptions: () => "",
+      resetAppLaunchOptionSelection: (appid) => {
+        resetAppid = appid
+      },
+    },
     { get: (target, key) => target[key] ?? (() => false) },
   )
   globalThis.window = { setTimeout: () => 1, clearTimeout: () => {} }
@@ -370,6 +379,64 @@ test("the per-app launch options page exposes a Presets tab wired to its exact a
   assert.ok(presets, "Presets is an actual app-page tab")
   assert.equal(presets.content.props.appid, "1903340")
   assert.equal(presets.content.type.name, "AppPresets")
+  const advancedContent = tabs.find((tab) => tab.title === "Advanced").content
+  const advanced = f.render(advancedContent)
+  const reset = advanced.find(
+    (node) =>
+      node?.type === "ButtonItem" &&
+      node.props.label === "Reset launch options selection",
+  )
+  assert.equal(advancedContent.props.children.at(-1), reset)
+  assert.equal(reset.props.children, "Reset")
+  assert.equal(reset.props.layout, undefined)
+  assert.equal(reset.props.disabled, false)
+  reset.props.onClick()
+  assert.equal(resetAppid, "1903340")
+})
+
+test("the preset toolbar opens a reset action even while presets are loading", async () => {
+  const { AppPresets } = await import(
+    await sourceModule("src/teams/app-presets/app-presets.tsx", boundaries)
+  )
+  const f = harness({
+    profiles: {},
+    launchOptions: [],
+    environmentVariableMerges: [],
+  })
+  let resetAppid
+  f.actions = {
+    settings: f.settings,
+    loading: false,
+    resetAppLaunchOptionSelection: (appid) => {
+      resetAppid = appid
+    },
+  }
+  const previousStorage = globalThis.localStorage
+  globalThis.localStorage = { getItem: () => null }
+  f.queryResult = () => ({ isFetching: true, isPending: true })
+  try {
+    const tree = f.render({ type: AppPresets, props: { appid: "42" } })
+    const refresh = tree.find(
+      (node) => node?.props?.children === "Refresh presets",
+    )
+    assert.equal(refresh.props.disabled, true)
+    const actions = tree.find(
+      (node) => node?.props?.["aria-label"] === "Preset actions",
+    )
+    assert.equal(actions.props.disabled, false)
+    actions.props.onClick({ currentTarget: {} })
+    assert.equal(f.menus.length, 1)
+    const menu = f.menus[0]
+    const reset = f
+      .render(menu.element)
+      .find((node) => node?.type === "MenuItem")
+    assert.equal(reset.props.children, "Reset launch options selection")
+    reset.props.onSelected()
+    assert.equal(menu.hidden, true)
+    assert.equal(resetAppid, "42")
+  } finally {
+    globalThis.localStorage = previousStorage
+  }
 })
 
 test("missing options in an imported recipe offer reviewed re-import even when none of its preset references resolve", async () => {

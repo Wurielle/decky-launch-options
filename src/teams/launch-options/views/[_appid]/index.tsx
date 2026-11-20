@@ -94,6 +94,8 @@ export function AppLaunchOptionsPage() {
   }, [])
   const {
     settings,
+    loading,
+    resetAppLaunchOptionSelection,
     getAppLaunchOptionState,
     setAppLaunchOptionState,
     setAppValueIdState,
@@ -662,6 +664,13 @@ export function AppLaunchOptionsPage() {
                       ]}
                     />
                   </Field>
+                  <ButtonItem
+                    label="Reset launch options selection"
+                    disabled={loading}
+                    onClick={() => resetAppLaunchOptionSelection(appid)}
+                  >
+                    Reset
+                  </ButtonItem>
                 </Focusable>
               ),
             },

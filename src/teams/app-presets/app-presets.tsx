@@ -1,6 +1,5 @@
 import { fetchNoCors, toaster } from "@decky/api"
 import {
-  ButtonItem,
   DialogBody,
   DialogButton,
   DialogButtonPrimary,
@@ -9,7 +8,6 @@ import {
   Field,
   Focusable,
   ModalRoot,
-  PanelSectionRow,
   showModal,
   SteamSpinner,
 } from "@decky/ui"
@@ -20,8 +18,13 @@ import {
 } from "@tanstack/react-query"
 import { useEffect, useRef, useState } from "react"
 import { FaCheckCircle } from "react-icons/fa"
+import { ActionMenuButton } from "../../components/action-menu-button"
 import { importRecipe } from "../../components/batch-add-launch-options"
-import { LaunchOptionFocusList } from "../../components/launch-option-focus"
+import {
+  LaunchOptionControl,
+  LaunchOptionControls,
+  LaunchOptionFocusList,
+} from "../../components/launch-option-focus"
 import { ModalScrollContent } from "../../components/modal-scroll-content"
 import { StateMessage } from "../../components/state-message"
 import { TabLoading } from "../../components/tab-loading"
@@ -92,7 +95,7 @@ function readStores() {
 
 export function AppPresets({ appid }: { appid: string }) {
   const [configuration, setConfiguration] = useState(readStores)
-  const { settings, loading } = useSettings()
+  const { settings, loading, resetAppLaunchOptionSelection } = useSettings()
   const dialog = useRef<{ Close: () => void } | null>(null)
   const operation = useRef<AbortController | null>(null)
   useEffect(
@@ -129,18 +132,34 @@ export function AppPresets({ appid }: { appid: string }) {
         minHeight: "100%",
       }}
     >
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          disabled={pending}
-          onClick={() => {
-            setConfiguration(readStores())
-            for (const query of queries) void query.refetch()
-          }}
-        >
-          Refresh presets
-        </ButtonItem>
-      </PanelSectionRow>
+      <Field childrenLayout="inline" childrenContainerWidth="max">
+        <LaunchOptionControls style={{ width: "100%" }}>
+          <LaunchOptionControl control="value" style={{ flex: 1, minWidth: 0 }}>
+            <DialogButton
+              style={{ width: "100%" }}
+              disabled={pending}
+              onClick={() => {
+                setConfiguration(readStores())
+                for (const query of queries) void query.refetch()
+              }}
+            >
+              Refresh presets
+            </DialogButton>
+          </LaunchOptionControl>
+          <LaunchOptionControl control="actions">
+            <ActionMenuButton
+              label="Preset actions"
+              disabled={loading}
+              actions={[
+                {
+                  label: "Reset launch options selection",
+                  onSelected: () => resetAppLaunchOptionSelection(appid),
+                },
+              ]}
+            />
+          </LaunchOptionControl>
+        </LaunchOptionControls>
+      </Field>
       {pending ? (
         <TabLoading label="Loading presets" />
       ) : (
