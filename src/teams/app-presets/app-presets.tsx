@@ -27,7 +27,7 @@ import { StateMessage } from "../../components/state-message"
 import { useSettings } from "../../hooks"
 import { queryClient } from "../../queries/settings"
 import { launchOptionFactory, type Recipe } from "../../shared"
-import { getRecipesUrl, parseRecipes } from "../recipe-store/recipes"
+import { getRecipesUrl, readRecipeCatalog } from "../recipe-store/recipes"
 import { getStores } from "../recipe-store/store"
 import {
   fetchPresetResource,
@@ -147,22 +147,11 @@ export function AppPresets({ appid }: { appid: string }) {
                     </span>
                   </strong>
                 </div>
-                {errors.length > 0 && (
-                  <div
-                    style={{
-                      padding: "12px 0",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 12,
-                    }}
-                  >
-                    {errors.map((error, index) => (
-                      <StateMessage role="alert" key={index}>
-                        {error}
-                      </StateMessage>
-                    ))}
-                  </div>
-                )}
+                {errors.map((error, index) => (
+                  <StateMessage role="alert" key={index}>
+                    {error}
+                  </StateMessage>
+                ))}
                 {presets.map((preset) => {
                   let selected = false
                   try {
@@ -271,7 +260,7 @@ export function PresetDialog({
     queryFn: async ({ signal }: { signal: AbortSignal }) => {
       const response = await fetchPresetResource(url, fetchNoCors, signal)
       if (!response.ok) throw downloadHttpError(response.status, "recipes")
-      return parseRecipes(await response.json())
+      return readRecipeCatalog(response)
     },
   })
   const recipes: Recipe[] = catalog.data ?? []
@@ -412,12 +401,10 @@ export function PresetDialog({
                     </ul>
                   </div>
                 )}
-                {catalog.error && (
-                  <StateMessage role="alert">
-                    {catalog.error.message}
-                  </StateMessage>
-                )}
               </div>
+            )}
+            {resolution.missing.length > 0 && catalog.error && (
+              <StateMessage role="alert">{catalog.error.message}</StateMessage>
             )}
             {error && <StateMessage role="alert">{error}</StateMessage>}
           </ModalScrollContent>

@@ -10,6 +10,31 @@ export function getRecipesUrl(store: GithubStore): string {
   return `https://raw.githubusercontent.com/${repository}/refs/heads/${branch}/recipes.json`
 }
 
+export async function readRecipeCatalog(
+  response: Pick<Response, "json">,
+): Promise<Recipe[]> {
+  let value: unknown
+  try {
+    value = await response.json()
+  } catch {
+    return []
+  }
+  if (!Array.isArray(value)) return []
+  const recipes: Recipe[] = []
+  const ids = new Set<string>()
+  for (const item of value) {
+    try {
+      const [recipe] = parseRecipes([item])
+      if (recipe.id && ids.has(recipe.id)) continue
+      if (recipe.id) ids.add(recipe.id)
+      recipes.push(recipe)
+    } catch {
+      // Skip invalid recipes without hiding valid entries in the catalog.
+    }
+  }
+  return recipes
+}
+
 export function parseRecipes(value: unknown): Recipe[] {
   if (!Array.isArray(value)) throw new Error("Expected a recipes.json array.")
   const strings = ["id", "name", "group", "on", "off", "valueId", "valueName"]

@@ -11,6 +11,7 @@ export function StateMessage({
     <div
       role={role}
       style={{
+        padding: "12px 0",
         textAlign: "center",
         whiteSpace: "pre-line",
         overflowWrap: "anywhere",

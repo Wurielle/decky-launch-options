@@ -18,7 +18,7 @@ import {
   LaunchOptionControls,
   LaunchOptionFocusList,
 } from "../../components/launch-option-focus"
-import { getRecipesUrl, parseRecipes } from "./recipes"
+import { getRecipesUrl, readRecipeCatalog } from "./recipes"
 import type { GithubStore } from "./store"
 import { prepareRecipeImport } from "../app-presets/model"
 
@@ -46,7 +46,7 @@ export function StoreRecipes({
       const response = await fetchNoCors(source.href)
       if (!response.ok)
         throw new Error(`Could not download recipes (HTTP ${response.status}).`)
-      return parseRecipes(await response.json())
+      return readRecipeCatalog(response)
     },
   })
   const query = search.trim().toLocaleLowerCase()
