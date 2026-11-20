@@ -53,11 +53,14 @@ export async function fetchPresetResource(
   }
 }
 
-export function presetHttpError(status: number): Error {
+export function downloadHttpError(
+  status: number,
+  resource: "presets" | "recipes",
+): Error {
   return new Error(
     status === 403 || status === 429
       ? `GitHub rate limit or permission error (HTTP ${status}). Try again later or check the store's visibility.`
-      : `Could not download presets (HTTP ${status}).`,
+      : `Could not download ${resource} (HTTP ${status}).`,
   )
 }
 
@@ -89,7 +92,7 @@ export function presetQueryOptions(
         signal,
       )
       if (response.status === 404) return { presets: [], errors: [] }
-      if (!response.ok) throw presetHttpError(response.status)
+      if (!response.ok) throw downloadHttpError(response.status, "presets")
       const entries: unknown = await response.json()
       if (!Array.isArray(entries))
         throw new Error("Invalid preset directory listing.")
@@ -114,7 +117,7 @@ export function presetQueryOptions(
             fetcher,
             signal,
           )
-          if (!file.ok) throw presetHttpError(file.status)
+          if (!file.ok) throw downloadHttpError(file.status, "presets")
           presets.push(parsePreset(await file.json(), entry.name, store, appid))
         } catch (error) {
           signal.throwIfAborted()

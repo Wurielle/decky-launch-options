@@ -65,6 +65,9 @@ const ui = dataURL(`
 const hooks = dataURL(
   `export const useSettings = () => globalThis.__dloRecipeFixture.actions;`,
 )
+const stateMessage = await sourceModule("src/components/state-message.tsx", {
+  "react/jsx-runtime": jsx,
+})
 const dialog = await import(
   await sourceModule("src/components/batch-add-launch-options.tsx", {
     "../shared": shared,
@@ -81,6 +84,7 @@ const dialog = await import(
     "./modal-scroll-content": dataURL(
       `export const ModalScrollContent='ModalScrollContent';`,
     ),
+    "./state-message": stateMessage,
   })
 )
 
@@ -104,6 +108,7 @@ const { StoreRecipes } = await import(
     "../../components/launch-option-focus": dataURL(
       `export const LaunchOptionControl='LaunchOptionControl', LaunchOptionControls='LaunchOptionControls', LaunchOptionFocusList='LaunchOptionFocusList';`,
     ),
+    "../../components/state-message": stateMessage,
   })
 )
 

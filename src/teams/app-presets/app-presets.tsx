@@ -18,11 +18,12 @@ import {
   useQueries,
   useQuery,
 } from "@tanstack/react-query"
-import { type ReactNode, useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { FaCheckCircle } from "react-icons/fa"
 import { importRecipe } from "../../components/batch-add-launch-options"
 import { LaunchOptionFocusList } from "../../components/launch-option-focus"
 import { ModalScrollContent } from "../../components/modal-scroll-content"
+import { StateMessage } from "../../components/state-message"
 import { useSettings } from "../../hooks"
 import { queryClient } from "../../queries/settings"
 import { launchOptionFactory, type Recipe } from "../../shared"
@@ -30,27 +31,11 @@ import { getRecipesUrl, parseRecipes } from "../recipe-store/recipes"
 import { getStores } from "../recipe-store/store"
 import {
   fetchPresetResource,
-  presetHttpError,
+  downloadHttpError,
   presetQueryOptions,
 } from "./discovery"
 import { isPresetSelected, prepareRecipeImport, resolvePreset } from "./model"
 import type { AppPreset } from "./model"
-
-function PresetMessage({
-  children,
-  role,
-  align = "center",
-}: {
-  children: ReactNode
-  role?: "alert" | "status"
-  align?: "left" | "center"
-}) {
-  return (
-    <div role={role} style={{ textAlign: align, overflowWrap: "anywhere" }}>
-      {children}
-    </div>
-  )
-}
 
 function PresetLoading({ label }: { label: string }) {
   return (
@@ -140,10 +125,10 @@ export function AppPresets({ appid }: { appid: string }) {
       ) : (
         <>
           {configuration.error && (
-            <PresetMessage role="alert">{configuration.error}</PresetMessage>
+            <StateMessage role="alert">{configuration.error}</StateMessage>
           )}
           {!hasContent && !configuration.error && (
-            <PresetMessage>No presets found for this app.</PresetMessage>
+            <StateMessage>No presets found for this app.</StateMessage>
           )}
           {stores.map(({ url, store, presets, errors }) => {
             if (!presets.length) return null
@@ -163,9 +148,9 @@ export function AppPresets({ appid }: { appid: string }) {
                   </strong>
                 </div>
                 {errors.map((error, index) => (
-                  <PresetMessage role="alert" key={index}>
+                  <StateMessage role="alert" key={index}>
                     {error}
-                  </PresetMessage>
+                  </StateMessage>
                 ))}
                 {presets.map((preset) => {
                   let selected = false
@@ -274,7 +259,7 @@ export function PresetDialog({
     enabled: resolution.missing.length > 0,
     queryFn: async ({ signal }: { signal: AbortSignal }) => {
       const response = await fetchPresetResource(url, fetchNoCors, signal)
-      if (!response.ok) throw presetHttpError(response.status)
+      if (!response.ok) throw downloadHttpError(response.status, "recipes")
       return parseRecipes(await response.json())
     },
   })
@@ -394,17 +379,12 @@ export function PresetDialog({
             </div>
             {resolution.missing.length > 0 && (
               <>
-                <PresetMessage align="left">
+                <div>
                   Some launch options have not been imported yet. Add their
                   corresponding recipes to import them.
-                </PresetMessage>
+                </div>
                 {catalog.isFetching && (
                   <PresetLoading label="Loading referenced recipes" />
-                )}
-                {catalog.error && (
-                  <PresetMessage align="left" role="alert">
-                    {catalog.error.message}
-                  </PresetMessage>
                 )}
                 {!catalog.isFetching && unavailableRecipeIds.length > 0 && (
                   <div style={{ marginTop: 12 }}>
@@ -419,12 +399,19 @@ export function PresetDialog({
                     </ul>
                   </div>
                 )}
+                {catalog.error && (
+                  <div style={{ marginTop: 12 }}>
+                    <StateMessage role="alert">
+                      {catalog.error.message}
+                    </StateMessage>
+                  </div>
+                )}
               </>
             )}
             {(validationError || error) && (
-              <PresetMessage align="left" role="alert">
+              <StateMessage role="alert">
                 {validationError || error}
-              </PresetMessage>
+              </StateMessage>
             )}
           </ModalScrollContent>
           {missingRecipes.length > 0 && (

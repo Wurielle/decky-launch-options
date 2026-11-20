@@ -7,6 +7,7 @@ import {
   Tabs,
 } from "@decky/ui"
 import { useEffect, useRef, useState } from "react"
+import { StateMessage } from "../../../components/state-message"
 import { ModalWrapper } from "../../launch-options/components/modal-wrapper"
 import { AddStoreForm } from "../add-store-form"
 import {
@@ -136,9 +137,7 @@ export function RecipeStorePage() {
                     </ButtonItem>
                   </PanelSectionRow>
                   {storeError && (
-                    <div role="alert" style={{ textAlign: "center" }}>
-                      {storeError}
-                    </div>
+                    <StateMessage role="alert">{storeError}</StateMessage>
                   )}
                   <StoreList
                     stores={stores}

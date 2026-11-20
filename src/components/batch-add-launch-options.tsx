@@ -22,6 +22,7 @@ import { FaGlobe } from "react-icons/fa"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { queryClient } from "../query"
 import { ModalScrollContent } from "./modal-scroll-content"
+import { StateMessage } from "./state-message"
 
 export function BatchAddLaunchOptions({
   data,
@@ -340,7 +341,7 @@ export function BatchAddLaunchOptions({
           </DialogBody>
         </ModalScrollContent>
         <DialogFooter>
-          {error && <div role="alert">{error}</div>}
+          {error && <StateMessage role="alert">{error}</StateMessage>}
           <Focusable
             flow-children="column"
             style={{ display: "flex", flexDirection: "column", gap: 10 }}

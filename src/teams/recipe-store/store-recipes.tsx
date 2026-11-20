@@ -10,6 +10,7 @@ import {
 } from "@decky/ui"
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
+import { StateMessage } from "../../components/state-message"
 import { FaSyncAlt } from "react-icons/fa"
 import { importRecipeEventType } from "../../shared"
 import {
@@ -110,13 +111,11 @@ export function StoreRecipes({
           />
         </div>
       ) : recipes.error ? (
-        <div role="alert" style={{ textAlign: "center" }}>
-          {recipes.error.message}
-        </div>
+        <StateMessage role="alert">{recipes.error.message}</StateMessage>
       ) : !filteredRecipes?.length ? (
-        <div style={{ textAlign: "center" }}>
+        <StateMessage>
           {query ? "No matching recipes." : "No recipes found."}
-        </div>
+        </StateMessage>
       ) : (
         <Focusable
           style={{
