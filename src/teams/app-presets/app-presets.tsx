@@ -299,9 +299,13 @@ export function PresetDialog({
   const missingRecipeIds = [
     ...new Set(resolution.missing.map((reference) => reference.recipeId)),
   ]
-  const firstAvailableRecipeId = missingRecipeIds.find((id) =>
-    recipes.some((recipe) => recipe.id === id),
+  const missingRecipes = missingRecipeIds
+    .map((id) => recipes.find((recipe) => recipe.id === id))
+    .filter((recipe) => recipe !== undefined)
+  const unavailableRecipeIds = missingRecipeIds.filter(
+    (id) => !recipes.some((recipe) => recipe.id === id),
   )
+  const firstAvailableRecipeId = missingRecipes[0]?.id
   const run = async (action: () => Promise<void>) => {
     if (
       loading ||
@@ -402,6 +406,19 @@ export function PresetDialog({
                     {catalog.error.message}
                   </PresetMessage>
                 )}
+                {!catalog.isFetching && unavailableRecipeIds.length > 0 && (
+                  <div style={{ marginTop: 12 }}>
+                    <div>Recipes unavailable:</div>
+                    <ul
+                      aria-label="Unavailable recipes"
+                      style={{ margin: 0, paddingLeft: 24, lineHeight: 1.5 }}
+                    >
+                      {unavailableRecipeIds.map((recipeId) => (
+                        <li key={recipeId}>{recipeId}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </>
             )}
             {(validationError || error) && (
@@ -410,47 +427,39 @@ export function PresetDialog({
               </PresetMessage>
             )}
           </ModalScrollContent>
-          {missingRecipeIds.length > 0 && (
+          {missingRecipes.length > 0 && (
             <Focusable
               flow-children="column"
               style={{
                 display: "flex",
                 flexDirection: "column",
                 gap: 10,
+                marginTop: 12,
                 marginBottom: 8,
               }}
             >
-              {missingRecipeIds.map((recipeId) => {
-                const recipe = recipes.find((recipe) => recipe.id === recipeId)
-                return recipe ? (
-                  <DialogButton
-                    ref={
-                      recipeId === firstAvailableRecipeId
-                        ? reviewButtonRef
-                        : undefined
-                    }
-                    key={recipeId}
-                    disabled={busy || loading || !!validationError}
-                    onClick={() =>
-                      void run(async () => {
-                        await importRecipe(
-                          prepareRecipeImport(recipe, preset.store, settings),
-                          {
-                            save: savePresetRecipe,
-                            signal: controller.current.signal,
-                          },
-                        )
-                      })
-                    }
-                  >{`Add ${recipe.name} recipe`}</DialogButton>
-                ) : (
-                  !catalog.isFetching && (
-                    <PresetMessage align="left" key={recipeId}>
-                      Recipe unavailable: {recipeId}
-                    </PresetMessage>
-                  )
-                )
-              })}
+              {missingRecipes.map((recipe) => (
+                <DialogButton
+                  ref={
+                    recipe.id === firstAvailableRecipeId
+                      ? reviewButtonRef
+                      : undefined
+                  }
+                  key={recipe.id}
+                  disabled={busy || loading || !!validationError}
+                  onClick={() =>
+                    void run(async () => {
+                      await importRecipe(
+                        prepareRecipeImport(recipe, preset.store, settings),
+                        {
+                          save: savePresetRecipe,
+                          signal: controller.current.signal,
+                        },
+                      )
+                    })
+                  }
+                >{`Add ${recipe.name} recipe`}</DialogButton>
+              ))}
             </Focusable>
           )}
         </DialogBody>
