@@ -422,7 +422,6 @@ export function PresetDialog({
                 flexDirection: "column",
                 gap: 10,
                 marginTop: 12,
-                marginBottom: 8,
               }}
             >
               {missingRecipes.map((recipe) => (
@@ -450,7 +449,7 @@ export function PresetDialog({
             </Focusable>
           )}
         </DialogBody>
-        <DialogFooter>
+        <DialogFooter style={{ paddingTop: 24 }}>
           <Focusable
             flow-children="column"
             style={{ display: "flex", flexDirection: "column", gap: 10 }}

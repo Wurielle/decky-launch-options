@@ -8,7 +8,14 @@ export function StateMessage({
   role?: "alert" | "status"
 }) {
   return (
-    <div role={role} style={{ textAlign: "center", overflowWrap: "anywhere" }}>
+    <div
+      role={role}
+      style={{
+        textAlign: "center",
+        whiteSpace: "pre-line",
+        overflowWrap: "anywhere",
+      }}
+    >
       {children}
     </div>
   )

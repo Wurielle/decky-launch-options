@@ -59,7 +59,7 @@ export function downloadHttpError(
 ): Error {
   return new Error(
     status === 403 || status === 429
-      ? `GitHub rate limit or permission error (HTTP ${status}). Try again later or check the store's visibility.`
+      ? `GitHub rate limit or permission error (HTTP ${status}).\nTry again later or check the store's visibility.`
       : `Could not download ${resource} (HTTP ${status}).`,
   )
 }
