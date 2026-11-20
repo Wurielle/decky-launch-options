@@ -490,7 +490,7 @@ test("declining reviewed import applies only the explicitly confirmed subset and
   )
 })
 
-test("all-store list keeps successful presets beside errors and exposes loading, empty and refresh states", async () => {
+test("store sections require an available preset and preserve loading, empty and refresh states", async () => {
   const { AppPresets } = await import(
     await sourceModule("src/teams/app-presets/app-presets.tsx", boundaries)
   )
@@ -544,14 +544,32 @@ test("all-store list keeps successful presets beside errors and exposes loading,
   const page = { type: AppPresets, props: { appid: "42" } }
   let tree = f.render(page)
   assert.ok(button(tree, "Test"))
-  assert.ok(tree.includes("Rate limit"))
+  assert.equal(tree.includes("Rate limit"), false)
   assert.deepEqual(
     tree.filter((node) => node?.type === "strong").map((node) => node.props.children[0]),
-    ["One", "Two"],
-    "each store has its own heading in saved order",
+    ["One"],
+    "stores without presets have no heading, even when their request fails",
   )
   button(tree, "Refresh presets").props.onClick()
   assert.equal(refetches, 2)
+  f.queryResult = () => ({
+    error: new Error("No internet connection"),
+    isFetching: false,
+    isPending: false,
+  })
+  tree = f.render(page)
+  assert.equal(tree.some((node) => node?.type === "strong"), false)
+  assert.equal(tree.includes("No internet connection"), false)
+  assert.ok(tree.includes("No presets found for this app."))
+  f.queryResult = () => ({
+    data: { presets: [], errors: ["Invalid preset"] },
+    isFetching: false,
+    isPending: false,
+  })
+  tree = f.render(page)
+  assert.equal(tree.some((node) => node?.type === "strong"), false)
+  assert.equal(tree.includes("Invalid preset"), false)
+  assert.ok(tree.includes("No presets found for this app."))
   f.queryResult = () => ({ isPending: true, isFetching: true })
   tree = f.render(page)
   assert.ok(

@@ -113,9 +113,7 @@ export function AppPresets({ appid }: { appid: string }) {
       ],
     }
   })
-  const hasContent = stores.some(
-    ({ presets, errors }) => presets.length || errors.length,
-  )
+  const hasContent = stores.some(({ presets }) => presets.length > 0)
 
   return (
     <LaunchOptionFocusList
@@ -148,7 +146,7 @@ export function AppPresets({ appid }: { appid: string }) {
             <PresetMessage>No presets found for this app.</PresetMessage>
           )}
           {stores.map(({ url, store, presets, errors }) => {
-            if (!presets.length && !errors.length) return null
+            if (!presets.length) return null
             return (
               <div key={url}>
                 <div style={{ marginTop: "16px" }}>
