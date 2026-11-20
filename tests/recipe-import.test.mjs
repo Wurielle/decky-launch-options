@@ -68,6 +68,10 @@ const hooks = dataURL(
 const stateMessage = await sourceModule("src/components/state-message.tsx", {
   "react/jsx-runtime": jsx,
 })
+const tabLoading = await sourceModule("src/components/tab-loading.tsx", {
+  "react/jsx-runtime": jsx,
+  "@decky/ui": dataURL(`export const SteamSpinner='SteamSpinner';`),
+})
 const dialog = await import(
   await sourceModule("src/components/batch-add-launch-options.tsx", {
     "../shared": shared,
@@ -109,6 +113,7 @@ const { StoreRecipes } = await import(
       `export const LaunchOptionControl='LaunchOptionControl', LaunchOptionControls='LaunchOptionControls', LaunchOptionFocusList='LaunchOptionFocusList';`,
     ),
     "../../components/state-message": stateMessage,
+    "../../components/tab-loading": tabLoading,
   })
 )
 

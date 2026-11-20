@@ -5,12 +5,12 @@ import {
   Field,
   Focusable,
   PanelSectionRow,
-  SteamSpinner,
   TextField,
 } from "@decky/ui"
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import { StateMessage } from "../../components/state-message"
+import { TabLoading } from "../../components/tab-loading"
 import { FaSyncAlt } from "react-icons/fa"
 import { importRecipeEventType } from "../../shared"
 import {
@@ -96,22 +96,7 @@ export function StoreRecipes({
         </LaunchOptionControls>
       </Field>
       {loading ? (
-        <div
-          data-dlo-loading-recipes
-          role="status"
-          aria-label="Loading recipes"
-          style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <SteamSpinner
-            background="transparent"
-            style={{ width: 64, height: 64 }}
-          />
-        </div>
+        <TabLoading label="Loading recipes" />
       ) : recipes.error ? (
         <StateMessage role="alert">{recipes.error.message}</StateMessage>
       ) : !filteredRecipes?.length ? (
@@ -151,13 +136,6 @@ export function StoreRecipes({
             </div>
           ))}
         </Focusable>
-      )}
-      {loading && (
-        <style>{`
-          ._TabContentsScroll:has([data-dlo-loading-recipes]) {
-            padding-bottom: 0;
-          }
-        `}</style>
       )}
     </LaunchOptionFocusList>
   )

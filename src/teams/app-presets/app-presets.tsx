@@ -24,6 +24,7 @@ import { importRecipe } from "../../components/batch-add-launch-options"
 import { LaunchOptionFocusList } from "../../components/launch-option-focus"
 import { ModalScrollContent } from "../../components/modal-scroll-content"
 import { StateMessage } from "../../components/state-message"
+import { TabLoading } from "../../components/tab-loading"
 import { useSettings } from "../../hooks"
 import { queryClient } from "../../queries/settings"
 import { launchOptionFactory, type Recipe } from "../../shared"
@@ -121,7 +122,7 @@ export function AppPresets({ appid }: { appid: string }) {
         </ButtonItem>
       </PanelSectionRow>
       {pending ? (
-        <PresetLoading label="Loading presets" />
+        <TabLoading label="Loading presets" />
       ) : (
         <>
           {configuration.error && (
