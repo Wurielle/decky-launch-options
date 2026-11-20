@@ -53,13 +53,14 @@ export function StoreRecipes({
   const filteredRecipes = recipes.data?.filter((recipe) =>
     recipe.name.toLocaleLowerCase().includes(query),
   )
+  const loading = recipes.isPending || recipes.isFetching
 
   return (
     <LaunchOptionFocusList
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 6,
+        gap: loading ? 0 : 6,
         minHeight: "100%",
       }}
     >
@@ -94,8 +95,9 @@ export function StoreRecipes({
           </LaunchOptionControl>
         </LaunchOptionControls>
       </Field>
-      {recipes.isPending || recipes.isFetching ? (
+      {loading ? (
         <div
+          data-dlo-loading-recipes
           role="status"
           aria-label="Loading recipes"
           style={{
@@ -149,6 +151,13 @@ export function StoreRecipes({
             </div>
           ))}
         </Focusable>
+      )}
+      {loading && (
+        <style>{`
+          ._TabContentsScroll:has([data-dlo-loading-recipes]) {
+            padding-bottom: 0;
+          }
+        `}</style>
       )}
     </LaunchOptionFocusList>
   )

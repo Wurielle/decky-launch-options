@@ -46,9 +46,7 @@ export function parseStore(value: unknown): GithubStore {
     typeof data.github.branch !== "string" ||
     !data.github.branch.trim()
   ) {
-    throw new Error(
-      "Expected store JSON with name, description, type: github, and github.repository and github.branch.",
-    )
+    throw new Error("Invalid store schema.")
   }
   return {
     name: data.name,
