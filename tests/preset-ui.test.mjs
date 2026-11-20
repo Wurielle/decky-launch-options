@@ -224,6 +224,103 @@ test("preset authors appear in both views, only Wurielle has a verified badge, a
   }
 })
 
+test("preset dividers separate game and global presets without changing store order or showing empty groups", async () => {
+  const { AppPresets } = await import(
+    await sourceModule("src/teams/app-presets/app-presets.tsx", boundaries)
+  )
+  const { parsePreset, storeKey } = await import(
+    await sourceModule("src/teams/app-presets/model.ts")
+  )
+  const stores = ["Second", "First"].map((name) => ({
+    url: `https://fixture.test/${name}.json`,
+    store: {
+      name,
+      description: "",
+      type: "github",
+      github: { repository: `example/${name}`, branch: "main" },
+    },
+  }))
+  const preset = (store, name, sourceAppid) =>
+    parsePreset(
+      {
+        id: name,
+        name,
+        author: "Example",
+        description: "",
+        launchOptions: [{ recipeId: "renderer", launchOptionId: "install" }],
+      },
+      `${name}.json`,
+      store,
+      "42",
+      sourceAppid,
+    )
+  const f = harness({
+    profiles: {},
+    launchOptions: [],
+    environmentVariableMerges: [],
+  })
+  f.actions = { settings: f.settings, loading: false }
+  const catalogs = new Map(
+    stores.map((store) => [
+      storeKey(store),
+      [
+        preset(store, `${store.store.name}-global`, "*"),
+        preset(store, `${store.store.name}-game`, "42"),
+      ],
+    ]),
+  )
+  let loading = false
+  f.queryResult = (options) => ({
+    data: { presets: catalogs.get(options.queryKey[1]) ?? [], errors: [] },
+    isFetching: loading,
+    isPending: false,
+  })
+  const previousStorage = globalThis.localStorage
+  globalThis.localStorage = {
+    getItem: (key) =>
+      key.endsWith("default-removed") ? "true" : JSON.stringify(stores),
+  }
+  const render = () => f.render({ type: AppPresets, props: { appid: "42" } })
+  const sections = (tree) => tree.filter((node) => node?.type === "section")
+  try {
+    const tree = render()
+    assert.ok(tree.indexOf("Second") < tree.indexOf("First"))
+    assert.deepEqual(
+      sections(tree).map((section) => section.props["aria-label"]),
+      ["Game presets", "Global presets", "Game presets", "Global presets"],
+    )
+    assert.deepEqual(
+      sections(tree).map((section) =>
+        f
+          .render(section)
+          .filter((node) => node?.type === "DialogButton")
+          .map((node) => node.props["aria-label"]),
+      ),
+      [
+        ["Use Second-game"],
+        ["Use Second-global"],
+        ["Use First-game"],
+        ["Use First-global"],
+      ],
+    )
+    assert.equal(tree.filter((node) => node?.type === "hr").length, 4)
+
+    catalogs.set(storeKey(stores[0]), [])
+    catalogs.set(storeKey(stores[1]), [preset(stores[1], "only-global", "*")])
+    const globalOnly = render()
+    assert.equal(globalOnly.includes("Second"), false)
+    assert.deepEqual(
+      sections(globalOnly).map((section) => section.props["aria-label"]),
+      ["Global presets"],
+    )
+
+    loading = true
+    assert.equal(sections(render()).length, 0)
+  } finally {
+    globalThis.localStorage = previousStorage
+  }
+})
+
 test("the real settings hook exposes awaited preset actions backed by the current query cache", async () => {
   const { useSettings } = await import(
     await sourceModule("src/hooks.ts", {

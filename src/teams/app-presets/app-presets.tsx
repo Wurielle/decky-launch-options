@@ -20,6 +20,7 @@ import { useEffect, useRef, useState } from "react"
 import { FaCheckCircle } from "react-icons/fa"
 import { ActionMenuButton } from "../../components/action-menu-button"
 import { importRecipe } from "../../components/batch-add-launch-options"
+import { LabeledDivider } from "../../components/labeled-divider"
 import {
   LaunchOptionControl,
   LaunchOptionControls,
@@ -172,6 +173,16 @@ export function AppPresets({ appid }: { appid: string }) {
           )}
           {stores.map(({ url, store, presets, errors }) => {
             if (!presets.length) return null
+            const sections = [
+              {
+                label: "Game presets",
+                presets: presets.filter((preset) => preset.sourceAppid !== "*"),
+              },
+              {
+                label: "Global presets",
+                presets: presets.filter((preset) => preset.sourceAppid === "*"),
+              },
+            ].filter((section) => section.presets.length > 0)
             return (
               <div key={url}>
                 <div style={{ marginTop: "16px" }}>
@@ -192,73 +203,78 @@ export function AppPresets({ appid }: { appid: string }) {
                     {error}
                   </StateMessage>
                 ))}
-                {presets.map((preset) => {
-                  let selected = false
-                  try {
-                    selected = isPresetSelected(preset, settings)
-                  } catch {
-                    /* Invalid presets are not marked selected. */
-                  }
-                  return (
-                    <Field
-                      key={preset.key}
-                      childrenLayout="inline"
-                      label={
-                        <span
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6,
-                          }}
-                        >
-                          {preset.name}
-                          {selected && (
-                            <FaCheckCircle
-                              role="img"
-                              aria-label="Preset selected"
-                              style={{ color: "#a4d007" }}
-                            />
-                          )}
-                        </span>
+                {sections.map((section) => (
+                  <section key={section.label} aria-label={section.label}>
+                    <LabeledDivider label={section.label} />
+                    {section.presets.map((preset) => {
+                      let selected = false
+                      try {
+                        selected = isPresetSelected(preset, settings)
+                      } catch {
+                        /* Invalid presets are not marked selected. */
                       }
-                      description={
-                        <span
-                          style={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 4,
-                          }}
+                      return (
+                        <Field
+                          key={preset.key}
+                          childrenLayout="inline"
+                          label={
+                            <span
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                              }}
+                            >
+                              {preset.name}
+                              {selected && (
+                                <FaCheckCircle
+                                  role="img"
+                                  aria-label="Preset selected"
+                                  style={{ color: "#a4d007" }}
+                                />
+                              )}
+                            </span>
+                          }
+                          description={
+                            <span
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 4,
+                              }}
+                            >
+                              {preset.description && (
+                                <span>{preset.description}</span>
+                              )}
+                              <PresetAuthor author={preset.author} />
+                            </span>
+                          }
                         >
-                          {preset.description && (
-                            <span>{preset.description}</span>
-                          )}
-                          <PresetAuthor author={preset.author} />
-                        </span>
-                      }
-                    >
-                      <DialogButton
-                        aria-label={`Use ${preset.name}`}
-                        disabled={loading}
-                        onClick={() => {
-                          operation.current?.abort()
-                          operation.current = new AbortController()
-                          const modal = showModal(
-                            <QueryClientProvider client={queryClient}>
-                              <PresetDialog
-                                preset={preset}
-                                signal={operation.current.signal}
-                                onClose={() => modal.Close()}
-                              />
-                            </QueryClientProvider>,
-                          )
-                          dialog.current = modal
-                        }}
-                      >
-                        Use
-                      </DialogButton>
-                    </Field>
-                  )
-                })}
+                          <DialogButton
+                            aria-label={`Use ${preset.name}`}
+                            disabled={loading}
+                            onClick={() => {
+                              operation.current?.abort()
+                              operation.current = new AbortController()
+                              const modal = showModal(
+                                <QueryClientProvider client={queryClient}>
+                                  <PresetDialog
+                                    preset={preset}
+                                    signal={operation.current.signal}
+                                    onClose={() => modal.Close()}
+                                  />
+                                </QueryClientProvider>,
+                              )
+                              dialog.current = modal
+                            }}
+                          >
+                            Use
+                          </DialogButton>
+                        </Field>
+                      )
+                    })}
+                  </section>
+                ))}
               </div>
             )
           })}
