@@ -38,6 +38,26 @@ import {
 import { isPresetSelected, prepareRecipeImport, resolvePreset } from "./model"
 import type { AppPreset } from "./model"
 
+function PresetAuthor({ author }: { author: string }) {
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 4,
+        fontSize: 14,
+        fontWeight: 400,
+        color: "#b8bcbf",
+      }}
+    >
+      {author.toLowerCase() === "wurielle" && (
+        <FaCheckCircle role="img" aria-label="Verified author" />
+      )}
+      {author}
+    </span>
+  )
+}
+
 function PresetLoading({ label }: { label: string }) {
   return (
     <div
@@ -182,7 +202,20 @@ export function AppPresets({ appid }: { appid: string }) {
                           )}
                         </span>
                       }
-                      description={preset.description}
+                      description={
+                        <span
+                          style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 4,
+                          }}
+                        >
+                          {preset.description && (
+                            <span>{preset.description}</span>
+                          )}
+                          <PresetAuthor author={preset.author} />
+                        </span>
+                      }
                     >
                       <DialogButton
                         aria-label={`Use ${preset.name}`}
@@ -322,7 +355,17 @@ export function PresetDialog({
       bAllowFullSize
     >
       <Focusable flow-children="column">
-        <DialogHeader>{preset.name} Preset</DialogHeader>
+        <DialogHeader
+          style={{
+            display: "flex",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: 12,
+          }}
+        >
+          <span>{preset.name} Preset</span>
+          <PresetAuthor author={preset.author} />
+        </DialogHeader>
         <DialogBody
           style={{
             textAlign: "left",
@@ -342,41 +385,69 @@ export function PresetDialog({
                   {preset.description}
                 </p>
               )}
-              <ul
-                aria-label="Preset launch options"
-                style={{ margin: "0 0 12px", paddingLeft: 24, lineHeight: 1.5 }}
-              >
-                {preset.launchOptions.map((reference) => {
-                  const option =
-                    resolution.selected.find(
-                      (option) =>
-                        option.source?.recipeId === reference.recipeId &&
-                        option.source.launchOptionId ===
-                          reference.launchOptionId,
-                    ) ??
-                    previews
-                      .flatMap((recipe) => recipe.launchOptions ?? [])
-                      .find(
-                        (option) =>
-                          option.source?.recipeId === reference.recipeId &&
-                          option.source.launchOptionId ===
-                            reference.launchOptionId,
+              {preset.notes.length > 0 && (
+                <>
+                  <div>Notes:</div>
+                  <ul
+                    aria-label="Preset notes"
+                    style={{
+                      margin: "0 0 12px",
+                      paddingLeft: 24,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {preset.notes.map((note, index) => (
+                      <li key={index} style={{ whiteSpace: "pre-line" }}>
+                        {note}
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+              {preset.launchOptions.length > 0 && (
+                <>
+                  <div>Launch options:</div>
+                  <ul
+                    aria-label="Preset launch options"
+                    style={{
+                      margin: "0 0 12px",
+                      paddingLeft: 24,
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    {preset.launchOptions.map((reference) => {
+                      const option =
+                        resolution.selected.find(
+                          (option) =>
+                            option.source?.recipeId === reference.recipeId &&
+                            option.source.launchOptionId ===
+                              reference.launchOptionId,
+                        ) ??
+                        previews
+                          .flatMap((recipe) => recipe.launchOptions ?? [])
+                          .find(
+                            (option) =>
+                              option.source?.recipeId === reference.recipeId &&
+                              option.source.launchOptionId ===
+                                reference.launchOptionId,
+                          )
+                      const skipped = resolution.protectedOptions.some(
+                        (item) => item.reference === reference,
                       )
-                  const skipped = resolution.protectedOptions.some(
-                    (item) => item.reference === reference,
-                  )
-                  return (
-                    <li key={JSON.stringify(reference)}>
-                      {option?.name || reference.launchOptionId}
-                      {option?.valueName ? ` (${option.valueName})` : ""}
-                      {resolution.missing.includes(reference) && (
-                        <span> — Not imported</span>
-                      )}
-                      {skipped && <span> — Skipped</span>}
-                    </li>
-                  )
-                })}
-              </ul>
+                      return (
+                        <li key={JSON.stringify(reference)}>
+                          {option?.name || reference.launchOptionId}
+                          {option?.valueName ? ` (${option.valueName})` : ""}
+                          {resolution.missing.includes(reference) && (
+                            <span> — Not imported</span>
+                          )}
+                          {skipped && <span> — Skipped</span>}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </>
+              )}
             </div>
             {resolution.missing.length > 0 && (
               <div

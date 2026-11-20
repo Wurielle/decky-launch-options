@@ -85,55 +85,88 @@ export function presetQueryOptions(
         .map(encodeURIComponent)
         .join("/")
       const branch = encodeURIComponent(store.store.github.branch)
-      const directory = `presets/steam/${appid}`
-      const response = await fetchPresetResource(
-        `https://api.github.com/repos/${repository}/contents/${directory}?ref=${branch}`,
-        fetcher,
-        signal,
-      )
-      if (response.status === 404) return { presets: [], errors: [] }
-      if (!response.ok) throw downloadHttpError(response.status, "presets")
-      let entries: unknown
-      try {
-        entries = await response.json()
-      } catch {
-        signal.throwIfAborted()
-        return { presets: [], errors: [] }
-      }
-      if (!Array.isArray(entries)) return { presets: [], errors: [] }
-      const presets: AppPreset[] = []
-      const errors: string[] = []
-      const names = new Set<string>()
-      for (const entry of entries) {
-        if (
-          entry?.type !== "file" ||
-          typeof entry.name !== "string" ||
-          !entry.name.endsWith(".json")
+      const readDirectory = async (
+        sourceAppid: string,
+      ): Promise<PresetDiscovery> => {
+        const scope =
+          sourceAppid === "*" ? "%2A" : encodeURIComponent(sourceAppid)
+        const directory = `presets/steam/${scope}`
+        const response = await fetchPresetResource(
+          `https://api.github.com/repos/${repository}/contents/${directory}?ref=${branch}`,
+          fetcher,
+          signal,
         )
-          continue
-        if (names.has(entry.name) || /[/\\]/.test(entry.name)) continue
-        names.add(entry.name)
-        let file: Awaited<ReturnType<typeof fetchPresetResource>>
+        if (response.status === 404) return { presets: [], errors: [] }
+        if (!response.ok) throw downloadHttpError(response.status, "presets")
+        let entries: unknown
         try {
-          file = await fetchPresetResource(
-            `https://raw.githubusercontent.com/${repository}/refs/heads/${branch}/${directory}/${encodeURIComponent(entry.name)}`,
-            fetcher,
-            signal,
-          )
-          if (!file.ok) throw downloadHttpError(file.status, "presets")
-        } catch (error) {
-          signal.throwIfAborted()
-          errors.push(error instanceof Error ? error.message : String(error))
-          continue
-        }
-        try {
-          presets.push(parsePreset(await file.json(), entry.name, store, appid))
+          entries = await response.json()
         } catch {
           signal.throwIfAborted()
+          return { presets: [], errors: [] }
+        }
+        if (!Array.isArray(entries)) return { presets: [], errors: [] }
+        const presets: AppPreset[] = []
+        const errors: string[] = []
+        const names = new Set<string>()
+        for (const entry of entries) {
+          if (
+            entry?.type !== "file" ||
+            typeof entry.name !== "string" ||
+            !entry.name.endsWith(".json")
+          )
+            continue
+          if (names.has(entry.name) || /[/\\]/.test(entry.name)) continue
+          names.add(entry.name)
+          let file: Awaited<ReturnType<typeof fetchPresetResource>>
+          try {
+            file = await fetchPresetResource(
+              `https://raw.githubusercontent.com/${repository}/refs/heads/${branch}/${directory}/${encodeURIComponent(entry.name)}`,
+              fetcher,
+              signal,
+            )
+            if (!file.ok) throw downloadHttpError(file.status, "presets")
+          } catch (error) {
+            signal.throwIfAborted()
+            errors.push(error instanceof Error ? error.message : String(error))
+            continue
+          }
+          try {
+            presets.push(
+              parsePreset(
+                await file.json(),
+                entry.name,
+                store,
+                appid,
+                sourceAppid,
+              ),
+            )
+          } catch {
+            signal.throwIfAborted()
+          }
+        }
+        signal.throwIfAborted()
+        return { presets, errors }
+      }
+      const presets: AppPreset[] = []
+      const errors: string[] = []
+      let directoryError: Error | undefined
+      for (const sourceAppid of [appid, "*"]) {
+        try {
+          const result = await readDirectory(sourceAppid)
+          presets.push(...result.presets)
+          errors.push(...result.errors)
+        } catch (error) {
+          signal.throwIfAborted()
+          const failure =
+            error instanceof Error ? error : new Error(String(error))
+          directoryError ??= failure
+          errors.push(failure.message)
         }
       }
       signal.throwIfAborted()
-      return { presets, errors }
+      if (!presets.length && directoryError) throw directoryError
+      return { presets, errors: [...new Set(errors)] }
     },
   }
 }

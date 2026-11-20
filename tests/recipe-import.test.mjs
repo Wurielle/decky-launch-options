@@ -314,6 +314,7 @@ test("ID-less remote recipes imported through ordinary review cannot forge a sec
     {
       id: "preset",
       name: "B",
+      author: "Example",
       description: "",
       launchOptions: [{ recipeId: "renderer", launchOptionId: "install" }],
     },

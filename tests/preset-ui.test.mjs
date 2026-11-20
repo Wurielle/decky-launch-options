@@ -112,6 +112,117 @@ function harness(settings, catalogs = new Map()) {
   globalThis.__presetUI = fixture
   return fixture
 }
+test("preset authors appear in both views, only Wurielle has a verified badge, and notes follow the description", async () => {
+  const { AppPresets, PresetDialog } = await import(
+    await sourceModule("src/teams/app-presets/app-presets.tsx", boundaries)
+  )
+  const { parsePreset } = await import(
+    await sourceModule("src/teams/app-presets/model.ts")
+  )
+  const store = {
+    url: "https://fixture.test/store.json",
+    store: {
+      name: "Store",
+      description: "",
+      type: "github",
+      github: { repository: "example/store", branch: "main" },
+    },
+  }
+  const data = {
+    id: "official",
+    name: "Official",
+    author: "Wurielle",
+    description: "Preset description",
+    notes: ["First usage note", "Second usage note"],
+    launchOptions: [{ recipeId: "renderer", launchOptionId: "install" }],
+  }
+  const official = parsePreset(data, "official.json", store, "42")
+  const community = parsePreset(
+    {
+      ...data,
+      id: "community",
+      name: "Community",
+      author: "AnotherUser",
+      notes: [],
+    },
+    "community.json",
+    store,
+    "42",
+  )
+  const f = harness({
+    profiles: {},
+    launchOptions: [],
+    environmentVariableMerges: [],
+  })
+  f.actions = { settings: f.settings, loading: false }
+  const previousStorage = globalThis.localStorage
+  globalThis.localStorage = {
+    getItem: (key) =>
+      key.endsWith("default-removed") ? "true" : JSON.stringify([store]),
+  }
+  f.queryResult = (options) =>
+    options.queryKey[0] === "app-presets"
+      ? {
+          data: { presets: [official, community], errors: [] },
+          isFetching: false,
+          isPending: false,
+        }
+      : { data: [], isFetching: false }
+  const badges = (tree) =>
+    tree.filter((node) => node?.props?.["aria-label"] === "Verified author")
+  try {
+    const list = f.render({ type: AppPresets, props: { appid: "42" } })
+    assert.ok(list.includes("Wurielle"))
+    assert.ok(list.includes("AnotherUser"))
+    assert.equal(badges(list).length, 1)
+    assert.ok(list.indexOf("Preset description") < list.indexOf("Wurielle"))
+    assert.ok(list.indexOf(badges(list)[0]) < list.indexOf("Wurielle"))
+    assert.equal(list.includes("First usage note"), false)
+    for (const preset of [official, community]) {
+      const tree = f.render({
+        type: PresetDialog,
+        props: { preset, signal: new AbortController().signal, onClose() {} },
+      })
+      assert.ok(tree.includes(preset.author))
+      assert.equal(badges(tree).length, preset === official ? 1 : 0)
+      const header = tree.find(node => node?.type === "DialogHeader")
+      const title = f.render(header)
+      assert.ok(title.includes(preset.author))
+      assert.ok(title.indexOf(preset.name) < title.indexOf(preset.author))
+      assert.ok(tree.includes("Launch options:"))
+      if (preset === official) {
+        assert.ok(tree.indexOf(badges(tree)[0]) < tree.indexOf("Wurielle"))
+        assert.ok(tree.indexOf("Notes:") < tree.indexOf("First usage note"))
+        assert.ok(tree.indexOf("Launch options:") < tree.indexOf("install"))
+        assert.ok(
+          tree.indexOf("Preset description") < tree.indexOf("First usage note"),
+        )
+        assert.ok(
+          tree.indexOf("First usage note") < tree.indexOf("Second usage note"),
+        )
+        assert.ok(tree.indexOf("Second usage note") < tree.indexOf("install"))
+        assert.ok(
+          tree.some((node) => node?.props?.["aria-label"] === "Preset notes"),
+        )
+      } else {
+        assert.equal(tree.includes("Notes:"), false)
+        assert.equal(
+          tree.some((node) => node?.props?.["aria-label"] === "Preset notes"),
+          false,
+        )
+      }
+    }
+    const empty = f.render({
+      type: PresetDialog,
+      props: { preset: { ...community, launchOptions: [] }, signal: new AbortController().signal, onClose() {} },
+    })
+    assert.equal(empty.includes("Launch options:"), false)
+    assert.equal(empty.some(node => node?.props?.["aria-label"] === "Preset launch options"), false)
+  } finally {
+    globalThis.localStorage = previousStorage
+  }
+})
+
 test("the real settings hook exposes awaited preset actions backed by the current query cache", async () => {
   const { useSettings } = await import(
     await sourceModule("src/hooks.ts", {
@@ -168,6 +279,7 @@ test("the real settings hook exposes awaited preset actions backed by the curren
     {
       id: "example",
       name: "Example",
+      author: "Example",
       description: "",
       launchOptions: [{ recipeId: "renderer", launchOptionId: "install" }],
     },
@@ -281,6 +393,7 @@ test("missing options in an imported recipe offer reviewed re-import even when n
     {
       id: "test",
       name: "Test",
+      author: "Example",
       description: "",
       launchOptions: [{ recipeId: "renderer", launchOptionId: "missing" }],
     },
@@ -323,10 +436,15 @@ test("missing options in an imported recipe offer reviewed re-import even when n
   })
   assert.ok(button(tree, "Add Renderer recipe"))
   const reader = tree.find((node) => node?.type === "ModalScrollContent")
-  assert.equal(button(f.render(reader), "Add Renderer recipe"), undefined,
-    "recipe buttons must not bubble gamepad direction events through the scroll reader")
+  assert.equal(
+    button(f.render(reader), "Add Renderer recipe"),
+    undefined,
+    "recipe buttons must not bubble gamepad direction events through the scroll reader",
+  )
   let recipeFocus = 0
-  button(tree, "Add Renderer recipe").props.ref.current = { focus: () => recipeFocus++ }
+  button(tree, "Add Renderer recipe").props.ref.current = {
+    focus: () => recipeFocus++,
+  }
   reader.props.onFocusNext()
   assert.equal(recipeFocus, 1, "leaving the reader enters the recipe controls")
 })
@@ -363,6 +481,7 @@ test("conflicting choices discovered in an unimported recipe cannot partially ap
     {
       id: "test",
       name: "Test",
+      author: "Example",
       description: "",
       launchOptions: recipe.launchOptions.map((option) => ({
         recipeId: "renderer",
@@ -396,7 +515,10 @@ test("conflicting choices discovered in an unimported recipe cannot partially ap
   })
   const apply = button(tree, "Apply preset anyway")
   assert.equal(apply.props.disabled, true)
-  assert.equal(tree.some((node) => node?.props?.role === "alert"), false)
+  assert.equal(
+    tree.some((node) => node?.props?.role === "alert"),
+    false,
+  )
   apply.props.onClick()
   await tick()
   assert.equal(f.writes.length, 0)
@@ -434,6 +556,7 @@ test("declining reviewed import applies only the explicitly confirmed subset and
     {
       id: "test",
       name: "Test",
+      author: "Example",
       description: "",
       launchOptions: [
         { recipeId: "renderer", launchOptionId: "available" },
@@ -511,6 +634,7 @@ test("store sections require an available preset and preserve loading, empty and
     {
       id: "test",
       name: "Test",
+      author: "Example",
       description: "Description",
       launchOptions: [{ recipeId: "renderer", launchOptionId: "option" }],
     },
@@ -559,7 +683,10 @@ test("store sections require an available preset and preserve loading, empty and
     isPending: false,
   })
   tree = f.render(page)
-  assert.equal(tree.some((node) => node?.type === "strong"), false)
+  assert.equal(
+    tree.some((node) => node?.type === "strong"),
+    false,
+  )
   assert.equal(tree.includes("No internet connection"), false)
   assert.ok(tree.includes("No presets found for this app."))
   f.queryResult = () => ({
@@ -568,7 +695,10 @@ test("store sections require an available preset and preserve loading, empty and
     isPending: false,
   })
   tree = f.render(page)
-  assert.equal(tree.some((node) => node?.type === "strong"), false)
+  assert.equal(
+    tree.some((node) => node?.type === "strong"),
+    false,
+  )
   assert.equal(tree.includes("Invalid preset"), false)
   assert.ok(tree.includes("No presets found for this app."))
   f.queryResult = () => ({ isPending: true, isFetching: true })
@@ -582,8 +712,14 @@ test("store sections require an available preset and preserve loading, empty and
     isFetching: true,
   })
   tree = f.render(page)
-  assert.ok(tree.some((node) => node?.props?.["aria-label"] === "Loading presets"))
-  assert.equal(button(tree, "Test"), undefined, "cached presets stay hidden while refreshing")
+  assert.ok(
+    tree.some((node) => node?.props?.["aria-label"] === "Loading presets"),
+  )
+  assert.equal(
+    button(tree, "Test"),
+    undefined,
+    "cached presets stay hidden while refreshing",
+  )
   assert.equal(tree.includes("Previous error"), false)
   f.queryResult = () => ({
     data: { presets: [], errors: [] },
@@ -614,6 +750,7 @@ test("recipe discovery allows partial application and app unmount blocks stale w
     {
       id: "test",
       name: "Test",
+      author: "Example",
       description: "",
       launchOptions: [{ recipeId: "renderer", launchOptionId: "option" }],
     },
@@ -650,7 +787,11 @@ test("recipe discovery allows partial application and app unmount blocks stale w
   assert.equal(button(tree, "Apply preset anyway").props.disabled, false)
   button(tree, "Apply preset anyway").props.onClick()
   await tick()
-  assert.equal(writes, 1, "recipe discovery must not block applying imported options")
+  assert.equal(
+    writes,
+    1,
+    "recipe discovery must not block applying imported options",
+  )
   assert.equal(modal.closed, true)
   f.queryResult = () => ({ data: [], isFetching: false })
   tree = f.render(modal.element)
@@ -681,6 +822,7 @@ test("preset recipe review reflects preserved globals rather than importing a re
     {
       id: "test",
       name: "Test",
+      author: "Example",
       description: "",
       launchOptions: [{ recipeId: "renderer", launchOptionId: "option" }],
     },
@@ -759,6 +901,7 @@ test("a reviewed re-import that still lacks a reference reports it as skipped, n
     {
       id: "test",
       name: "Test",
+      author: "Example",
       description: "",
       launchOptions: [{ recipeId: "renderer", launchOptionId: "missing" }],
     },
@@ -812,8 +955,11 @@ test("a reviewed re-import that still lacks a reference reports it as skipped, n
 const button = (tree, label) =>
   tree.find(
     (node) =>
-      ["ButtonItem", "DialogButton", "DialogButtonPrimary"].includes(node?.type) &&
-      (node.props.children === label || node.props["aria-label"] === `Use ${label}`),
+      ["ButtonItem", "DialogButton", "DialogButtonPrimary"].includes(
+        node?.type,
+      ) &&
+      (node.props.children === label ||
+        node.props["aria-label"] === `Use ${label}`),
   )
 const tick = () => new Promise((resolve) => setImmediate(resolve))
 
@@ -903,7 +1049,13 @@ test("published app fixture flows through the preset dialog, existing recipe rev
     "preset values are readable with controller scrolling",
   )
   assert.equal(f.writes.length, 0)
-  assert.ok(review.includes(recipe.launchOptions.find((option) => option.id === "dlor-optiscaler-install").name))
+  assert.ok(
+    review.includes(
+      recipe.launchOptions.find(
+        (option) => option.id === "dlor-optiscaler-install",
+      ).name,
+    ),
+  )
   assert.equal(review.includes("On command"), false)
   const importButton = review.find(
     (node) =>
@@ -928,7 +1080,8 @@ test("published app fixture flows through the preset dialog, existing recipe rev
   assert.equal(f.writes.length, 1)
   assert.equal(importModal.closed, true)
   review = f.render(modal.element)
-  assert.equal(review.filter((node) => node?.type === "li").length, 10)
+  const optionList = review.find((node) => node?.props?.["aria-label"] === "Preset launch options")
+  assert.equal(f.render(optionList).filter((node) => node?.type === "li").length, 10)
   assert.equal(review.includes("On command"), false)
   const applyPreset = f.actions.applyAppPreset
   f.actions.applyAppPreset = async () => { throw new Error("Could not save preset") }
@@ -947,7 +1100,11 @@ test("published app fixture flows through the preset dialog, existing recipe rev
   review = f.render(modal.element)
   button(review, "Apply preset").props.onClick()
   await tick()
-  assert.equal(modal.closed, false, "keep the dialog open until saving succeeds")
+  assert.equal(
+    modal.closed,
+    false,
+    "keep the dialog open until saving succeeds",
+  )
   assert.equal(f.notifications.length, 0)
   finishSave()
   await tick()
@@ -1018,6 +1175,7 @@ test("global-protected preset choices explain skips without reimport and only ef
     {
       id: "global-test",
       name: "Global test",
+      author: "Example",
       description: "",
       launchOptions: [{ recipeId: "renderer", launchOptionId: "high" }],
     },
@@ -1071,11 +1229,7 @@ test("global-protected preset choices explain skips without reimport and only ef
     const modal = f.modals[0]
     let tree = f.render(modal.element)
     assert.ok(
-      tree.some(
-        (node) =>
-          typeof node === "string" &&
-          / — Skipped/.test(node),
-      ),
+      tree.some((node) => typeof node === "string" && / — Skipped/.test(node)),
       "mark globally protected options as skipped before application",
     )
     assert.equal(
@@ -1095,8 +1249,10 @@ test("global-protected preset choices explain skips without reimport and only ef
     button(tree, "Apply preset").props.onClick()
     await tick()
     assert.equal(modal.closed, true)
-    assert.ok(f.notifications.at(-1).body.includes("0 launch options applied"),
-      "selected count must not include a protected inactive choice")
+    assert.ok(
+      f.notifications.at(-1).body.includes("0 launch options applied"),
+      "selected count must not include a protected inactive choice",
+    )
     assert.deepEqual(f.settings, before)
     assert.equal(f.writes.length, 0)
     assert.equal(
@@ -1123,8 +1279,10 @@ test("global-protected preset choices explain skips without reimport and only ef
     )
     button(f.render(page), matching.name).props.onClick()
     const matchingTree = f.render(f.modals.at(-1).element)
-    assert.ok(matchingTree.includes(" — Skipped"),
-      "globally enabled options are marked skipped even when they already match")
+    assert.ok(
+      matchingTree.includes(" — Skipped"),
+      "globally enabled options are marked skipped even when they already match",
+    )
   }
 })
 
@@ -1189,6 +1347,7 @@ test("reviewed recovery imports available options while preserving globally prot
     {
       id: "global-test",
       name: "Global test",
+      author: "Example",
       description: "",
       launchOptions: [
         { recipeId: "renderer", launchOptionId: "high" },

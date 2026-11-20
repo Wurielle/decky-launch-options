@@ -14,10 +14,13 @@ export type PresetSkip = PresetReference & { reason?: "global-preference" }
 export interface AppPreset {
   id: string
   name: string
+  author: string
   description: string
+  notes: string[]
   launchOptions: PresetReference[]
   store: SavedStore
   appid: string
+  sourceAppid: string
   key: string
 }
 
@@ -34,22 +37,37 @@ export function parsePreset(
   filename: string,
   store: SavedStore,
   appid: string,
+  sourceAppid = appid,
 ): AppPreset {
   const data = value as AppPreset
   if (
     !data ||
     Object.keys(data).some(
-      (key) => !["id", "name", "description", "launchOptions"].includes(key),
+      (key) =>
+        ![
+          "id",
+          "name",
+          "author",
+          "description",
+          "notes",
+          "launchOptions",
+        ].includes(key),
     ) ||
     typeof data.id !== "string" ||
     !data.id.trim() ||
     filename !== `${data.id}.json` ||
     typeof data.name !== "string" ||
     !data.name.trim() ||
+    typeof data.author !== "string" ||
+    !/^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/.test(data.author) ||
     typeof data.description !== "string" ||
+    (data.notes !== undefined &&
+      (!Array.isArray(data.notes) ||
+        data.notes.some((note) => typeof note !== "string"))) ||
     !Array.isArray(data.launchOptions) ||
     !data.launchOptions.length ||
-    !/^[1-9]\d*$/.test(appid)
+    !/^[1-9]\d*$/.test(appid) ||
+    (sourceAppid !== "*" && sourceAppid !== appid)
   ) {
     throw new Error(`Invalid preset: ${filename}.`)
   }
@@ -76,14 +94,23 @@ export function parsePreset(
   return {
     id: data.id,
     name: data.name,
+    author: data.author,
     description: data.description,
+    notes: [...(data.notes ?? [])],
     launchOptions: data.launchOptions.map(({ recipeId, launchOptionId }) => ({
       recipeId,
       launchOptionId,
     })),
     store,
     appid,
-    key: JSON.stringify([storeKey(store), "steam", appid, data.id]),
+    sourceAppid,
+    key: JSON.stringify([
+      storeKey(store),
+      "steam",
+      appid,
+      sourceAppid,
+      data.id,
+    ]),
   }
 }
 
@@ -133,12 +160,13 @@ export function resolvePreset(
   settings: Settings,
   previews: LaunchOption[] = [],
 ) {
-  const { id, name, description, launchOptions } = preset
+  const { id, name, author, description, notes, launchOptions } = preset
   parsePreset(
-    { id, name, description, launchOptions },
+    { id, name, author, description, notes, launchOptions },
     `${id}.json`,
     preset.store,
     preset.appid,
+    preset.sourceAppid,
   )
   const selected: LaunchOption[] = []
   const missing: PresetReference[] = []

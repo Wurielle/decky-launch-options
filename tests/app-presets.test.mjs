@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { readFile } from "node:fs/promises"
 import { test } from "node:test"
 import { parseRecipes } from "../src/teams/recipe-store/recipes.ts"
 import { sourceModule } from "./source-module.mjs"
@@ -16,11 +17,147 @@ const store = {
 const presetData = {
   id: "handheld",
   name: "Handheld",
+  author: "Example",
   description: "Enable rendering",
   launchOptions: [{ recipeId: "renderer", launchOptionId: "install" }],
 }
 const model = () =>
   sourceModule("src/teams/app-presets/model.ts").then((url) => import(url))
+
+test("preset author and optional notes survive parsing while malformed metadata is rejected", async () => {
+  const { parsePreset } = await model()
+  const fixture = JSON.parse(
+    await readFile(new URL("./fixtures/app-presets/fsr4.json", import.meta.url), "utf8"),
+  )
+  const published = parsePreset(fixture, "fsr4.json", store, "42", "*")
+  assert.equal(published.author, "Wurielle")
+  assert.deepEqual(published.notes, fixture.notes)
+  assert.equal(published.sourceAppid, "*")
+  const data = {
+    ...presetData,
+    author: "Wurielle",
+    notes: ["First note", "Second\nline"],
+  }
+  const preset = parsePreset(data, "handheld.json", store, "42")
+  assert.equal(preset.author, "Wurielle")
+  assert.deepEqual(preset.notes, data.notes)
+  data.notes.push("Later edit")
+  assert.equal(preset.notes.length, 2)
+  assert.deepEqual(
+    parsePreset(presetData, "handheld.json", store, "42").notes,
+    [],
+  )
+  for (const author of [
+    undefined,
+    null,
+    "",
+    "@Wurielle",
+    "https://github.com/Wurielle",
+    "Two names",
+  ])
+    assert.throws(() =>
+      parsePreset({ ...presetData, author }, "handheld.json", store, "42"),
+    )
+  for (const notes of [null, "Not an array", {}, [42]])
+    assert.throws(() =>
+      parsePreset({ ...presetData, notes }, "handheld.json", store, "42"),
+    )
+})
+
+test("wildcard discovery combines both scopes without collisions and applies only to the current app", async () => {
+  const { presetQueryOptions } = await import(
+    await sourceModule("src/teams/app-presets/discovery.ts")
+  )
+  const { prepareRecipeImport, applyPreset } = await model()
+  const calls = []
+  let mode = "both"
+  const fetcher = async (url) => {
+    calls.push(url)
+    const wildcard = new URL(url).pathname.includes("/steam/%2A")
+    const directory = url.includes("api.github.com")
+    const status =
+      directory && !wildcard && mode === "failed-app"
+        ? 500
+        : directory &&
+            ((!wildcard && mode === "missing-app") ||
+              (wildcard && mode === "missing-wildcard"))
+          ? 404
+          : 200
+    return {
+      ok: status === 200,
+      status,
+      json: async () =>
+        directory
+          ? [{ type: "file", name: "handheld.json" }]
+          : wildcard
+            ? {
+                ...presetData,
+                author: "Wurielle",
+                name: "Universal",
+                notes: ["All apps"],
+              }
+            : presetData,
+    }
+  }
+  const discover = (appid = "42") =>
+    presetQueryOptions(store, appid, fetcher).queryFn({
+      signal: new AbortController().signal,
+    })
+  const result = await discover()
+  assert.equal(result.presets.length, 2)
+  assert.deepEqual(result.errors, [])
+  const [specific, universal] = result.presets
+  assert.deepEqual(
+    result.presets.map((preset) => preset.sourceAppid),
+    ["42", "*"],
+  )
+  assert.deepEqual(
+    result.presets.map((preset) => preset.appid),
+    ["42", "42"],
+  )
+  assert.notEqual(specific.key, universal.key)
+  assert.equal(universal.author, "Wurielle")
+  assert.deepEqual(universal.notes, ["All apps"])
+  assert.ok(
+    calls.includes(
+      "https://api.github.com/repos/example/recipes/contents/presets/steam/%2A?ref=feat%2Frender",
+    ),
+  )
+  assert.ok(
+    calls.includes(
+      "https://raw.githubusercontent.com/example/recipes/refs/heads/feat%2Frender/presets/steam/%2A/handheld.json",
+    ),
+  )
+  const settings = {
+    profiles: {
+      99: { state: { unchanged: true }, originalLaunchOptions: "other" },
+    },
+    launchOptions: prepareRecipeImport(
+      { id: "renderer", name: "Renderer", launchOptions: [{ id: "install" }] },
+      store,
+    ).launchOptions.map(launchOptionFactory),
+    environmentVariableMerges: [],
+  }
+  const other = structuredClone(settings.profiles[99])
+  assert.equal(applyPreset(settings, universal).selected, 1)
+  assert.equal(settings.profiles[42].state[settings.launchOptions[0].id], true)
+  assert.deepEqual(settings.profiles[99], other)
+  assert.equal(settings.profiles["*"], undefined)
+  mode = "missing-app"
+  const onlyUniversal = await discover("43")
+  assert.equal(onlyUniversal.presets.length, 1)
+  assert.equal(onlyUniversal.presets[0].appid, "43")
+  assert.notEqual(onlyUniversal.presets[0].key, universal.key)
+  mode = "failed-app"
+  const partial = await discover()
+  assert.equal(partial.presets[0].sourceAppid, "*")
+  assert.deepEqual(partial.errors, ["Could not download presets (HTTP 500)."])
+  mode = "missing-wildcard"
+  const onlySpecific = await discover()
+  assert.equal(onlySpecific.presets.length, 1)
+  assert.equal(onlySpecific.presets[0].sourceAppid, "42")
+  assert.deepEqual(onlySpecific.errors, [])
+})
 
 test("a store-scoped preset resolves only its imported provenance and applies atomically to one app", async () => {
   const {
@@ -256,6 +393,8 @@ test("discovery bounds requests across stores, preserves good files, and disting
     peak = Math.max(peak, active)
     await new Promise((resolve) => setTimeout(resolve, 2))
     active--
+    if (url.includes("/steam/%2A"))
+      return { ok: false, status: 404, json: async () => ({}) }
     return {
       ok: !url.includes("unavailable.json"),
       status: url.includes("unavailable.json") ? 500 : 200,
@@ -437,10 +576,10 @@ test("real query caching avoids repeated requests, refreshes explicitly, and iso
   const options = presetQueryOptions(store, "42", fetcher)
   await client.fetchQuery(options)
   await client.fetchQuery(options)
-  assert.equal(calls, 1)
+  assert.equal(calls, 2)
   await client.invalidateQueries({ queryKey: options.queryKey })
   await client.fetchQuery(options)
-  assert.equal(calls, 2)
+  assert.equal(calls, 4)
   let release,
     parsed = false
   const delayed = presetQueryOptions(

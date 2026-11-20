@@ -86,7 +86,9 @@ Store authors can publish one JSON file per preset at
 {
   "id": "handheld",
   "name": "Handheld",
+  "author": "ExampleAuthor",
   "description": "Enable the renderer's low quality choice.",
+  "notes": ["Enable the renderer in the game's settings."],
   "launchOptions": [
     { "recipeId": "renderer", "launchOptionId": "renderer-quality-low" }
   ]
@@ -98,6 +100,14 @@ launch-option IDs, **not** the shared dropdown `valueId`. Presets contain refere
 not commands or store URLs. References resolve only against their originating store's
 repository and branch; colliding IDs from other stores do not satisfy them. Duplicate
 references, ambiguous IDs, malformed files, and conflicting dropdown choices are rejected.
+
+`author` is required and contains a GitHub username without an `@` prefix or profile
+URL. It appears in the list and review dialog. Optional `notes` are an array of plain
+strings displayed after the description in the dialog.
+
+Presets in the literal `presets/steam/*/` directory are available to every Steam app
+alongside its app-specific presets. Choosing one applies its selections only to the
+current app. Matching preset IDs in the two directories remain separate entries.
 
 Discovery uses GitHub's Contents API, caches by store configuration and app ID for five
 minutes, and limits preset/catalog requests to four in flight. **Refresh presets**
