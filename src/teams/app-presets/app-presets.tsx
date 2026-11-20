@@ -168,7 +168,7 @@ export function AppPresets({ appid }: { appid: string }) {
                   try {
                     selected = isPresetSelected(preset, settings)
                   } catch {
-                    /* The review dialog explains invalid references. */
+                    /* Invalid presets are not marked selected. */
                   }
                   return (
                     <Field
@@ -256,11 +256,11 @@ export function PresetDialog({
     missing: preset.launchOptions,
     protectedOptions: [],
   }
-  let validationError = ""
+  let invalidPreset = false
   try {
     resolution = resolvePreset(preset, settings)
-  } catch (error) {
-    validationError = error instanceof Error ? error.message : String(error)
+  } catch {
+    invalidPreset = true
   }
   const url = getRecipesUrl(preset.store.store)
   const catalog = useQuery({
@@ -289,8 +289,8 @@ export function PresetDialog({
   // only the already imported part of a potentially conflicting preset.
   try {
     resolution = resolvePreset(preset, settings, previewOptions)
-  } catch (error) {
-    validationError = error instanceof Error ? error.message : String(error)
+  } catch {
+    invalidPreset = true
   }
   const missingRecipeIds = [
     ...new Set(resolution.missing.map((reference) => reference.recipeId)),
@@ -305,7 +305,7 @@ export function PresetDialog({
   const run = async (action: () => Promise<void>) => {
     if (
       loading ||
-      validationError ||
+      invalidPreset ||
       busyRef.current ||
       controller.current.signal.aborted
     )
@@ -389,7 +389,9 @@ export function PresetDialog({
               </ul>
             </div>
             {resolution.missing.length > 0 && (
-              <>
+              <div
+                style={{ display: "flex", flexDirection: "column", gap: 12 }}
+              >
                 <div>
                   Some launch options have not been imported yet. Add their
                   corresponding recipes to import them.
@@ -398,7 +400,7 @@ export function PresetDialog({
                   <PresetLoading label="Loading referenced recipes" />
                 )}
                 {!catalog.isFetching && unavailableRecipeIds.length > 0 && (
-                  <div style={{ marginTop: 12 }}>
+                  <div>
                     <div>Recipes unavailable:</div>
                     <ul
                       aria-label="Unavailable recipes"
@@ -411,19 +413,13 @@ export function PresetDialog({
                   </div>
                 )}
                 {catalog.error && (
-                  <div style={{ marginTop: 12 }}>
-                    <StateMessage role="alert">
-                      {catalog.error.message}
-                    </StateMessage>
-                  </div>
+                  <StateMessage role="alert">
+                    {catalog.error.message}
+                  </StateMessage>
                 )}
-              </>
+              </div>
             )}
-            {(validationError || error) && (
-              <StateMessage role="alert">
-                {validationError || error}
-              </StateMessage>
-            )}
+            {error && <StateMessage role="alert">{error}</StateMessage>}
           </ModalScrollContent>
           {missingRecipes.length > 0 && (
             <Focusable
@@ -443,7 +439,7 @@ export function PresetDialog({
                       : undefined
                   }
                   key={recipe.id}
-                  disabled={busy || loading || !!validationError}
+                  disabled={busy || loading || invalidPreset}
                   onClick={() =>
                     void run(async () => {
                       await importRecipe(
@@ -468,7 +464,7 @@ export function PresetDialog({
             <DialogButtonPrimary
               style={{ flex: 1 }}
               ref={applyButtonRef}
-              disabled={loading || busy || !!validationError}
+              disabled={loading || busy || invalidPreset}
               onClick={() =>
                 void run(async () => {
                   const outcome = await applyAppPreset(preset, previewOptions)

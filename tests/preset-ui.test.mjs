@@ -396,6 +396,7 @@ test("conflicting choices discovered in an unimported recipe cannot partially ap
   })
   const apply = button(tree, "Apply preset anyway")
   assert.equal(apply.props.disabled, true)
+  assert.equal(tree.some((node) => node?.props?.role === "alert"), false)
   apply.props.onClick()
   await tick()
   assert.equal(f.writes.length, 0)

@@ -257,13 +257,16 @@ test("discovery bounds requests across stores, preserves good files, and disting
     await new Promise((resolve) => setTimeout(resolve, 2))
     active--
     return {
-      ok: true,
-      status: 200,
+      ok: !url.includes("unavailable.json"),
+      status: url.includes("unavailable.json") ? 500 : 200,
       json: async () =>
         url.includes("api.github")
           ? [
               { type: "file", name: "handheld.json" },
               { type: "file", name: "invalid.json" },
+              { type: "file", name: "handheld.json" },
+              { type: "file", name: "invalid/name.json" },
+              { type: "file", name: "unavailable.json" },
             ]
           : url.includes("invalid.json")
             ? { bad: true }
@@ -282,9 +285,23 @@ test("discovery bounds requests across stores, preserves good files, and disting
   assert.ok(peak <= 4, `peak ${peak} exceeds four concurrent requests`)
   assert.ok(
     results.every(
-      (result) => result.presets.length === 1 && result.errors.length === 1,
+      (result) =>
+        result.presets.length === 1 &&
+        result.errors.length === 1 &&
+        result.errors[0] === "Could not download presets (HTTP 500).",
     ),
   )
+  for (const entries of [{ invalid: true }, null]) {
+    const query = presetQueryOptions(store, "42", async () => ({
+      ok: true,
+      status: 200,
+      json: async () => entries,
+    }))
+    assert.deepEqual(
+      await query.queryFn({ signal: new AbortController().signal }),
+      { presets: [], errors: [] },
+    )
+  }
   for (const status of [404, 403, 429, 500]) {
     const query = presetQueryOptions(store, "42", async () => ({
       ok: false,

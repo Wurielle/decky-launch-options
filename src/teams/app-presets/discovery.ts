@@ -93,9 +93,14 @@ export function presetQueryOptions(
       )
       if (response.status === 404) return { presets: [], errors: [] }
       if (!response.ok) throw downloadHttpError(response.status, "presets")
-      const entries: unknown = await response.json()
-      if (!Array.isArray(entries))
-        throw new Error("Invalid preset directory listing.")
+      let entries: unknown
+      try {
+        entries = await response.json()
+      } catch {
+        signal.throwIfAborted()
+        return { presets: [], errors: [] }
+      }
+      if (!Array.isArray(entries)) return { presets: [], errors: [] }
       const presets: AppPreset[] = []
       const errors: string[] = []
       const names = new Set<string>()
@@ -106,22 +111,25 @@ export function presetQueryOptions(
           !entry.name.endsWith(".json")
         )
           continue
+        if (names.has(entry.name) || /[/\\]/.test(entry.name)) continue
+        names.add(entry.name)
+        let file: Awaited<ReturnType<typeof fetchPresetResource>>
         try {
-          if (names.has(entry.name) || /[/\\]/.test(entry.name))
-            throw new Error(
-              `Invalid or duplicate preset filename: ${entry.name}.`,
-            )
-          names.add(entry.name)
-          const file = await fetchPresetResource(
+          file = await fetchPresetResource(
             `https://raw.githubusercontent.com/${repository}/refs/heads/${branch}/${directory}/${encodeURIComponent(entry.name)}`,
             fetcher,
             signal,
           )
           if (!file.ok) throw downloadHttpError(file.status, "presets")
-          presets.push(parsePreset(await file.json(), entry.name, store, appid))
         } catch (error) {
           signal.throwIfAborted()
           errors.push(error instanceof Error ? error.message : String(error))
+          continue
+        }
+        try {
+          presets.push(parsePreset(await file.json(), entry.name, store, appid))
+        } catch {
+          signal.throwIfAborted()
         }
       }
       signal.throwIfAborted()
