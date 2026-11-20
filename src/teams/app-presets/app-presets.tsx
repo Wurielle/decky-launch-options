@@ -147,11 +147,22 @@ export function AppPresets({ appid }: { appid: string }) {
                     </span>
                   </strong>
                 </div>
-                {errors.map((error, index) => (
-                  <StateMessage role="alert" key={index}>
-                    {error}
-                  </StateMessage>
-                ))}
+                {errors.length > 0 && (
+                  <div
+                    style={{
+                      padding: "12px 0",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 12,
+                    }}
+                  >
+                    {errors.map((error, index) => (
+                      <StateMessage role="alert" key={index}>
+                        {error}
+                      </StateMessage>
+                    ))}
+                  </div>
+                )}
                 {presets.map((preset) => {
                   let selected = false
                   try {

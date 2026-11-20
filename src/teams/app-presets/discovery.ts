@@ -121,9 +121,7 @@ export function presetQueryOptions(
           presets.push(parsePreset(await file.json(), entry.name, store, appid))
         } catch (error) {
           signal.throwIfAborted()
-          errors.push(
-            `${entry.name}: ${error instanceof Error ? error.message : String(error)}`,
-          )
+          errors.push(error instanceof Error ? error.message : String(error))
         }
       }
       signal.throwIfAborted()
