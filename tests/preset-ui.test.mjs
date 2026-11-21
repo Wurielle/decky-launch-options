@@ -29,7 +29,7 @@ const boundaries = {
     `export const QueryClientProvider='QueryClientProvider'; export const useQueries=({queries})=>queries.map(options=>globalThis.__presetUI.query(options)); export const useQuery=options=>globalThis.__presetUI.query(options);`,
   ),
   "../query": dataURL(`export const queryClient={};`),
-  "../../queries/settings": dataURL(`export const queryClient={};`),
+  "../../queries/settings": dataURL(`export const queryClient={}; export const presetPersistence={ready:Promise.resolve()};`),
   "./modal-scroll-content": dataURL(
     `export const ModalScrollContent='ModalScrollContent';`,
   ),
@@ -74,6 +74,8 @@ function harness(settings, catalogs = new Map()) {
       if (!current[i]) current[i] = { cleanup: fn(), deps }
     },
     query(options) {
+      if (options.queryKey[0] === "preset-persistence-ready")
+        return { data: true, isPending: fixture.restoring ?? false, isFetching: false }
       const result = fixture.queryResult?.(options) ?? {
         data: catalogs.get(JSON.stringify(options.queryKey)),
         isPending: false,
@@ -908,25 +910,42 @@ test("store sections require an available preset and preserve loading, empty and
       key.endsWith("default-removed") ? "true" : JSON.stringify(stores),
   }
   const refetches = []
-  f.queryResult = (options) => ({
-    data: options.queryKey[1].includes("One.test")
-      ? { presets: [preset], errors: [] }
-      : undefined,
-    error: options.queryKey[1].includes("Two.test")
-      ? new Error("Rate limit")
-      : null,
-    isFetching: false,
-    isPending: false,
-    refetch: async () => {
-      refetches.push(options.queryKey[2])
-    },
-  })
+  const enabled = []
+  f.queryResult = (options) => {
+    enabled.push(options.enabled)
+    return {
+      data: options.queryKey[1].includes("One.test")
+        ? { presets: [preset], errors: [] }
+        : undefined,
+      error: options.queryKey[1].includes("Two.test")
+        ? new Error("Rate limit")
+        : null,
+      isFetching: false,
+      isPending: false,
+      refetch: async () => {
+        refetches.push(options.queryKey[2])
+      },
+    }
+  }
   const page = { type: AppPresets, props: { appid: "42" } }
+  f.restoring = true
+  const restoring = f.render(page)
+  assert.equal(button(restoring, "Test"), undefined)
+  assert.equal(button(restoring, "Refresh presets").props.disabled, true)
+  assert.ok(
+    enabled.every((value) => value === false),
+    "network queries wait for persisted data",
+  )
+  f.restoring = false
+  enabled.length = 0
   let tree = f.render(page)
+  assert.ok(enabled.every((value) => value === true))
   assert.ok(button(tree, "Test"))
   assert.equal(tree.includes("Rate limit"), false)
   assert.deepEqual(
-    tree.filter((node) => node?.type === "strong").map((node) => node.props.children[0]),
+    tree
+      .filter((node) => node?.type === "strong")
+      .map((node) => node.props.children[0]),
     ["One"],
     "stores without presets have no heading, even when their request fails",
   )

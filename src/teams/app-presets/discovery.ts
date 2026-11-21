@@ -2,7 +2,6 @@ import { parsePresetDefinition, storeKey } from "./model"
 import type { PresetDefinition } from "./model"
 import type { SavedStore } from "../recipe-store/store"
 import type { QueryClient } from "@tanstack/react-query"
-import { readPresetCache, writePresetCache } from "./cache"
 
 export type PresetFetcher = (
   url: string,
@@ -73,13 +72,10 @@ export function presetQueryOptions(
 ) {
   const global = sourceAppid === "*"
   const queryKey = ["app-presets", storeKey(store), sourceAppid]
-  const cached = readPresetCache(queryKey)
   return {
     queryKey,
     staleTime: 5 * 60_000,
     gcTime: Infinity,
-    initialData: cached?.data,
-    initialDataUpdatedAt: cached?.updatedAt,
     retry: false as const,
     retryOnMount: true,
     refetchOnMount: true,
@@ -93,12 +89,7 @@ export function presetQueryOptions(
       // shared cache even if navigation temporarily removes its last observer.
       // Reading context.signal would opt into TanStack's unmount cancellation.
       const signal = global ? new AbortController().signal : context.signal
-      const previous =
-        context.client?.getQueryData<PresetDiscovery>(queryKey) ?? cached?.data
-      const remember = (data: PresetDiscovery) => {
-        writePresetCache(queryKey, data)
-        return data
-      }
+      const previous = context.client?.getQueryData<PresetDiscovery>(queryKey)
       signal.throwIfAborted()
       const repository = store.store.github.repository
         .split("/")
@@ -112,16 +103,16 @@ export function presetQueryOptions(
         fetcher,
         signal,
       )
-      if (response.status === 404) return remember({ presets: [], errors: [] })
+      if (response.status === 404) return { presets: [], errors: [] }
       if (!response.ok) throw downloadHttpError(response.status, "presets")
       let entries: unknown
       try {
         entries = await response.json()
       } catch {
         signal.throwIfAborted()
-        return remember({ presets: [], errors: [] })
+        return { presets: [], errors: [] }
       }
-      if (!Array.isArray(entries)) return remember({ presets: [], errors: [] })
+      if (!Array.isArray(entries)) return { presets: [], errors: [] }
       const names = new Set<string>()
       const files = entries.filter((entry) => {
         if (
@@ -167,10 +158,10 @@ export function presetQueryOptions(
         }),
       )
       signal.throwIfAborted()
-      return remember({
+      return {
         presets: results.flatMap((result) => result.presets),
         errors: [...new Set(results.flatMap((result) => result.errors))],
-      })
+      }
     },
   }
 }

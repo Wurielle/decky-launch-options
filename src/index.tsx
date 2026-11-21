@@ -17,6 +17,7 @@ import {
   getInfoQueryOptions,
   getSettingsQueryOptions,
   queryClient,
+  presetPersistence,
 } from "./query"
 import { libraryAppPatch } from "./patches/library-app"
 import { Content } from "./components/content"
@@ -35,6 +36,7 @@ import { settingsStore } from "./stores"
 import { RecipeStorePage } from "./teams/recipe-store/views"
 
 export default definePlugin(() => {
+  void presetPersistence.start()
   routerHook.addRoute(routes.recipeStore(), () => (
     <QueryClientProvider client={queryClient}>
       <RecipeStorePage />
@@ -123,6 +125,8 @@ export default definePlugin(() => {
     ),
     icon: <FaTerminal />,
     onDismount() {
+      void presetPersistence.save()
+      presetPersistence.stop()
       launchOptionsLifecycle.active = false
       Object.values(routes).forEach((route) => {
         routerHook.removeRoute(route())

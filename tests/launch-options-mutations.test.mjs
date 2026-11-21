@@ -138,6 +138,7 @@ beforeEach(async () => {
     `export * from '${fileURL("src/utils/app-launch-options.ts")}'; export * from '${normalization}'; // ${sequence}`,
   )
   const settings = await sourceModule("src/queries/settings.ts", {
+    "./preset-persistence": dataURL(`export const createPresetPersistence=()=>({});`),
     "@tanstack/react-query": reactQuery,
     "../api": api,
     "../utils/settings": normalization,

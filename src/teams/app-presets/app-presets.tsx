@@ -30,7 +30,8 @@ import { ModalScrollContent } from "../../components/modal-scroll-content"
 import { StateMessage } from "../../components/state-message"
 import { TabLoading } from "../../components/tab-loading"
 import { useSettings } from "../../hooks"
-import { queryClient } from "../../queries/settings"
+import { presetPersistence, queryClient } from "../../queries/settings"
+import { presetRestorationKey } from "../../queries/preset-persistence"
 import { launchOptionFactory, type Recipe } from "../../shared"
 import { getRecipesUrl, readRecipeCatalog } from "../recipe-store/recipes"
 import { getStores } from "../recipe-store/store"
@@ -100,6 +101,14 @@ function readStores() {
 }
 
 export function AppPresets({ appid }: { appid: string }) {
+  const restoring = useQuery({
+    queryKey: presetRestorationKey,
+    queryFn: () => presetPersistence.ready.then(() => true),
+    staleTime: Infinity,
+    gcTime: Infinity,
+    // Restoring local data must also run when the network is offline.
+    networkMode: "always",
+  }).isPending
   const [configuration, setConfiguration] = useState(readStores)
   const { settings, loading, resetAppLaunchOptionSelection } = useSettings()
   const dialog = useRef<{ Close: () => void } | null>(null)
@@ -112,10 +121,12 @@ export function AppPresets({ appid }: { appid: string }) {
     [appid],
   )
   const queries = useQueries({
-    queries: configuration.stores.flatMap((store) => [
-      presetQueryOptions(store, appid, fetchNoCors),
-      presetQueryOptions(store, "*", fetchNoCors),
-    ]),
+    queries: configuration.stores
+      .flatMap((store) => [
+        presetQueryOptions(store, appid, fetchNoCors),
+        presetQueryOptions(store, "*", fetchNoCors),
+      ])
+      .map((options) => ({ ...options, enabled: !restoring })),
   })
   const fetching = queries.some((query) => query.isFetching)
   const stores = configuration.stores.map((source, index) => {
@@ -143,10 +154,11 @@ export function AppPresets({ appid }: { appid: string }) {
   })
   const hasContent = stores.some(({ presets }) => presets.length > 0)
   const pending =
-    !hasContent &&
-    queries.some(
-      (query) => !query.data && (query.isFetching || query.isPending),
-    )
+    restoring ||
+    (!hasContent &&
+      queries.some(
+        (query) => !query.data && (query.isFetching || query.isPending),
+      ))
 
   return (
     <LaunchOptionFocusList
@@ -161,7 +173,7 @@ export function AppPresets({ appid }: { appid: string }) {
           <LaunchOptionControl control="value" style={{ flex: 1, minWidth: 0 }}>
             <DialogButton
               style={{ width: "100%" }}
-              disabled={fetching}
+              disabled={restoring || fetching}
               onClick={() => {
                 setConfiguration(readStores())
                 for (const query of queries) void query.refetch()

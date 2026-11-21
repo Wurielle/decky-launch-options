@@ -15,8 +15,10 @@ import {
 } from "../api"
 import { Settings } from "../shared"
 import { normalizeSettings } from "../utils/settings"
+import { createPresetPersistence } from "./preset-persistence"
 
 export const queryClient = new QueryClient()
+export const presetPersistence = createPresetPersistence(queryClient)
 
 export const keys = {
   settings: () => ["settings"],
