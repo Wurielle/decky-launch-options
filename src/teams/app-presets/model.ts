@@ -11,13 +11,16 @@ export interface PresetReference {
 
 export type PresetSkip = PresetReference & { reason?: "global-preference" }
 
-export interface AppPreset {
+export interface PresetDefinition {
   id: string
   name: string
   author: string
   description: string
   notes: string[]
   launchOptions: PresetReference[]
+}
+
+export interface AppPreset extends PresetDefinition {
   store: SavedStore
   appid: string
   sourceAppid: string
@@ -39,7 +42,19 @@ export function parsePreset(
   appid: string,
   sourceAppid = appid,
 ): AppPreset {
-  const data = value as AppPreset
+  return bindPresetToApp(
+    parsePresetDefinition(value, filename),
+    store,
+    appid,
+    sourceAppid,
+  )
+}
+
+export function parsePresetDefinition(
+  value: unknown,
+  filename: string,
+): PresetDefinition {
+  const data = value as PresetDefinition
   if (
     !data ||
     Object.keys(data).some(
@@ -65,9 +80,7 @@ export function parsePreset(
       (!Array.isArray(data.notes) ||
         data.notes.some((note) => typeof note !== "string"))) ||
     !Array.isArray(data.launchOptions) ||
-    !data.launchOptions.length ||
-    !/^[1-9]\d*$/.test(appid) ||
-    (sourceAppid !== "*" && sourceAppid !== appid)
+    !data.launchOptions.length
   ) {
     throw new Error(`Invalid preset: ${filename}.`)
   }
@@ -101,6 +114,23 @@ export function parsePreset(
       recipeId,
       launchOptionId,
     })),
+  }
+}
+
+export function bindPresetToApp(
+  definition: PresetDefinition,
+  store: SavedStore,
+  appid: string,
+  sourceAppid = appid,
+): AppPreset {
+  if (
+    !/^[1-9]\d*$/.test(appid) ||
+    (sourceAppid !== "*" && sourceAppid !== appid)
+  ) {
+    throw new Error(`Invalid preset: ${definition.id}.json.`)
+  }
+  return {
+    ...definition,
     store,
     appid,
     sourceAppid,
@@ -109,7 +139,7 @@ export function parsePreset(
       "steam",
       appid,
       sourceAppid,
-      data.id,
+      definition.id,
     ]),
   }
 }

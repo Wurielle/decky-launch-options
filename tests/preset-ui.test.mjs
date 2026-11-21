@@ -74,14 +74,23 @@ function harness(settings, catalogs = new Map()) {
       if (!current[i]) current[i] = { cleanup: fn(), deps }
     },
     query(options) {
-      return (
-        fixture.queryResult?.(options) ?? {
-          data: catalogs.get(JSON.stringify(options.queryKey)),
-          isPending: false,
-          isFetching: false,
-          refetch: async () => {},
-        }
-      )
+      const result = fixture.queryResult?.(options) ?? {
+        data: catalogs.get(JSON.stringify(options.queryKey)),
+        isPending: false,
+        isFetching: false,
+        refetch: async () => {},
+      }
+      if (options.queryKey[0] !== "app-presets" || !result.data) return result
+      return {
+        ...result,
+        data: {
+          ...result.data,
+          presets: result.data.presets.filter(
+            (preset) =>
+              !preset.sourceAppid || preset.sourceAppid === options.queryKey[2],
+          ),
+        },
+      }
     },
     render(element) {
       if (Array.isArray(element)) return element.flatMap(fixture.render)
@@ -315,7 +324,89 @@ test("preset dividers separate game and global presets without changing store or
     )
 
     loading = true
-    assert.equal(sections(render()).length, 0)
+    assert.equal(sections(render()).length, 1, "cached groups remain visible during refresh")
+  } finally {
+    globalThis.localStorage = previousStorage
+  }
+})
+
+test("the preset page rebinds shared global definitions to the current game and refreshes both scopes", async () => {
+  const { AppPresets } = await import(
+    await sourceModule("src/teams/app-presets/app-presets.tsx", boundaries)
+  )
+  const { parsePresetDefinition } = await import(
+    await sourceModule("src/teams/app-presets/model.ts")
+  )
+  const store = {
+    url: "https://fixture.test/store.json",
+    store: {
+      name: "Store",
+      description: "",
+      type: "github",
+      github: { repository: "example/store", branch: "main" },
+    },
+  }
+  const definition = parsePresetDefinition(
+    {
+      id: "universal",
+      name: "Universal",
+      author: "Example",
+      description: "",
+      launchOptions: [{ recipeId: "renderer", launchOptionId: "install" }],
+    },
+    "universal.json",
+  )
+  const f = harness({
+    profiles: {},
+    launchOptions: [],
+    environmentVariableMerges: [],
+  })
+  const applied = [],
+    refetched = [],
+    globalKeys = new Set()
+  f.actions = {
+    settings: f.settings,
+    loading: false,
+    applyAppPreset: async (preset) => {
+      applied.push(preset)
+      return { selected: 0, skipped: [] }
+    },
+  }
+  f.queryResult = (options) => {
+    const scope = options.queryKey[2]
+    if (options.queryKey[0] !== "app-presets")
+      return { data: [], isFetching: false }
+    if (scope === "*") globalKeys.add(JSON.stringify(options.queryKey))
+    return {
+      data: { presets: scope === "*" ? [definition] : [], errors: [] },
+      isPending: false,
+      isFetching: false,
+      refetch: async () => {
+        refetched.push(scope)
+      },
+    }
+  }
+  const previousStorage = globalThis.localStorage
+  globalThis.localStorage = {
+    getItem: (key) =>
+      key.endsWith("default-removed") ? "true" : JSON.stringify([store]),
+  }
+  try {
+    for (const appid of ["42", "43"]) {
+      const tree = f.render({ type: AppPresets, props: { appid } })
+      button(tree, "Universal").props.onClick()
+      const modal = f.modals.at(-1)
+      button(f.render(modal.element), "Apply preset anyway").props.onClick()
+      await tick()
+      assert.equal(applied.at(-1).appid, appid)
+      assert.equal(applied.at(-1).sourceAppid, "*")
+      assert.equal(modal.closed, true)
+      if (appid === "43") button(tree, "Refresh presets").props.onClick()
+    }
+    assert.equal(globalKeys.size, 1)
+    assert.notEqual(applied[0].key, applied[1].key)
+    assert.deepEqual(refetched, ["43", "*"])
+    assert.equal(definition.appid, undefined)
   } finally {
     globalThis.localStorage = previousStorage
   }
@@ -816,7 +907,7 @@ test("store sections require an available preset and preserve loading, empty and
     getItem: (key) =>
       key.endsWith("default-removed") ? "true" : JSON.stringify(stores),
   }
-  let refetches = 0
+  const refetches = []
   f.queryResult = (options) => ({
     data: options.queryKey[1].includes("One.test")
       ? { presets: [preset], errors: [] }
@@ -827,7 +918,7 @@ test("store sections require an available preset and preserve loading, empty and
     isFetching: false,
     isPending: false,
     refetch: async () => {
-      refetches++
+      refetches.push(options.queryKey[2])
     },
   })
   const page = { type: AppPresets, props: { appid: "42" } }
@@ -840,7 +931,7 @@ test("store sections require an available preset and preserve loading, empty and
     "stores without presets have no heading, even when their request fails",
   )
   button(tree, "Refresh presets").props.onClick()
-  assert.equal(refetches, 2)
+  assert.deepEqual(refetches, ["42", "*", "42", "*"])
   f.queryResult = () => ({
     error: new Error("No internet connection"),
     isFetching: false,
@@ -876,15 +967,21 @@ test("store sections require an available preset and preserve loading, empty and
     isFetching: true,
   })
   tree = f.render(page)
-  assert.ok(
-    tree.some((node) => node?.props?.["aria-label"] === "Loading presets"),
-  )
   assert.equal(
-    button(tree, "Test"),
-    undefined,
-    "cached presets stay hidden while refreshing",
+    tree.some((node) => node?.props?.["aria-label"] === "Loading presets"),
+    false,
   )
-  assert.equal(tree.includes("Previous error"), false)
+  assert.ok(button(tree, "Test"), "cached presets stay usable while refreshing")
+  assert.equal(button(tree, "Refresh presets").props.disabled, true)
+  f.queryResult = () => ({
+    data: { presets: [preset], errors: [] },
+    error: new Error("No internet connection"),
+    isPending: false,
+    isFetching: false,
+  })
+  tree = f.render(page)
+  assert.ok(button(tree, "Test"), "a failed refresh keeps the offline list")
+  assert.equal(button(tree, "Refresh presets").props.disabled, false)
   f.queryResult = () => ({
     data: { presets: [], errors: [] },
     isPending: false,

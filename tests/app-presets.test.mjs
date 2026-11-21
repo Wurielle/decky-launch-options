@@ -64,11 +64,11 @@ test("preset author and optional notes survive parsing while malformed metadata 
     )
 })
 
-test("wildcard discovery combines both scopes without collisions and applies only to the current app", async () => {
+test("independent wildcard discovery binds cached definitions only to the current app", async () => {
   const { presetQueryOptions } = await import(
     await sourceModule("src/teams/app-presets/discovery.ts")
   )
-  const { prepareRecipeImport, applyPreset } = await model()
+  const { prepareRecipeImport, applyPreset, bindPresetToApp } = await model()
   const calls = []
   let mode = "both"
   const fetcher = async (url) => {
@@ -99,22 +99,21 @@ test("wildcard discovery combines both scopes without collisions and applies onl
             : presetData,
     }
   }
-  const discover = (appid = "42") =>
-    presetQueryOptions(store, appid, fetcher).queryFn({
+  const discover = (scope) =>
+    presetQueryOptions(store, scope, fetcher).queryFn({
       signal: new AbortController().signal,
     })
-  const result = await discover()
-  assert.equal(result.presets.length, 2)
-  assert.deepEqual(result.errors, [])
-  const [specific, universal] = result.presets
-  assert.deepEqual(
-    result.presets.map((preset) => preset.sourceAppid),
-    ["42", "*"],
-  )
-  assert.deepEqual(
-    result.presets.map((preset) => preset.appid),
-    ["42", "42"],
-  )
+  const [game, global] = await Promise.all([discover("42"), discover("*")])
+  assert.equal(game.presets.length, 1)
+  assert.equal(global.presets.length, 1)
+  assert.deepEqual(game.errors, [])
+  assert.deepEqual(global.errors, [])
+  assert.equal(global.presets[0].appid, undefined)
+  const specific = bindPresetToApp(game.presets[0], store, "42")
+  const universal = bindPresetToApp(global.presets[0], store, "42", "*")
+  assert.equal(specific.sourceAppid, "42")
+  assert.equal(universal.sourceAppid, "*")
+  assert.equal(universal.appid, "42")
   assert.notEqual(specific.key, universal.key)
   assert.equal(universal.author, "Wurielle")
   assert.deepEqual(universal.notes, ["All apps"])
@@ -144,18 +143,20 @@ test("wildcard discovery combines both scopes without collisions and applies onl
   assert.deepEqual(settings.profiles[99], other)
   assert.equal(settings.profiles["*"], undefined)
   mode = "missing-app"
-  const onlyUniversal = await discover("43")
-  assert.equal(onlyUniversal.presets.length, 1)
-  assert.equal(onlyUniversal.presets[0].appid, "43")
-  assert.notEqual(onlyUniversal.presets[0].key, universal.key)
+  assert.deepEqual(await discover("43"), { presets: [], errors: [] })
+  const nextGame = bindPresetToApp(global.presets[0], store, "43", "*")
+  assert.equal(nextGame.appid, "43")
+  assert.notEqual(nextGame.key, universal.key)
   mode = "failed-app"
-  const partial = await discover()
-  assert.equal(partial.presets[0].sourceAppid, "*")
-  assert.deepEqual(partial.errors, ["Could not download presets (HTTP 500)."])
+  await assert.rejects(
+    discover("42"),
+    /Could not download presets \(HTTP 500\)/,
+  )
+  assert.equal(universal.sourceAppid, "*")
   mode = "missing-wildcard"
-  const onlySpecific = await discover()
+  assert.deepEqual(await discover("*"), { presets: [], errors: [] })
+  const onlySpecific = await discover("42")
   assert.equal(onlySpecific.presets.length, 1)
-  assert.equal(onlySpecific.presets[0].sourceAppid, "42")
   assert.deepEqual(onlySpecific.errors, [])
 })
 
@@ -361,7 +362,8 @@ test("preset discovery uses the configured Contents path and ignores non-file/no
     calls[1],
     "https://raw.githubusercontent.com/example/recipes/refs/heads/feat%2Frender/presets/steam/42/handheld.json",
   )
-  assert.equal(result.presets[0].store.url, store.url)
+  assert.equal(result.presets[0].id, "handheld")
+  assert.equal(result.presets[0].appid, undefined)
   assert.notDeepEqual(
     query.queryKey,
     presetQueryOptions(store, "43", fetcher).queryKey,
@@ -576,10 +578,10 @@ test("real query caching avoids repeated requests, refreshes explicitly, and iso
   const options = presetQueryOptions(store, "42", fetcher)
   await client.fetchQuery(options)
   await client.fetchQuery(options)
-  assert.equal(calls, 2)
+  assert.equal(calls, 1)
   await client.invalidateQueries({ queryKey: options.queryKey })
   await client.fetchQuery(options)
-  assert.equal(calls, 4)
+  assert.equal(calls, 2)
   let release,
     parsed = false
   const delayed = presetQueryOptions(

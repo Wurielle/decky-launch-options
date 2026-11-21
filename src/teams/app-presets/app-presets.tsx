@@ -39,7 +39,12 @@ import {
   downloadHttpError,
   presetQueryOptions,
 } from "./discovery"
-import { isPresetSelected, prepareRecipeImport, resolvePreset } from "./model"
+import {
+  bindPresetToApp,
+  isPresetSelected,
+  prepareRecipeImport,
+  resolvePreset,
+} from "./model"
 import type { AppPreset } from "./model"
 
 function PresetAuthor({ author }: { author: string }) {
@@ -107,23 +112,41 @@ export function AppPresets({ appid }: { appid: string }) {
     [appid],
   )
   const queries = useQueries({
-    queries: configuration.stores.map((store) =>
+    queries: configuration.stores.flatMap((store) => [
       presetQueryOptions(store, appid, fetchNoCors),
-    ),
+      presetQueryOptions(store, "*", fetchNoCors),
+    ]),
   })
-  const pending = queries.some((query) => query.isFetching || query.isPending)
+  const fetching = queries.some((query) => query.isFetching)
   const stores = configuration.stores.map((source, index) => {
-    const query = queries[index]
+    const game = queries[index * 2]
+    const global = queries[index * 2 + 1]
     return {
       ...source,
-      presets: query.data?.presets ?? [],
+      presets: [
+        ...(game.data?.presets ?? []).map((preset) =>
+          bindPresetToApp(preset, source, appid),
+        ),
+        ...(global.data?.presets ?? []).map((preset) =>
+          bindPresetToApp(preset, source, appid, "*"),
+        ),
+      ],
       errors: [
-        ...(query.error ? [query.error.message] : []),
-        ...(query.data?.errors ?? []),
+        ...new Set(
+          [game, global].flatMap((query) => [
+            ...(query.error ? [query.error.message] : []),
+            ...(query.data?.errors ?? []),
+          ]),
+        ),
       ],
     }
   })
   const hasContent = stores.some(({ presets }) => presets.length > 0)
+  const pending =
+    !hasContent &&
+    queries.some(
+      (query) => !query.data && (query.isFetching || query.isPending),
+    )
 
   return (
     <LaunchOptionFocusList
@@ -138,7 +161,7 @@ export function AppPresets({ appid }: { appid: string }) {
           <LaunchOptionControl control="value" style={{ flex: 1, minWidth: 0 }}>
             <DialogButton
               style={{ width: "100%" }}
-              disabled={pending}
+              disabled={fetching}
               onClick={() => {
                 setConfiguration(readStores())
                 for (const query of queries) void query.refetch()
