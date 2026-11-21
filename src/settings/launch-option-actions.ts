@@ -75,6 +75,21 @@ export function createLaunchOptionActions(setSettings: SetSettings) {
           const existingLaunchOptionIndex = draft.launchOptions.findIndex(
             (item) => item.id === nextLaunchOption.id,
           )
+          // Catalog reimports must not reactivate previously inert preset
+          // controls, including newly added choices in an inert dropdown.
+          const existingSiblings = draft.launchOptions.filter(
+            (item) =>
+              nextLaunchOption.valueId &&
+              item.valueId === nextLaunchOption.valueId,
+          )
+          if (
+            draft.launchOptions[existingLaunchOptionIndex]
+              ?.requireExplicitSelection ||
+            (existingSiblings.length > 0 &&
+              existingSiblings.every((item) => item.requireExplicitSelection))
+          ) {
+            nextLaunchOption.requireExplicitSelection = true
+          }
           if (existingLaunchOptionIndex !== -1) {
             draft.launchOptions[existingLaunchOptionIndex] = nextLaunchOption
           } else {
@@ -248,6 +263,7 @@ export function createLaunchOptionActions(setSettings: SetSettings) {
             launchOptionFactory({
               ...launchOption,
               id: undefined,
+              source: undefined,
               name,
             }),
           )
@@ -279,6 +295,7 @@ export function createLaunchOptionActions(setSettings: SetSettings) {
             launchOptionFactory({
               ...sibling,
               id: undefined,
+              source: undefined,
               name: namesByOriginalName.get(sibling.name) || sibling.name,
               valueId,
             }),

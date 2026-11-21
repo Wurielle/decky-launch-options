@@ -7,6 +7,12 @@ export function createProfileActions(
   setSettings: SetSettings,
 ) {
   return {
+    resetAppLaunchOptionSelection: (appid: string) => {
+      setSettings((draft) => {
+        if (!draft.profiles[appid]) return
+        draft.profiles[appid].state = {}
+      })
+    },
     setAppLaunchOptionState: (
       appid: string,
       launchOptionId: string,

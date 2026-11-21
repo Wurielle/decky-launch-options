@@ -5,11 +5,12 @@ import {
   Field,
   Focusable,
   PanelSectionRow,
-  SteamSpinner,
   TextField,
 } from "@decky/ui"
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
+import { StateMessage } from "../../components/state-message"
+import { TabLoading } from "../../components/tab-loading"
 import { FaSyncAlt } from "react-icons/fa"
 import { importRecipeEventType } from "../../shared"
 import {
@@ -17,10 +18,17 @@ import {
   LaunchOptionControls,
   LaunchOptionFocusList,
 } from "../../components/launch-option-focus"
-import { getRecipesUrl, parseRecipes } from "./recipes"
+import { getRecipesUrl, readRecipeCatalog } from "./recipes"
 import type { GithubStore } from "./store"
+import { prepareRecipeImport } from "../app-presets/model"
 
-export function StoreRecipes({ store }: { store: GithubStore }) {
+export function StoreRecipes({
+  store,
+  storeUrl,
+}: {
+  store: GithubStore
+  storeUrl?: string
+}) {
   const [search, setSearch] = useState("")
   const url = getRecipesUrl(store)
   const recipes = useQuery({
@@ -38,20 +46,21 @@ export function StoreRecipes({ store }: { store: GithubStore }) {
       const response = await fetchNoCors(source.href)
       if (!response.ok)
         throw new Error(`Could not download recipes (HTTP ${response.status}).`)
-      return parseRecipes(await response.json())
+      return readRecipeCatalog(response)
     },
   })
   const query = search.trim().toLocaleLowerCase()
   const filteredRecipes = recipes.data?.filter((recipe) =>
     recipe.name.toLocaleLowerCase().includes(query),
   )
+  const loading = recipes.isPending || recipes.isFetching
 
   return (
     <LaunchOptionFocusList
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: 6,
+        gap: loading ? 0 : 6,
         minHeight: "100%",
       }}
     >
@@ -86,30 +95,14 @@ export function StoreRecipes({ store }: { store: GithubStore }) {
           </LaunchOptionControl>
         </LaunchOptionControls>
       </Field>
-      {recipes.isPending || recipes.isFetching ? (
-        <div
-          role="status"
-          aria-label="Loading recipes"
-          style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <SteamSpinner
-            background="transparent"
-            style={{ width: 64, height: 64 }}
-          />
-        </div>
+      {loading ? (
+        <TabLoading label="Loading recipes" />
       ) : recipes.error ? (
-        <div role="alert" style={{ textAlign: "center" }}>
-          {recipes.error.message}
-        </div>
+        <StateMessage role="alert">{recipes.error.message}</StateMessage>
       ) : !filteredRecipes?.length ? (
-        <div style={{ textAlign: "center" }}>
+        <StateMessage>
           {query ? "No matching recipes." : "No recipes found."}
-        </div>
+        </StateMessage>
       ) : (
         <Focusable
           style={{
@@ -126,7 +119,13 @@ export function StoreRecipes({ store }: { store: GithubStore }) {
                   onClick={() =>
                     window.dispatchEvent(
                       new CustomEvent(importRecipeEventType, {
-                        detail: recipe,
+                        detail:
+                          storeUrl && recipe.id
+                            ? prepareRecipeImport(recipe, {
+                                url: storeUrl,
+                                store,
+                              })
+                            : recipe,
                       }),
                     )
                   }

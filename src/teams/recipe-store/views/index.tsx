@@ -7,6 +7,7 @@ import {
   Tabs,
 } from "@decky/ui"
 import { useEffect, useRef, useState } from "react"
+import { StateMessage } from "../../../components/state-message"
 import { ModalWrapper } from "../../launch-options/components/modal-wrapper"
 import { AddStoreForm } from "../add-store-form"
 import {
@@ -21,7 +22,7 @@ import {
 import { StoreRecipes } from "../store-recipes"
 import { StoreList } from "../store-list"
 
-export function RecipeStorePage() {
+export function RecipeStorePage({ initialTab }: { initialTab?: "stores" }) {
   const [tab, setTab] = useState("stores")
   const [readyToShow, setReadyToShow] = useState(true)
   const [stores, setStores] = useState<SavedStore[]>([])
@@ -45,7 +46,7 @@ export function RecipeStorePage() {
       setStoreError(error instanceof Error ? error.message : String(error))
     }
   }
-  useEffect(() => refreshStores(true), [])
+  useEffect(() => refreshStores(initialTab !== "stores"), [initialTab])
 
   const removeStore = (url: string) => {
     try {
@@ -136,9 +137,7 @@ export function RecipeStorePage() {
                     </ButtonItem>
                   </PanelSectionRow>
                   {storeError && (
-                    <div role="alert" style={{ textAlign: "center" }}>
-                      {storeError}
-                    </div>
+                    <StateMessage role="alert">{storeError}</StateMessage>
                   )}
                   <StoreList
                     stores={stores}
@@ -169,7 +168,7 @@ export function RecipeStorePage() {
                 : store.name,
               content: readyToShow && (
                 <Focusable key={url} style={{ height: "100%" }}>
-                  <StoreRecipes store={store} />
+                  <StoreRecipes store={store} storeUrl={url} />
                 </Focusable>
               ),
             })),

@@ -13,6 +13,7 @@ import {
 import {
   getRecipesUrl,
   parseRecipes,
+  readRecipeCatalog,
 } from "../src/teams/recipe-store/recipes.ts"
 
 const manifest = {
@@ -62,6 +63,36 @@ test("recipe parsing keeps launch options unchanged and rejects malformed catalo
   ]) {
     assert.throws(() => parseRecipes(invalid))
   }
+})
+
+test("catalog loading silently skips invalid recipes and duplicates while keeping valid entries", async () => {
+  const valid = { id: "valid", name: "Valid", launchOptions: [{ id: "option" }] }
+  const other = { name: "Other", environmentVariableMerges: [] }
+  const catalog = [
+    null,
+    { name: "Missing lists" },
+    { name: "Invalid option", launchOptions: [{ on: {} }] },
+    { name: "Duplicate options", launchOptions: [{ id: "same" }, { id: "same" }] },
+    { name: "Invalid merge", environmentVariableMerges: [{}] },
+    { id: "valid", name: "Invalid first entry", launchOptions: [null] },
+    valid,
+    { ...valid, name: "Duplicate recipe" },
+    other,
+  ]
+  assert.deepEqual(await readRecipeCatalog({ json: async () => catalog }), [
+    valid,
+    other,
+  ])
+  for (const value of [null, {}, "invalid", []])
+    assert.deepEqual(await readRecipeCatalog({ json: async () => value }), [])
+  assert.deepEqual(
+    await readRecipeCatalog({
+      json: async () => {
+        throw new SyntaxError("Invalid JSON")
+      },
+    }),
+    [],
+  )
 })
 
 test("recipe parsing preserves both lists, either list alone, and literal delimiters", () => {

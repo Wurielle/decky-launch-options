@@ -10,9 +10,11 @@ export interface MenuAction {
 export function ActionMenuButton({
   label,
   actions,
+  disabled,
 }: {
   label: string
   actions: MenuAction[]
+  disabled?: boolean
 }) {
   const showActions = (event: any) => {
     let menu: ReturnType<typeof showContextMenu>
@@ -40,6 +42,7 @@ export function ActionMenuButton({
   return (
     <DialogButton
       aria-label={label}
+      disabled={disabled}
       style={{
         minWidth: 40,
         width: 40,

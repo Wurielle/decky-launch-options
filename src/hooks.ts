@@ -1,12 +1,18 @@
 import { produce } from "immer"
 import { useEffect, useRef, useState } from "react"
-import { useGetSettingsQuery, useSetSettingsMutation } from "./queries/settings"
+import {
+  keys,
+  queryClient,
+  useGetSettingsQuery,
+  useSetSettingsMutation,
+} from "./queries/settings"
 import { createEnvironmentVariableMergeActions } from "./settings/environment-variable-merge-actions"
 import { createLaunchOptionActions } from "./settings/launch-option-actions"
 import { createProfileActions } from "./settings/profile-actions"
 import { SetSettings } from "./settings/types"
 import { Settings } from "./shared"
 import { normalizeSettings } from "./utils"
+import { createPresetActions } from "./teams/app-presets/actions"
 
 export function useSettings() {
   const [settings, _setSettings] = useState<Settings>({
@@ -48,5 +54,12 @@ export function useSettings() {
     ...createLaunchOptionActions(setSettings),
     ...createEnvironmentVariableMergeActions(setSettings),
     ...createProfileActions(settings, setSettings),
+    ...createPresetActions(
+      () =>
+        normalizeSettings(
+          queryClient.getQueryData<Settings>(keys.settings()) ?? settings,
+        ),
+      (next) => setSettingsMutation.mutateAsync(next),
+    ),
   }
 }

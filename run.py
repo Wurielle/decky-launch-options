@@ -391,8 +391,17 @@ def get_final_args_details(settings, appid, skipped_prefixes=None):
             selected_by_value_id[value_id] = global_selected
             continue
 
-        fallback = next((opt["id"] for opt in siblings if opt.get("fallbackValue", False)), None)
-        selected_by_value_id[value_id] = fallback if fallback is not None else siblings[0]["id"]
+        # Preset-imported controls have no implicit activation; field omission
+        # preserves the fallback behavior of ordinary and existing settings.
+        implicit = [
+            opt for opt in siblings
+            if not opt.get("requireExplicitSelection", False)
+        ]
+        fallback = next((opt["id"] for opt in implicit if opt.get("fallbackValue", False)), None)
+        selected_by_value_id[value_id] = (
+            fallback if fallback is not None
+            else (implicit[0]["id"] if implicit else None)
+        )
 
     # Parse each enabled launch option, collecting with priority for sorting
     launch_option_parts = []
@@ -408,7 +417,15 @@ def get_final_args_details(settings, appid, skipped_prefixes=None):
             raw_command = opt["on"] if is_enabled else ""
         else:
             is_enabled = profile_state.get(opt_id, enable_globally)
-            raw_command = opt["on"] if is_enabled else opt["off"]
+            # An untouched preset boolean must not run its off command either.
+            if (
+                opt.get("requireExplicitSelection", False)
+                and not enable_globally
+                and opt_id not in profile_state
+            ):
+                raw_command = ""
+            else:
+                raw_command = opt["on"] if is_enabled else opt["off"]
 
         if raw_command and raw_command.strip():
             parsed = parse_launch_option(raw_command)

@@ -1,0 +1,1912 @@
+{
+  "id": "dlor-optiscaler",
+  "name": "DLOR OptiScaler",
+  "environmentVariableMerges": [
+    {
+      "id": "winedlloverrides",
+      "name": "WINEDLLOVERRIDES",
+      "delimiter": ";"
+    }
+  ],
+  "launchOptions": [
+    {
+      "id": "dlor-optiscaler",
+      "name": "DLOR OptiScaler",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-install",
+      "name": "DLOR OptiScaler",
+      "on": "export WINEDLLOVERRIDES=\"${WINEDLLOVERRIDES:+$WINEDLLOVERRIDES;}${DLOR_OPTISCALER_PROXY:-dxgi}=n,b\" && SteamDeck=0 ~/.dlor/run dlor-optiscaler install 15c2538b42fe8685e160ee3e11d00392354ba6d0 -- %command%",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler",
+      "valueName": "Install"
+    },
+    {
+      "id": "dlor-optiscaler-uninstall",
+      "name": "DLOR OptiScaler",
+      "on": "~/.dlor/run dlor-optiscaler uninstall 15c2538b42fe8685e160ee3e11d00392354ba6d0 -- %command%",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler",
+      "valueName": "Uninstall"
+    },
+    {
+      "id": "dlor-optiscaler-proxy-none",
+      "name": "OptiScaler Proxy",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-proxy",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-proxy-dxgi",
+      "name": "OptiScaler Proxy",
+      "on": "DLOR_OPTISCALER_PROXY=\"dxgi\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-proxy",
+      "valueName": "dxgi.dll"
+    },
+    {
+      "id": "dlor-optiscaler-proxy-winmm",
+      "name": "OptiScaler Proxy",
+      "on": "DLOR_OPTISCALER_PROXY=\"winmm\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-proxy",
+      "valueName": "winmm.dll"
+    },
+    {
+      "id": "dlor-optiscaler-proxy-d3d12",
+      "name": "OptiScaler Proxy",
+      "on": "DLOR_OPTISCALER_PROXY=\"d3d12\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-proxy",
+      "valueName": "d3d12.dll"
+    },
+    {
+      "id": "dlor-optiscaler-proxy-dbghelp",
+      "name": "OptiScaler Proxy",
+      "on": "DLOR_OPTISCALER_PROXY=\"dbghelp\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-proxy",
+      "valueName": "dbghelp.dll"
+    },
+    {
+      "id": "dlor-optiscaler-proxy-version",
+      "name": "OptiScaler Proxy",
+      "on": "DLOR_OPTISCALER_PROXY=\"version\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-proxy",
+      "valueName": "version.dll"
+    },
+    {
+      "id": "dlor-optiscaler-proxy-wininet",
+      "name": "OptiScaler Proxy",
+      "on": "DLOR_OPTISCALER_PROXY=\"wininet\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-proxy",
+      "valueName": "wininet.dll"
+    },
+    {
+      "id": "dlor-optiscaler-proxy-winhttp",
+      "name": "OptiScaler Proxy",
+      "on": "DLOR_OPTISCALER_PROXY=\"winhttp\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-proxy",
+      "valueName": "winhttp.dll"
+    },
+    {
+      "id": "dlor-optiscaler-fsr-override-none",
+      "group": "DLOR OptiScaler",
+      "name": "FSR Override",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr-override",
+      "valueName": "None"
+    },
+    {
+      "id": "dlor-optiscaler-fsr-override-bundled",
+      "group": "DLOR OptiScaler",
+      "name": "FSR Override",
+      "on": "DLOR_OPTISCALER_FSR_PROFILE=\"bundled\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr-override",
+      "valueName": "Bundled"
+    },
+    {
+      "id": "dlor-optiscaler-fsr-override-sdk-amd",
+      "group": "DLOR OptiScaler",
+      "name": "FSR Override",
+      "on": "DLOR_OPTISCALER_FSR_PROFILE=\"sdk-amd\"",
+      "off": "",
+      "enableGlobally": true,
+      "valueId": "dlor-optiscaler-fsr-override",
+      "valueName": "AMD SDK",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-fsr-override-zgauthier2000-rx6000-exact",
+      "group": "DLOR OptiScaler",
+      "name": "FSR Override",
+      "on": "DLOR_OPTISCALER_FSR_PROFILE=\"zgauthier2000-rx6000-exact\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr-override",
+      "valueName": "RDNA 2 - Exact"
+    },
+    {
+      "id": "dlor-optiscaler-fsr-override-zgauthier2000-rx6000-lossy",
+      "group": "DLOR OptiScaler",
+      "name": "FSR Override",
+      "on": "DLOR_OPTISCALER_FSR_PROFILE=\"zgauthier2000-rx6000-lossy\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr-override",
+      "valueName": "RDNA 2 - Lossy"
+    },
+    {
+      "id": "dlor-optiscaler-fsr-override-zgauthier2000-rx7000-exact",
+      "group": "DLOR OptiScaler",
+      "name": "FSR Override",
+      "on": "DLOR_OPTISCALER_FSR_PROFILE=\"zgauthier2000-rx7000-exact\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr-override",
+      "valueName": "RDNA 3 - Exact"
+    },
+    {
+      "id": "dlor-optiscaler-fsr-override-zgauthier2000-rx7000-lossy",
+      "group": "DLOR OptiScaler",
+      "name": "FSR Override",
+      "on": "DLOR_OPTISCALER_FSR_PROFILE=\"zgauthier2000-rx7000-lossy\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr-override",
+      "valueName": "RDNA 3 - Lossy"
+    },
+    {
+      "id": "dlor-optiscaler-fsr-override-zgauthier2000-igpu-rdna2-exact",
+      "group": "DLOR OptiScaler",
+      "name": "FSR Override",
+      "on": "DLOR_OPTISCALER_FSR_PROFILE=\"zgauthier2000-igpu-rdna2-exact\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr-override",
+      "valueName": "RDNA 2 iGPU - Exact"
+    },
+    {
+      "id": "dlor-optiscaler-fsr-override-zgauthier2000-igpu-rdna2-lossy",
+      "group": "DLOR OptiScaler",
+      "name": "FSR Override",
+      "on": "DLOR_OPTISCALER_FSR_PROFILE=\"zgauthier2000-igpu-rdna2-lossy\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr-override",
+      "valueName": "RDNA 2 iGPU - Lossy"
+    },
+    {
+      "id": "dlor-optiscaler-fsr-override-zgauthier2000-igpu-rdna3-exact",
+      "group": "DLOR OptiScaler",
+      "name": "FSR Override",
+      "on": "DLOR_OPTISCALER_FSR_PROFILE=\"zgauthier2000-igpu-rdna3-exact\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr-override",
+      "valueName": "RDNA 3 iGPU - Exact"
+    },
+    {
+      "id": "dlor-optiscaler-fsr-override-zgauthier2000-igpu-rdna3-lossy",
+      "group": "DLOR OptiScaler",
+      "name": "FSR Override",
+      "on": "DLOR_OPTISCALER_FSR_PROFILE=\"zgauthier2000-igpu-rdna3-lossy\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr-override",
+      "valueName": "RDNA 3 iGPU - Lossy"
+    },
+    {
+      "id": "dlor-optiscaler-nightly-upgrade",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Nightly Upgrade",
+      "on": "~/.dlor/run optiscaler update-nightly 15c2538b42fe8685e160ee3e11d00392354ba6d0 -- %command%",
+      "off": "",
+      "enableGlobally": false,
+      "priority": -1
+    },
+    {
+      "id": "dlor-optiscaler-framegen",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen",
+      "on": "OptiScaler_FrameGen_Enabled=\"true\"",
+      "off": "OptiScaler_FrameGen_Enabled=\"false\""
+    },
+    {
+      "id": "dlor-optiscaler-menu-shortcut-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Menu Shortcut",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-menu-shortcut",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-menu-shortcut-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Menu Shortcut",
+      "on": "OptiScaler_Menu_ShortcutKey=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-menu-shortcut",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-menu-shortcut-insert",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Menu Shortcut",
+      "on": "OptiScaler_Menu_ShortcutKey=\"0x2D\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-menu-shortcut",
+      "valueName": "Insert"
+    },
+    {
+      "id": "dlor-optiscaler-menu-shortcut-volume-down",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Menu Shortcut",
+      "on": "OptiScaler_Menu_ShortcutKey=\"0xAE\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-menu-shortcut",
+      "valueName": "Volume Down"
+    },
+    {
+      "id": "dlor-optiscaler-menu-shortcut-volume-up",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Menu Shortcut",
+      "on": "OptiScaler_Menu_ShortcutKey=\"0xAF\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-menu-shortcut",
+      "valueName": "Volume Up"
+    },
+    {
+      "id": "dlor-optiscaler-menu-shortcut-previous-track",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Menu Shortcut",
+      "on": "OptiScaler_Menu_ShortcutKey=\"0xB1\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-menu-shortcut",
+      "valueName": "Previous Track"
+    },
+    {
+      "id": "dlor-optiscaler-menu-shortcut-play-pause",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Menu Shortcut",
+      "on": "OptiScaler_Menu_ShortcutKey=\"0xB3\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-menu-shortcut",
+      "valueName": "Play/Pause"
+    },
+    {
+      "id": "dlor-optiscaler-menu-shortcut-next-track",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Menu Shortcut",
+      "on": "OptiScaler_Menu_ShortcutKey=\"0xB0\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-menu-shortcut",
+      "valueName": "Next Track"
+    },
+    {
+      "id": "dlor-optiscaler-menu-shortcut-escape",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Menu Shortcut",
+      "on": "OptiScaler_Menu_ShortcutKey=\"0x1B\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-menu-shortcut",
+      "valueName": "Escape"
+    },
+    {
+      "id": "dlor-optiscaler-menu-shortcut-tab",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Menu Shortcut",
+      "on": "OptiScaler_Menu_ShortcutKey=\"0x09\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-menu-shortcut",
+      "valueName": "Tab"
+    },
+    {
+      "id": "dlor-optiscaler-menu-shortcut-enter",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Menu Shortcut",
+      "on": "OptiScaler_Menu_ShortcutKey=\"0x0D\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-menu-shortcut",
+      "valueName": "Enter"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-optifg-hudfix",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen OptiFG HUDFix",
+      "on": "OptiScaler_OptiFG_HUDFix=\"true\"",
+      "off": "OptiScaler_OptiFG_HUDFix=\"auto\"",
+      "enableGlobally": false
+    },
+    {
+      "id": "dlor-optiscaler-framegen-input-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Input",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-input",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-framegen-input-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Input",
+      "on": "OptiScaler_FrameGen_FGInput=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-input",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-input-nofg",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Input",
+      "on": "OptiScaler_FrameGen_FGInput=\"nofg\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-input",
+      "valueName": "No Frame Generation"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-input-dlssg",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Input",
+      "on": "OptiScaler_FrameGen_FGInput=\"dlssg\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-input",
+      "valueName": "DLSSG via Streamline"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-input-nvngxfg",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Input",
+      "on": "OptiScaler_FrameGen_FGInput=\"nvngxfg\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-input",
+      "valueName": "Nvngx DLSSG"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-input-fsrfg",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Input",
+      "on": "OptiScaler_FrameGen_FGInput=\"fsrfg\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-input",
+      "valueName": "FSR 3.1 FG"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-input-upscaler",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Input",
+      "on": "OptiScaler_FrameGen_FGInput=\"upscaler\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-input",
+      "valueName": "OptiFG (Upscaler)"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-input-fsrfg30",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Input",
+      "on": "OptiScaler_FrameGen_FGInput=\"fsrfg30\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-input",
+      "valueName": "FSR 3.0 FG"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-input-xefg",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Input",
+      "on": "OptiScaler_FrameGen_FGInput=\"xefg\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-input",
+      "valueName": "XeFG"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-output-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Output",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-output",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-framegen-output-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Output",
+      "on": "OptiScaler_FrameGen_FGOutput=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-output",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-output-nofg",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Output",
+      "on": "OptiScaler_FrameGen_FGOutput=\"nofg\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-output",
+      "valueName": "No Frame Generation"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-output-fsrfg",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Output",
+      "on": "OptiScaler_FrameGen_FGOutput=\"fsrfg\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-output",
+      "valueName": "FSR FG"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-output-xefg",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Output",
+      "on": "OptiScaler_FrameGen_FGOutput=\"xefg\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-output",
+      "valueName": "XeFG"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-output-dlssg",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Output",
+      "on": "OptiScaler_FrameGen_FGOutput=\"dlssg\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-output",
+      "valueName": "DLSSG"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-output-reprojection",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen Output",
+      "on": "OptiScaler_FrameGen_FGOutput=\"reprojection\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-output",
+      "valueName": "Reprojection"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-disabled",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"0.0\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "Disabled"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-30",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"30\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "30"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-40",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"40\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "40"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-45",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"45\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "45"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-60",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"60\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "60"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-72",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"72\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "72"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-82",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"82\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "82"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-90",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"90\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "90"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-120",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"120\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "120"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-144",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"144\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "144"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-165",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"165\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "165"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-180",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"180\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "180"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-240",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"240\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "240"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-360",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"360\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "360"
+    },
+    {
+      "id": "dlor-optiscaler-framerate-limit-480",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Framerate Limit",
+      "on": "OptiScaler_Framerate_FramerateLimit=\"480\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framerate-limit",
+      "valueName": "480"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx11-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx11)",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx11",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx11-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx11)",
+      "on": "OptiScaler_Upscalers_Dx11Upscaler=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx11",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx11-fsr22",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx11)",
+      "on": "OptiScaler_Upscalers_Dx11Upscaler=\"fsr22\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx11",
+      "valueName": "FSR 2.2 (native)"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx11-fsr31",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx11)",
+      "on": "OptiScaler_Upscalers_Dx11Upscaler=\"fsr31\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx11",
+      "valueName": "FSR 3.1 (native)"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx11-xess",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx11)",
+      "on": "OptiScaler_Upscalers_Dx11Upscaler=\"xess\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx11",
+      "valueName": "XeSS (native, Arc only)"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx11-xess12",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx11)",
+      "on": "OptiScaler_Upscalers_Dx11Upscaler=\"xess_12\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx11",
+      "valueName": "XeSS (DX11on12)"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx11-fsr21-12",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx11)",
+      "on": "OptiScaler_Upscalers_Dx11Upscaler=\"fsr21_12\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx11",
+      "valueName": "FSR 2.1 (DX11on12)"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx11-fsr22-12",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx11)",
+      "on": "OptiScaler_Upscalers_Dx11Upscaler=\"fsr22_12\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx11",
+      "valueName": "FSR 2.2 (DX11on12)"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx11-ffx-12",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx11)",
+      "on": "OptiScaler_Upscalers_Dx11Upscaler=\"ffx_12\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx11",
+      "valueName": "FidelityFX / FSR4"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx11-dlss",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx11)",
+      "on": "OptiScaler_Upscalers_Dx11Upscaler=\"dlss\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx11",
+      "valueName": "DLSS"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx12-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx12)",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx12",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx12-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx12)",
+      "on": "OptiScaler_Upscalers_Dx12Upscaler=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx12",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx12-xess",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx12)",
+      "on": "OptiScaler_Upscalers_Dx12Upscaler=\"xess\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx12",
+      "valueName": "XeSS"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx12-fsr21",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx12)",
+      "on": "OptiScaler_Upscalers_Dx12Upscaler=\"fsr21\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx12",
+      "valueName": "FSR 2.1"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx12-fsr22",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx12)",
+      "on": "OptiScaler_Upscalers_Dx12Upscaler=\"fsr22\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx12",
+      "valueName": "FSR 2.2"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx12-ffx",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx12)",
+      "on": "OptiScaler_Upscalers_Dx12Upscaler=\"ffx\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx12",
+      "valueName": "FidelityFX / FSR4"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-dx12-dlss",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Dx12)",
+      "on": "OptiScaler_Upscalers_Dx12Upscaler=\"dlss\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-dx12",
+      "valueName": "DLSS"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-vulkan-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Vulkan)",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-vulkan",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-vulkan-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Vulkan)",
+      "on": "OptiScaler_Upscalers_VulkanUpscaler=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-vulkan",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-vulkan-fsr21",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Vulkan)",
+      "on": "OptiScaler_Upscalers_VulkanUpscaler=\"fsr21\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-vulkan",
+      "valueName": "FSR 2.1 (native)"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-vulkan-fsr22",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Vulkan)",
+      "on": "OptiScaler_Upscalers_VulkanUpscaler=\"fsr22\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-vulkan",
+      "valueName": "FSR 2.2 (native)"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-vulkan-ffx",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Vulkan)",
+      "on": "OptiScaler_Upscalers_VulkanUpscaler=\"ffx\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-vulkan",
+      "valueName": "FidelityFX"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-vulkan-xess",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Vulkan)",
+      "on": "OptiScaler_Upscalers_VulkanUpscaler=\"xess\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-vulkan",
+      "valueName": "XeSS (native)"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-vulkan-fsr21-12",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Vulkan)",
+      "on": "OptiScaler_Upscalers_VulkanUpscaler=\"fsr21_12\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-vulkan",
+      "valueName": "FSR 2.1 (VKon12)"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-vulkan-ffx-12",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Vulkan)",
+      "on": "OptiScaler_Upscalers_VulkanUpscaler=\"ffx_12\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-vulkan",
+      "valueName": "FidelityFX / FSR4"
+    },
+    {
+      "id": "dlor-optiscaler-upscaler-vulkan-dlss",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler Upscaler (Vulkan)",
+      "on": "OptiScaler_Upscalers_VulkanUpscaler=\"dlss\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-upscaler-vulkan",
+      "valueName": "DLSS"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-preset-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 Preset",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-preset",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-preset-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 Preset",
+      "on": "OptiScaler_FSR_Fsr4Preset=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-preset",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-preset-0",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 Preset",
+      "on": "OptiScaler_FSR_Fsr4Preset=\"0\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-preset",
+      "valueName": "Native AA"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-preset-1",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 Preset",
+      "on": "OptiScaler_FSR_Fsr4Preset=\"1\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-preset",
+      "valueName": "Ultra Quality / Quality"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-preset-2",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 Preset",
+      "on": "OptiScaler_FSR_Fsr4Preset=\"2\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-preset",
+      "valueName": "Balanced"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-preset-3",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 Preset",
+      "on": "OptiScaler_FSR_Fsr4Preset=\"3\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-preset",
+      "valueName": "Performance"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-preset-4",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 Preset",
+      "on": "OptiScaler_FSR_Fsr4Preset=\"4\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-preset",
+      "valueName": "DRS"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-preset-5",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 Preset",
+      "on": "OptiScaler_FSR_Fsr4Preset=\"5\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-preset",
+      "valueName": "Ultra Performance"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-gpu-support-override-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 GPU Support Override",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-gpu-support-override",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-gpu-support-override-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 GPU Support Override",
+      "on": "OptiScaler_FSR_Fsr4GpuSupport=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-gpu-support-override",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-gpu-support-override-0",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 GPU Support Override",
+      "on": "OptiScaler_FSR_Fsr4GpuSupport=\"0\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-gpu-support-override",
+      "valueName": "No override"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-gpu-support-override-1",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 GPU Support Override",
+      "on": "OptiScaler_FSR_Fsr4GpuSupport=\"1\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-gpu-support-override",
+      "valueName": "FP8"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-gpu-support-override-2",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 GPU Support Override",
+      "on": "OptiScaler_FSR_Fsr4GpuSupport=\"2\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-gpu-support-override",
+      "valueName": "INT8"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-gpu-support-override-3",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 GPU Support Override",
+      "on": "OptiScaler_FSR_Fsr4GpuSupport=\"3\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-gpu-support-override",
+      "valueName": "INT8-2"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-gpu-support-override-4",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 GPU Support Override",
+      "on": "OptiScaler_FSR_Fsr4GpuSupport=\"4\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-gpu-support-override",
+      "valueName": "INT8 Lite"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-model-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 Model",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-model",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-model-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 Model",
+      "on": "OptiScaler_FSR_Fsr4Model=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-model",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-model-0",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 Model",
+      "on": "OptiScaler_FSR_Fsr4Model=\"0\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-model",
+      "valueName": "FP8"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-model-1",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 Model",
+      "on": "OptiScaler_FSR_Fsr4Model=\"1\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-model",
+      "valueName": "INT8"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-model-2",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 Model",
+      "on": "OptiScaler_FSR_Fsr4Model=\"2\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-model",
+      "valueName": "INT8 RDNA2"
+    },
+    {
+      "id": "dlor-optiscaler-fsr4-model-3",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FSR4 Model",
+      "on": "OptiScaler_FSR_Fsr4Model=\"3\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-fsr4-model",
+      "valueName": "INT8 Lite"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-mfg-multiplier-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG MFG Multiplier",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-mfg-multiplier",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-mfg-multiplier-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG MFG Multiplier",
+      "on": "OptiScaler_XeFG_InterpolationCount=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-mfg-multiplier",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-mfg-multiplier-1",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG MFG Multiplier",
+      "on": "OptiScaler_XeFG_InterpolationCount=\"1\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-mfg-multiplier",
+      "valueName": "2\u00d7"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-mfg-multiplier-2",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG MFG Multiplier",
+      "on": "OptiScaler_XeFG_InterpolationCount=\"2\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-mfg-multiplier",
+      "valueName": "3\u00d7"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-mfg-multiplier-3",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG MFG Multiplier",
+      "on": "OptiScaler_XeFG_InterpolationCount=\"3\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-mfg-multiplier",
+      "valueName": "4\u00d7"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-10",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"10\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "10 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-20",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"20\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "20 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-30",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"30\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "30 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-40",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"40\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "40 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-45",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"45\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "45 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-60",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"60\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "60 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-72",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"72\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "72 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-82",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"82\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "82 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-90",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"90\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "90 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-120",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"120\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "120 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-144",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"144\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "144 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-165",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"165\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "165 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-180",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"180\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "180 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-240",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"240\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "240 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-360",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"360\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "360 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps-480",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target FPS",
+      "on": "OptiScaler_XeFG_FramerateTargetDMFG=\"480\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-fps",
+      "valueName": "480 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-mfg-multiplier-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG MFG Multiplier",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-mfg-multiplier",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-mfg-multiplier-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG MFG Multiplier",
+      "on": "OptiScaler_DLSSG_InterpolationCount=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-mfg-multiplier",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-mfg-multiplier-1",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG MFG Multiplier",
+      "on": "OptiScaler_DLSSG_InterpolationCount=\"1\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-mfg-multiplier",
+      "valueName": "2\u00d7"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-mfg-multiplier-2",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG MFG Multiplier",
+      "on": "OptiScaler_DLSSG_InterpolationCount=\"2\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-mfg-multiplier",
+      "valueName": "3\u00d7"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-mfg-multiplier-3",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG MFG Multiplier",
+      "on": "OptiScaler_DLSSG_InterpolationCount=\"3\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-mfg-multiplier",
+      "valueName": "4\u00d7"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-mfg-multiplier-4",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG MFG Multiplier",
+      "on": "OptiScaler_DLSSG_InterpolationCount=\"4\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-mfg-multiplier",
+      "valueName": "5\u00d7"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-mfg-multiplier-5",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG MFG Multiplier",
+      "on": "OptiScaler_DLSSG_InterpolationCount=\"5\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-mfg-multiplier",
+      "valueName": "6\u00d7"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-0",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"0\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "Display refresh rate"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-10",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"10\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "10 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-20",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"20\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "20 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-30",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"30\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "30 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-40",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"40\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "40 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-45",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"45\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "45 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-60",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"60\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "60 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-72",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"72\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "72 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-82",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"82\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "82 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-90",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"90\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "90 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-120",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"120\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "120 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-144",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"144\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "144 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-165",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"165\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "165 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-180",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"180\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "180 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-240",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"240\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "240 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-360",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"360\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "360 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps-480",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG Target FPS",
+      "on": "OptiScaler_DLSSG_FramerateTargetDMFG=\"480\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-target-fps",
+      "valueName": "480 FPS"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG",
+      "on": "OptiScaler_XeFG_DynamicMFG=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-on",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG",
+      "on": "OptiScaler_XeFG_DynamicMFG=\"true\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg",
+      "valueName": "On"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-off",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG",
+      "on": "OptiScaler_XeFG_DynamicMFG=\"false\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg",
+      "valueName": "Off"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-use-target-as-fps-limit-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Use Target as FPS Limit",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-use-target-as-fps-limit",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-use-target-as-fps-limit-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Use Target as FPS Limit",
+      "on": "OptiScaler_XeFG_TargetAsCapDMFG=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-use-target-as-fps-limit",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-use-target-as-fps-limit-on",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Use Target as FPS Limit",
+      "on": "OptiScaler_XeFG_TargetAsCapDMFG=\"true\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-use-target-as-fps-limit",
+      "valueName": "On"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-use-target-as-fps-limit-off",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Use Target as FPS Limit",
+      "on": "OptiScaler_XeFG_TargetAsCapDMFG=\"false\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-use-target-as-fps-limit",
+      "valueName": "Off"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG",
+      "on": "OptiScaler_DLSSG_ForceDMFG=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-on",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG",
+      "on": "OptiScaler_DLSSG_ForceDMFG=\"true\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg",
+      "valueName": "On"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-dlssg-dynamic-mfg-off",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen DLSSG Dynamic MFG",
+      "on": "OptiScaler_DLSSG_ForceDMFG=\"false\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-dlssg-dynamic-mfg",
+      "valueName": "Off"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-rounding-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target Rounding",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-rounding",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-rounding-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target Rounding",
+      "on": "OptiScaler_XeFG_RoundingDMFG=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-rounding",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-rounding-0",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target Rounding",
+      "on": "OptiScaler_XeFG_RoundingDMFG=\"0\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-rounding",
+      "valueName": "At most target"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-rounding-1",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target Rounding",
+      "on": "OptiScaler_XeFG_RoundingDMFG=\"1\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-rounding",
+      "valueName": "Around target"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-rounding-2",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen XeFG Dynamic MFG Target Rounding",
+      "on": "OptiScaler_XeFG_RoundingDMFG=\"2\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-framegen-xefg-dynamic-mfg-target-rounding",
+      "valueName": "At least target"
+    },
+    {
+      "id": "dlor-optiscaler-vsync-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler VSync",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-vsync",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-vsync-auto",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler VSync",
+      "on": "OptiScaler_VSync_OverrideVsync=\"auto\" OptiScaler_VSync_ForceVsync=\"auto\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-vsync",
+      "valueName": "Auto"
+    },
+    {
+      "id": "dlor-optiscaler-vsync-on",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler VSync",
+      "on": "OptiScaler_VSync_OverrideVsync=\"true\" OptiScaler_VSync_ForceVsync=\"true\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-vsync",
+      "valueName": "On"
+    },
+    {
+      "id": "dlor-optiscaler-vsync-off",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler VSync",
+      "on": "OptiScaler_VSync_OverrideVsync=\"true\" OptiScaler_VSync_ForceVsync=\"false\"",
+      "off": "",
+      "enableGlobally": false,
+      "valueId": "dlor-optiscaler-vsync",
+      "valueName": "Off"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-anr-none",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen ANR",
+      "on": "",
+      "off": "",
+      "enableGlobally": false,
+      "priority": -2,
+      "valueId": "dlor-optiscaler-framegen-anr",
+      "valueName": "None",
+      "fallbackValue": true
+    },
+    {
+      "id": "dlor-optiscaler-framegen-anr-install",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen ANR",
+      "on": "~/.dlor/run anr-framegen install 15c2538b42fe8685e160ee3e11d00392354ba6d0 -- %command%",
+      "off": "",
+      "enableGlobally": false,
+      "priority": -2,
+      "valueId": "dlor-optiscaler-framegen-anr",
+      "valueName": "Install"
+    },
+    {
+      "id": "dlor-optiscaler-framegen-anr-uninstall",
+      "group": "DLOR OptiScaler",
+      "name": "OptiScaler FrameGen ANR",
+      "on": "~/.dlor/run anr-framegen uninstall 15c2538b42fe8685e160ee3e11d00392354ba6d0 -- %command%",
+      "off": "",
+      "enableGlobally": false,
+      "priority": 1,
+      "valueId": "dlor-optiscaler-framegen-anr",
+      "valueName": "Uninstall"
+    }
+  ]
+}

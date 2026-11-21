@@ -1,0 +1,52 @@
+{
+  "id": "steam-deck",
+  "name": "Steam Deck",
+  "author": "Wurielle",
+  "description": "OptiScaler with FSR4 (Performance) + XeFG (x2).",
+  "notes": [
+    "Requires to enable DLSS Upscaling in game",
+    "Requires to enable DLSS Frame Generation in game"
+  ],
+  "launchOptions": [
+    {
+      "recipeId": "dlor-optiscaler",
+      "launchOptionId": "dlor-optiscaler-install"
+    },
+    {
+      "recipeId": "dlor-optiscaler",
+      "launchOptionId": "dlor-optiscaler-fsr-override-sdk-amd"
+    },
+    {
+      "recipeId": "dlor-optiscaler",
+      "launchOptionId": "dlor-optiscaler-upscaler-dx11-ffx-12"
+    },
+    {
+      "recipeId": "dlor-optiscaler",
+      "launchOptionId": "dlor-optiscaler-upscaler-dx12-ffx"
+    },
+    {
+      "recipeId": "dlor-optiscaler",
+      "launchOptionId": "dlor-optiscaler-upscaler-vulkan-ffx-12"
+    },
+    {
+      "recipeId": "dlor-optiscaler",
+      "launchOptionId": "dlor-optiscaler-fsr4-preset-3"
+    },
+    {
+      "recipeId": "dlor-optiscaler",
+      "launchOptionId": "dlor-optiscaler-vsync-on"
+    },
+    {
+      "recipeId": "dlor-optiscaler",
+      "launchOptionId": "dlor-optiscaler-framegen"
+    },
+    {
+      "recipeId": "dlor-optiscaler",
+      "launchOptionId": "dlor-optiscaler-framegen-input-dlssg"
+    },
+    {
+      "recipeId": "dlor-optiscaler",
+      "launchOptionId": "dlor-optiscaler-framegen-output-xefg"
+    }
+  ]
+}

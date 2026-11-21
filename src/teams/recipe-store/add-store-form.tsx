@@ -1,6 +1,7 @@
 import { fetchNoCors, toaster } from "@decky/api"
 import { DialogButton, Field, Focusable, TextField } from "@decky/ui"
 import { useEffect, useRef, useState } from "react"
+import { StateMessage } from "../../components/state-message"
 import { defaultRecipeStore, parseStore, saveStore } from "./store"
 import { readClipboardText } from "../../utils/clipboard"
 
@@ -94,11 +95,7 @@ export function AddStoreForm({
           </DialogButton>
         )}
       </Focusable>
-      {error && (
-        <div role="alert" style={{ textAlign: "center" }}>
-          {error}
-        </div>
-      )}
+      {error && <StateMessage role="alert">{error}</StateMessage>}
       <DialogButton
         style={{ flex: 1 }}
         disabled={busy || pasting || !url.trim()}

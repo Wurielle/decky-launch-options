@@ -5,6 +5,7 @@ import { pathToFileURL } from "node:url"
 import path from "node:path"
 import ts from "typescript"
 import { produce } from "immer"
+import { sourceModule as graphModule } from "./source-module.mjs"
 import {
   batchCreateLaunchOptionsEventType,
   defaultEnvironmentVariableMerges,
@@ -64,6 +65,13 @@ const ui = dataURL(`
 const hooks = dataURL(
   `export const useSettings = () => globalThis.__dloRecipeFixture.actions;`,
 )
+const stateMessage = await sourceModule("src/components/state-message.tsx", {
+  "react/jsx-runtime": jsx,
+})
+const tabLoading = await sourceModule("src/components/tab-loading.tsx", {
+  "react/jsx-runtime": jsx,
+  "@decky/ui": dataURL(`export const SteamSpinner='SteamSpinner';`),
+})
 const dialog = await import(
   await sourceModule("src/components/batch-add-launch-options.tsx", {
     "../shared": shared,
@@ -80,11 +88,13 @@ const dialog = await import(
     "./modal-scroll-content": dataURL(
       `export const ModalScrollContent='ModalScrollContent';`,
     ),
+    "./state-message": stateMessage,
   })
 )
 
 const { StoreRecipes } = await import(
   await sourceModule("src/teams/recipe-store/store-recipes.tsx", {
+    "../app-presets/model": await graphModule("src/teams/app-presets/model.ts"),
     "../../shared": shared,
     "./recipes": fileURL("src/teams/recipe-store/recipes.ts"),
     "@decky/api": dataURL(
@@ -102,6 +112,8 @@ const { StoreRecipes } = await import(
     "../../components/launch-option-focus": dataURL(
       `export const LaunchOptionControl='LaunchOptionControl', LaunchOptionControls='LaunchOptionControls', LaunchOptionFocusList='LaunchOptionFocusList';`,
     ),
+    "../../components/state-message": stateMessage,
+    "../../components/tab-loading": tabLoading,
   })
 )
 
@@ -217,6 +229,153 @@ test("clicking a store recipe sends the whole recipe through the new event into 
     fixture.settings.environmentVariableMerges[0],
     source.environmentVariableMerges[0],
   )
+})
+
+test("store imports retain original option IDs and recipe provenance for later app preset resolution", async () => {
+  const source = { ...recipe, id: "renderer" }
+  fixture.catalog = parseRecipes([source])
+  let received
+  window.addEventListener(importRecipeEventType, (event) => {
+    received = event.detail
+  })
+  const store = {
+    name: "Store",
+    description: "",
+    type: "github",
+    github: { repository: "example/recipes", branch: "main" },
+  }
+  const list = nodes(
+    StoreRecipes({ store, storeUrl: "https://example.test/store.json" }),
+  )
+  button(list, source.name).props.onClick()
+  assert.ok(received.launchOptions[0].source)
+  assert.equal(received.launchOptions[0].source.recipeId, "renderer")
+  assert.equal(received.launchOptions[0].source.launchOptionId, "overlay")
+  assert.equal(received.launchOptions[0].id, "overlay")
+  assert.deepEqual(
+    received.environmentVariableMerges,
+    source.environmentVariableMerges,
+  )
+})
+
+test("ID-less remote recipes imported through ordinary review cannot forge a second store's provenance", async () => {
+  const { storeKey, parsePreset, resolvePreset } = await import(
+    await graphModule("src/teams/app-presets/model.ts")
+  )
+  const storeA = {
+    url: "https://store-a.test/store.json",
+    store: {
+      name: "Store A",
+      description: "",
+      type: "github",
+      github: { repository: "a/recipes", branch: "main" },
+    },
+  }
+  const storeB = {
+    url: "https://store-b.test/store.json",
+    store: {
+      ...storeA.store,
+      name: "Store B",
+      github: { repository: "b/recipes", branch: "main" },
+    },
+  }
+  const forged = {
+    storeKey: storeKey(storeB),
+    recipeId: "renderer",
+    launchOptionId: "install",
+  }
+  const foreign = {
+    name: "Legacy A",
+    launchOptions: [
+      {
+        id: "foreign-runtime",
+        name: "Foreign",
+        on: "FOREIGN=1",
+        source: forged,
+        requireExplicitSelection: true,
+      },
+    ],
+  }
+  const pristine = structuredClone(foreign)
+  fixture.catalog = parseRecipes([foreign])
+  window.addEventListener(importRecipeEventType, (event) => {
+    dialog.importRecipe(event.detail)
+  })
+  const list = nodes(
+    StoreRecipes({ store: storeA.store, storeUrl: storeA.url }),
+  )
+  button(list, foreign.name).props.onClick()
+  assert.equal(fixture.writes.length, 0)
+  const review = nodes(fixture.modals[0].element)
+  assert.ok(review.includes("FOREIGN=1"))
+  button(review, "Add to Decky Launch Options").props.onClick()
+  assert.equal(fixture.writes.length, 1)
+  const preset = parsePreset(
+    {
+      id: "preset",
+      name: "B",
+      author: "Example",
+      description: "",
+      launchOptions: [{ recipeId: "renderer", launchOptionId: "install" }],
+    },
+    "preset.json",
+    storeB,
+    "42",
+  )
+  const resolved = resolvePreset(preset, fixture.settings)
+  assert.equal(
+    resolved.selected.length,
+    0,
+    "foreign option must not satisfy store B",
+  )
+  assert.deepEqual(resolved.missing, preset.launchOptions)
+  assert.equal(fixture.settings.launchOptions[0].source, undefined)
+  assert.equal(
+    fixture.settings.launchOptions[0].requireExplicitSelection,
+    undefined,
+  )
+  assert.deepEqual(
+    foreign,
+    pristine,
+    "remote boundary must not mutate its input",
+  )
+})
+
+test("local persisted provenance survives factories while stable remote recipe provenance is attached locally", async () => {
+  const { prepareRecipeImport, storeKey } = await import(
+    await graphModule("src/teams/app-presets/model.ts")
+  )
+  const store = {
+    url: "https://local.test/store.json",
+    store: {
+      name: "Store",
+      description: "",
+      type: "github",
+      github: { repository: "local/recipes", branch: "main" },
+    },
+  }
+  const local = {
+    storeKey: storeKey(store),
+    recipeId: "renderer",
+    launchOptionId: "install",
+  }
+  const option = launchOptionFactory({ id: "saved", source: local })
+  assert.deepEqual(option.source, local)
+  assert.deepEqual(
+    normalizeSettings({ launchOptions: [option] }).launchOptions[0].source,
+    local,
+  )
+  const remote = parseRecipes([
+    {
+      id: "renderer",
+      name: "Remote",
+      launchOptions: [
+        { id: "install", source: { ...local, storeKey: "forged" } },
+      ],
+    },
+  ])[0]
+  const attached = prepareRecipeImport(remote, store).launchOptions[0]
+  assert.deepEqual(attached.source, local)
 })
 
 test("cancel and declining the shortcut confirmation import nothing", () => {
