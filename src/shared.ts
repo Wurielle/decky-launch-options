@@ -5,6 +5,7 @@ export const importRecipeEventType = "dlo-add-recipe"
 
 export const routes = {
   recipeStore: () => "/launch-options-store",
+  recipeStores: () => "/launch-options-store/stores",
   appLaunchOptions: (appid: number | string = ":appid") =>
     `/launch-options/${appid}`,
   launchOptionsManagerItem: (page: number | string = ":page") =>

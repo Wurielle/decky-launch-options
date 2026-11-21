@@ -10,7 +10,7 @@ const react = dataURL(
   `export const useState=init=>globalThis.__presetUI.useState(init); export const useRef=init=>globalThis.__presetUI.useRef(init); export const useEffect=(fn,deps)=>globalThis.__presetUI.useEffect(fn,deps); export const useMemo=fn=>fn(); export const useCallback=fn=>fn;`,
 )
 const ui = dataURL(
-  `export const ButtonItem='ButtonItem', DialogBody='DialogBody', DialogButton='DialogButton', DialogButtonPrimary='DialogButtonPrimary', DialogFooter='DialogFooter', DialogHeader='DialogHeader', Field='Field', Focusable='Focusable', ModalRoot='ModalRoot', PanelSectionRow='PanelSectionRow', SteamSpinner='SteamSpinner', ConfirmModal='ConfirmModal', Menu='Menu', MenuItem='MenuItem'; export function showContextMenu(element){const menu={element,hidden:false,Hide(){this.hidden=true}};globalThis.__presetUI.menus.push(menu);return menu;} export function showModal(element){const modal={element,closed:false,Close(){this.closed=true}}; globalThis.__presetUI.modals.push(modal); return modal;}`,
+  `export const ButtonItem='ButtonItem', DialogBody='DialogBody', DialogButton='DialogButton', DialogButtonPrimary='DialogButtonPrimary', DialogFooter='DialogFooter', DialogHeader='DialogHeader', Field='Field', Focusable='Focusable', ModalRoot='ModalRoot', PanelSectionRow='PanelSectionRow', SteamSpinner='SteamSpinner', ConfirmModal='ConfirmModal', Menu='Menu', MenuItem='MenuItem'; export const Navigation={Navigate:path=>globalThis.__presetUI.navigations.push(path)}; export function showContextMenu(element){const menu={element,hidden:false,Hide(){this.hidden=true}};globalThis.__presetUI.menus.push(menu);return menu;} export function showModal(element){const modal={element,closed:false,Close(){this.closed=true}}; globalThis.__presetUI.modals.push(modal); return modal;}`,
 )
 const boundaries = {
   react,
@@ -50,6 +50,7 @@ function harness(settings, catalogs = new Map()) {
   const fixture = {
     modals: [],
     menus: [],
+    navigations: [],
     notifications: [],
     writes: [],
     settings,
@@ -584,7 +585,7 @@ test("the per-app launch options page wires Presets and the Advanced selection r
   assert.equal(resetAppid, "1903340")
 })
 
-test("the preset toolbar opens a reset action even while presets are loading", async () => {
+test("the preset menu opens the store first and keeps selection reset available while presets load", async () => {
   const { AppPresets } = await import(
     await sourceModule("src/teams/app-presets/app-presets.tsx", boundaries)
   )
@@ -617,12 +618,27 @@ test("the preset toolbar opens a reset action even while presets are loading", a
     actions.props.onClick({ currentTarget: {} })
     assert.equal(f.menus.length, 1)
     const menu = f.menus[0]
-    const reset = f
+    const entries = f
       .render(menu.element)
-      .find((node) => node?.type === "MenuItem")
-    assert.equal(reset.props.children, "Reset launch options selection")
-    reset.props.onSelected()
+      .filter((node) => node?.type === "MenuItem")
+    assert.deepEqual(
+      entries.map((node) => node.props.children),
+      ["Open recipe store", "Reset launch options selection"],
+    )
+    entries[0].props.onSelected()
     assert.equal(menu.hidden, true)
+    assert.deepEqual(f.navigations, ["/launch-options-store/stores"])
+    actions.props.onClick({ currentTarget: {} })
+    const resetMenu = f.menus[1]
+    const reset = f
+      .render(resetMenu.element)
+      .find(
+        (node) =>
+          node?.type === "MenuItem" &&
+          node.props.children === "Reset launch options selection",
+      )
+    reset.props.onSelected()
+    assert.equal(resetMenu.hidden, true)
     assert.equal(resetAppid, "42")
   } finally {
     globalThis.localStorage = previousStorage

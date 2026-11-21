@@ -37,6 +37,11 @@ import { RecipeStorePage } from "./teams/recipe-store/views"
 
 export default definePlugin(() => {
   void presetPersistence.start()
+  routerHook.addRoute(routes.recipeStores(), () => (
+    <QueryClientProvider client={queryClient}>
+      <RecipeStorePage initialTab="stores" />
+    </QueryClientProvider>
+  ))
   routerHook.addRoute(routes.recipeStore(), () => (
     <QueryClientProvider client={queryClient}>
       <RecipeStorePage />

@@ -8,6 +8,7 @@ import {
   Field,
   Focusable,
   ModalRoot,
+  Navigation,
   showModal,
   SteamSpinner,
 } from "@decky/ui"
@@ -32,7 +33,7 @@ import { TabLoading } from "../../components/tab-loading"
 import { useSettings } from "../../hooks"
 import { presetPersistence, queryClient } from "../../queries/settings"
 import { presetRestorationKey } from "../../queries/preset-persistence"
-import { launchOptionFactory, type Recipe } from "../../shared"
+import { launchOptionFactory, routes, type Recipe } from "../../shared"
 import { getRecipesUrl, readRecipeCatalog } from "../recipe-store/recipes"
 import { getStores } from "../recipe-store/store"
 import {
@@ -187,6 +188,10 @@ export function AppPresets({ appid }: { appid: string }) {
               label="Preset actions"
               disabled={loading}
               actions={[
+                {
+                  label: "Open recipe store",
+                  onSelected: () => Navigation.Navigate(routes.recipeStores()),
+                },
                 {
                   label: "Reset launch options selection",
                   onSelected: () => resetAppLaunchOptionSelection(appid),

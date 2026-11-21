@@ -22,7 +22,7 @@ import {
 import { StoreRecipes } from "../store-recipes"
 import { StoreList } from "../store-list"
 
-export function RecipeStorePage() {
+export function RecipeStorePage({ initialTab }: { initialTab?: "stores" }) {
   const [tab, setTab] = useState("stores")
   const [readyToShow, setReadyToShow] = useState(true)
   const [stores, setStores] = useState<SavedStore[]>([])
@@ -46,7 +46,7 @@ export function RecipeStorePage() {
       setStoreError(error instanceof Error ? error.message : String(error))
     }
   }
-  useEffect(() => refreshStores(true), [])
+  useEffect(() => refreshStores(initialTab !== "stores"), [initialTab])
 
   const removeStore = (url: string) => {
     try {
