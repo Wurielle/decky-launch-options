@@ -493,18 +493,12 @@ export function PresetDialog({
                     {preset.launchOptions.map((reference) => {
                       const option =
                         resolution.selected.find(
-                          (option) =>
-                            option.source?.recipeId === reference.recipeId &&
-                            option.source.launchOptionId ===
-                              reference.launchOptionId,
+                          (option) => option.id === reference.launchOptionId,
                         ) ??
                         previews
                           .flatMap((recipe) => recipe.launchOptions ?? [])
                           .find(
-                            (option) =>
-                              option.source?.recipeId === reference.recipeId &&
-                              option.source.launchOptionId ===
-                                reference.launchOptionId,
+                            (option) => option.id === reference.launchOptionId,
                           )
                       const skipped = resolution.protectedOptions.some(
                         (item) => item.reference === reference,

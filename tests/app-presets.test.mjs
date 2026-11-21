@@ -160,7 +160,7 @@ test("independent wildcard discovery binds cached definitions only to the curren
   assert.deepEqual(onlySpecific.errors, [])
 })
 
-test("a store-scoped preset resolves only its imported provenance and applies atomically to one app", async () => {
+test("a preset reuses matching imported IDs across stores and applies atomically to one app", async () => {
   const {
     parsePreset,
     prepareRecipeImport,
@@ -188,23 +188,16 @@ test("a store-scoped preset resolves only its imported provenance and applies at
     { ...store, url: "https://other.test/store.json" },
   )
   const settings = {
-    launchOptions: [...imported.launchOptions, ...other.launchOptions].map(
-      launchOptionFactory,
-    ),
+    launchOptions: other.launchOptions.map(launchOptionFactory),
     profiles: {
       42: { state: { unrelated: true }, originalLaunchOptions: "original" },
       43: { state: {}, originalLaunchOptions: "other" },
     },
     environmentVariableMerges: [],
   }
-  assert.notEqual(settings.launchOptions[0].id, settings.launchOptions[1].id)
-  assert.equal(
-    resolvePreset(preset, {
-      ...settings,
-      launchOptions: [settings.launchOptions[1]],
-    }).missing.length,
-    1,
-  )
+  assert.equal(imported.launchOptions[0].id, other.launchOptions[0].id)
+  assert.equal(imported.launchOptions[0].id, "install")
+  assert.equal(resolvePreset(preset, settings).missing.length, 0)
   assert.equal(isPresetSelected(preset, settings), false)
   const before = structuredClone(settings)
   assert.deepEqual(applyPreset(settings, preset), { selected: 1, skipped: [] })
@@ -470,7 +463,7 @@ test("discovery bounds requests across stores, preserves good files, and disting
   assert.equal(called, false)
 })
 
-test("reviewed preset imports persist scoped options before one atomic per-app save, without changing global choices", async () => {
+test("reviewed preset imports persist recipe options before one atomic per-app save, without changing global choices", async () => {
   const { createPresetActions } = await import(
     await sourceModule("src/teams/app-presets/actions.ts")
   )

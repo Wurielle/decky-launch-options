@@ -231,7 +231,7 @@ test("clicking a store recipe sends the whole recipe through the new event into 
   )
 })
 
-test("store imports retain scoped recipe provenance for later app preset resolution", async () => {
+test("store imports retain original option IDs and recipe provenance for later app preset resolution", async () => {
   const source = { ...recipe, id: "renderer" }
   fixture.catalog = parseRecipes([source])
   let received
@@ -251,7 +251,7 @@ test("store imports retain scoped recipe provenance for later app preset resolut
   assert.ok(received.launchOptions[0].source)
   assert.equal(received.launchOptions[0].source.recipeId, "renderer")
   assert.equal(received.launchOptions[0].source.launchOptionId, "overlay")
-  assert.notEqual(received.launchOptions[0].id, "overlay")
+  assert.equal(received.launchOptions[0].id, "overlay")
   assert.deepEqual(
     received.environmentVariableMerges,
     source.environmentVariableMerges,

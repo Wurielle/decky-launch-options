@@ -144,7 +144,6 @@ export function bindPresetToApp(
   }
 }
 
-// DLO's runtime IDs and valueIds are global; namespace both before importing.
 export function prepareRecipeImport(
   recipe: Recipe,
   store: SavedStore,
@@ -153,21 +152,17 @@ export function prepareRecipeImport(
   parseRecipes([recipe])
   if (!recipe.id) throw new Error("This recipe has no stable ID.")
   const key = storeKey(store)
-  const scoped = (kind: string, id: string) =>
-    JSON.stringify(["store", key, recipe.id, kind, id])
   return {
     ...recipe,
     launchOptions: recipe.launchOptions?.map((input) => {
       const option = launchOptionFactory(input)
       const prepared = {
         ...option,
-        id: scoped("option", option.id || ""),
         enableGlobally: preserveGlobals
           ? (preserveGlobals.launchOptions.find(
-              (existing) => existing.id === scoped("option", option.id),
+              (existing) => existing.id === option.id,
             )?.enableGlobally ?? false)
           : option.enableGlobally,
-        valueId: option.valueId ? scoped("value", option.valueId) : "",
         source: {
           storeKey: key,
           recipeId: recipe.id!,
@@ -208,10 +203,7 @@ export function resolvePreset(
   const dropdowns = new Set<string>()
   for (const reference of preset.launchOptions) {
     const matches = settings.launchOptions.filter(
-      (item) =>
-        item.source?.storeKey === storeKey(preset.store) &&
-        item.source.recipeId === reference.recipeId &&
-        item.source.launchOptionId === reference.launchOptionId,
+      (item) => item.id === reference.launchOptionId,
     )
     if (matches.length > 1)
       throw new Error(
@@ -219,13 +211,7 @@ export function resolvePreset(
       )
     const imported = matches[0]
     const option =
-      imported ??
-      previews.find(
-        (item) =>
-          item.source?.storeKey === storeKey(preset.store) &&
-          item.source.recipeId === reference.recipeId &&
-          item.source.launchOptionId === reference.launchOptionId,
-      )
+      imported ?? previews.find((item) => item.id === reference.launchOptionId)
     if (option) {
       if (option.valueId && dropdowns.has(option.valueId))
         throw new Error(

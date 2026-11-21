@@ -101,6 +101,144 @@ function runtime(settings, appid) {
   return JSON.parse(result.stdout)
 }
 
+test("catalog imports update existing IDs across stores and branches while preserving global and app selections", async () => {
+  const { produce } = await import("immer")
+  const input = {
+    id: "renderer",
+    name: "Renderer",
+    launchOptions: [
+      {
+        id: "low",
+        name: "Quality",
+        valueId: "quality",
+        on: "QUALITY=low",
+        enableGlobally: true,
+      },
+      { id: "high", name: "Quality", valueId: "quality", on: "QUALITY=high" },
+    ],
+  }
+  let settings = original()
+  settings.launchOptions.push(...input.launchOptions.map(launchOptionFactory))
+  settings.profiles[77].state = { low: false, high: true, unrelated: true }
+  const beforeProfiles = structuredClone(settings.profiles)
+  const actions = createLaunchOptionActions((mutate) => {
+    settings = produce(settings, mutate)
+  })
+  const origins = [
+    store,
+    {
+      ...store,
+      store: {
+        ...store.store,
+        github: { ...store.store.github, branch: "other" },
+      },
+    },
+    {
+      ...store,
+      url: "https://different.test/store.json",
+      store: {
+        ...store.store,
+        github: { repository: "different/recipes", branch: "dev" },
+      },
+    },
+  ]
+  for (const [index, origin] of origins.entries()) {
+    const changed = {
+      ...input,
+      launchOptions: input.launchOptions.map((option) => ({
+        ...option,
+        on: `${option.on}-${index}`,
+        enableGlobally: option.id === "high",
+      })),
+    }
+    const prepared = prepareRecipeImport(changed, origin)
+    actions.batchCreateLaunchOptions(
+      prepared.launchOptions.map(launchOptionFactory),
+    )
+    assert.equal(settings.launchOptions.length, 3)
+    assert.equal(
+      settings.launchOptions.find((option) => option.id === "low").on,
+      `QUALITY=low-${index}`,
+    )
+    assert.equal(
+      settings.launchOptions.find((option) => option.id === "low").valueId,
+      "quality",
+    )
+    assert.equal(
+      settings.launchOptions.find((option) => option.id === "low")
+        .enableGlobally,
+      true,
+    )
+    assert.equal(
+      settings.launchOptions.find((option) => option.id === "high")
+        .enableGlobally,
+      false,
+    )
+    assert.deepEqual(settings.profiles, beforeProfiles)
+    assert.equal(
+      getSelectedValueIdLaunchOptionId(settings, "77", "quality"),
+      "high",
+    )
+    assert.equal(
+      getSelectedValueIdLaunchOptionId(settings, "99999", "quality"),
+      "low",
+    )
+    const otherPreset = parsePreset(
+      {
+        id: "high",
+        name: "High",
+        author: "Example",
+        description: "",
+        launchOptions: [{ recipeId: "renderer", launchOptionId: "high" }],
+      },
+      "high.json",
+      store,
+      "77",
+    )
+    assert.equal(isPresetSelected(otherPreset, settings), true)
+  }
+})
+
+test("preset recipe recovery reuses imports from another store without adding controls or resetting app choices", async () => {
+  const f = fixture()
+  await f.import()
+  await f.actions.applyAppPreset(preset)
+  const beforeProfiles = structuredClone(f.settings.profiles)
+  const beforeIds = f.settings.launchOptions.map((option) => option.id).sort()
+  const otherStore = {
+    ...store,
+    url: "https://different.test/store.json",
+    store: {
+      ...store.store,
+      github: { ...store.store.github, branch: "other" },
+    },
+  }
+  const changed = {
+    ...recipe,
+    launchOptions: recipe.launchOptions.map((option) => ({
+      ...option,
+      on: `${option.on} UPDATED=1`,
+    })),
+  }
+  await f.actions.savePresetRecipe(
+    prepareRecipeImport(changed, otherStore, f.settings).launchOptions.map(
+      launchOptionFactory,
+    ),
+    [],
+  )
+  assert.deepEqual(
+    f.settings.launchOptions.map((option) => option.id).sort(),
+    beforeIds,
+  )
+  assert.deepEqual(f.settings.profiles, beforeProfiles)
+  assert.equal(isPresetSelected(preset, f.settings), true)
+  assert.ok(
+    f.settings.launchOptions
+      .filter((option) => option.source)
+      .every((option) => option.on.endsWith("UPDATED=1")),
+  )
+})
+
 test("preset fixture import leaves effective UI selections inert for current, unrelated and future apps through reimport", async () => {
   const f = fixture()
   await f.import()
