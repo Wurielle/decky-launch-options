@@ -20,6 +20,19 @@ def store_range(tag, previous_tag):
         if not match:
             continue
         merged_tag = match[1]
+        exists = subprocess.run(
+            ["git", "show-ref", "--verify", "--quiet", f"refs/tags/{merged_tag}"],
+            check=False,
+        )
+        if exists.returncode == 1:
+            # Deleted releases no longer define a shipped store snapshot.
+            continue
+        exists.check_returncode()
+        release_sha = git("rev-parse", f"refs/tags/{merged_tag}^{{commit}}")
+        parents = git("rev-list", "--parents", "-n", "1", sha).split()[1:]
+        if len(parents) != 2 or parents[1] != release_sha:
+            # A recreated tag must not reuse the deleted release's snapshot.
+            continue
         if merged_tag == tag:
             # Reruns must describe the original store build, not newer branch work.
             head = sha
