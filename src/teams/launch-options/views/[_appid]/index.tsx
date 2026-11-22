@@ -4,7 +4,6 @@ import {
   ConfirmModal,
   DialogButton,
   Field,
-  findModule,
   Focusable,
   NavEntryPositionPreferences,
   showModal,
@@ -46,6 +45,16 @@ import { ModalWrapper } from "../../components/modal-wrapper"
 import { useAppLaunchOptionsState } from "../../hooks/use-app-launch-options-state"
 
 const advancedTabId = "__advanced"
+
+// Keep badge styling local: Steam beta no longer exports its TabCount CSS map.
+const tabCountStyle = {
+  marginLeft: 4,
+  padding: "0 6px",
+  borderRadius: 2,
+  background: "rgba(255, 255, 255, 0.2)",
+  fontSize: 12,
+  lineHeight: "18px",
+}
 
 const formatExecutablePath = (path: string) =>
   /\s|'/.test(path) ? `'${path.split("'").join(`'"'"'`)}'` : path
@@ -252,15 +261,6 @@ export function AppLaunchOptionsPage() {
   )
     ? ["global", "local"]
     : ["local", "global"]
-  const { TabCount } = findModule((mod) => {
-    if (typeof mod !== "object") return false
-
-    if (mod.TabCount && mod.TabTitle) {
-      return true
-    }
-
-    return false
-  })
 
   // this fixes weird issues when switching tab by forcing the blur on the active element (no document.activeElement.blur doesn't work)
   const [readyToShow, setReadyToShow] = useState(true)
@@ -710,7 +710,7 @@ export function AppLaunchOptionsPage() {
                   (item) => !isLaunchOptionGlobal(item) && !item.group,
                 )
                 return (
-                  <span className={TabCount}>
+                  <span style={tabCountStyle}>
                     {count + Number(!!getAppOriginalLaunchOptions(appid))}
                   </span>
                 )
@@ -752,7 +752,7 @@ export function AppLaunchOptionsPage() {
                   getAppLaunchOptionState,
                   (item) => isLaunchOptionGlobal(item) && !item.group,
                 )
-                return <span className={TabCount}>{count}</span>
+                return <span style={tabCountStyle}>{count}</span>
               },
             },
             ...groups.map((group) => ({
@@ -818,7 +818,7 @@ export function AppLaunchOptionsPage() {
                   getAppLaunchOptionState,
                   (item) => item.group === group,
                 )
-                return <span className={TabCount}>{count}</span>
+                return <span style={tabCountStyle}>{count}</span>
               },
             })),
           ]}

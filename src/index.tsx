@@ -12,7 +12,7 @@ import { LaunchOptionsPage } from "./teams/launch-options/views"
 import { AppLaunchOptionsPage } from "./teams/launch-options/views/[_appid]"
 import { EnvironmentVariableMergesPage } from "./teams/environment-variable-merges/views"
 import { QueryClientProvider } from "@tanstack/react-query"
-import contextMenuPatch, { LibraryContextMenu } from "./patches/context-menu"
+import contextMenuPatch from "./patches/context-menu"
 import {
   getInfoQueryOptions,
   getSettingsQueryOptions,
@@ -54,8 +54,7 @@ export default definePlugin(() => {
       </QueryClientProvider>
     )
   })
-  // shamefully stolen from the talented people at SteamGridDB
-  const menuPatches = contextMenuPatch(LibraryContextMenu)
+  const menuPatches = contextMenuPatch()
   const libraryAppPatchResult = libraryAppPatch()
   const previousRestoration = window.dloLaunchOptionsRestored
   let pendingRestoration = previousRestoration
