@@ -23,6 +23,9 @@ jobs:
         with:
           node-version: "lts/*"
 
+      - name: Install release analyzer
+        run: npm ci --prefix .github/release --ignore-scripts --no-audit --no-fund
+
       - name: Semantic Release
         uses: cycjimmy/semantic-release-action@v6
         id: semantic-release
