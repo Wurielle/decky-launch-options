@@ -18,6 +18,7 @@
     }
   ],
   "plugins": [
+    "./.github/release/analyze.mjs",
     [
       "@semantic-release/npm",
       {

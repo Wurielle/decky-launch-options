@@ -25,7 +25,7 @@ def store_range(tag, previous_tag):
             head = sha
             continue
         ancestor = subprocess.run(
-            ["git", "merge-base", "--is-ancestor", f"refs/tags/{merged_tag}", f"refs/tags/{tag}"],
+            ["git", "merge-base", "--is-ancestor", f"refs/tags/{merged_tag}", tag],
             check=False,
         )
         if ancestor.returncode not in (0, 1):

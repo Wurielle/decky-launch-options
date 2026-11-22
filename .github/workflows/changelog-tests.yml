@@ -2,7 +2,10 @@ name: Changelog tests
 on:
   pull_request:
     paths:
+      - ".github/release/**"
+      - ".releaserc.json"
       - ".github/scripts/changelog.py"
+      - ".github/workflows/tag-release.yml"
       - ".github/workflows/release.yml"
       - ".github/workflows/changelog-tests.yml"
       - "changelog.config.json"
@@ -17,4 +20,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - run: node --test tests/release-changelog.test.mjs
+      - run: npm ci --prefix .github/release --ignore-scripts --no-audit --no-fund
+      - run: node --test tests/release-changelog.test.mjs .github/release/analyze.test.mjs
