@@ -1,0 +1,20 @@
+name: Changelog tests
+on:
+  pull_request:
+    paths:
+      - ".github/scripts/changelog.py"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/changelog-tests.yml"
+      - "changelog.config.json"
+      - "tests/release-changelog.test.mjs"
+permissions:
+  contents: read
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node --test tests/release-changelog.test.mjs
