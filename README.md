@@ -36,6 +36,9 @@
 
 ## Installation
 
+> [!IMPORTANT]
+> Decky Plugin Store updates have been [halted until further notice](https://github.com/Wurielle/decky-launch-options/issues/111), please download the plugin from the [releases page](https://github.com/Wurielle/decky-launch-options/releases).
+
 * [Download](https://github.com/Wurielle/decky-launch-options/releases) `decky-launch-options.zip` and import it
   in Decky Loader
 * Or copy the link to `decky-launch-options.zip` and import it in Decky Loader
@@ -51,7 +54,7 @@ If you wish to import a pre-defined set of
 launch options to quickstart your use of this plugin or create your own
 collection that you can share with others, I recommend checking out
 the [Decky Launch Options Recipes](https://github.com/Wurielle/decky-launch-options-recipes)
-plugin.
+plugin or downloading the version with the recipe store on the [releases page](https://github.com/Wurielle/decky-launch-options/releases).
 
 ## App presets
 

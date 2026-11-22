@@ -1,7 +1,7 @@
 {
   "categories": [
     {
-      "title": "## ✨ Features",
+      "title": "### ✨ Features",
       "labels": [
         "feat",
         "feature",
@@ -9,20 +9,20 @@
       ]
     },
     {
-      "title": "## 🐛 Fixes",
+      "title": "### 🐛 Fixes",
       "labels": [
         "fix",
         "bug"
       ]
     },
     {
-      "title": "## 🧪 Tests",
+      "title": "### 🧪 Tests",
       "labels": [
         "test"
       ]
     },
     {
-      "title": "## 🧬 Misc",
+      "title": "### 🧬 Misc",
       "labels": [
         "misc"
       ]
