@@ -9,8 +9,14 @@ on:
 
 jobs:
   tag-release:
+    # The version push uses ACCOUNT_TOKEN and emits another push event before
+    # the originating run tags the release or the store build can finish.
+    if: "${{ !startsWith(github.event.head_commit.message, 'chore(release): update package versions to ') }}"
     name: Tag release
     runs-on: ubuntu-latest
+    concurrency:
+      group: tag-release-${{ github.ref }}
+      cancel-in-progress: false
     steps:
       - name: Checkout
         uses: actions/checkout@v4
