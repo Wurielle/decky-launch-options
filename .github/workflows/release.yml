@@ -17,15 +17,56 @@ jobs:
       pull-requests: read
       repository-projects: read
       statuses: read
+    outputs:
+      store_sha: ${{ steps.store_range.outputs.to }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Create changelog for release
         id: github_release
         uses: mikepenz/release-changelog-builder-action@v1
         with:
           configuration: "changelog.config.json"
+          failOnError: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve changelog ranges
+        id: store_range
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          export PREVIOUS_TAG="$(git describe --tags --abbrev=0 --match 'v[0-9]*' "$RELEASE_TAG^")"
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, ".github/scripts")
+          from changelog import store_range
+
+          refs = store_range(os.environ["RELEASE_TAG"], os.environ["PREVIOUS_TAG"])
+          config = json.loads(Path("changelog.config.json").read_text())
+          config["base_branches"] = ["^with-store$"]
+          config_path = Path(os.environ["RUNNER_TEMP"]) / "changelog-with-store.json"
+          config_path.write_text(json.dumps(config))
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              for name, value in {**refs, "configuration": str(config_path)}.items():
+                  output.write(f"{name}={value}\n")
+          PY
+
+      - name: Create changelog for store branch
+        id: store_changelog
+        uses: mikepenz/release-changelog-builder-action@v1
+        with:
+          configuration: ${{ steps.store_range.outputs.configuration }}
+          fromTag: ${{ steps.store_range.outputs.from }}
+          toTag: ${{ steps.store_range.outputs.to }}
+          failOnError: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -41,7 +82,13 @@ jobs:
             https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/decky-launch-options.zip
             ```
 
+            ## Regular
+
             ${{ steps.github_release.outputs.changelog }}
+
+            ## With store
+
+            ${{ steps.store_changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
   #          prerelease: ${{ contains(github.ref, 'rc') || contains(github.ref, 'beta') || contains(github.ref, 'alpha')}}
 
@@ -111,7 +158,7 @@ jobs:
 
   release-with-store:
     name: Add store build to release
-    needs: [deploy]
+    needs: [release, deploy]
     if: ${{ !contains(github.ref_name, '-') }}
     runs-on: ubuntu-latest
     permissions:
@@ -125,7 +172,7 @@ jobs:
       - name: Checkout store branch
         uses: actions/checkout@v4
         with:
-          ref: with-store
+          ref: ${{ needs.release.outputs.store_sha }}
           fetch-depth: 0
           token: ${{ secrets.ACCOUNT_TOKEN }}
 
@@ -141,10 +188,33 @@ jobs:
             exit 1
           fi
 
+          pinned_sha="$(git rev-parse HEAD)"
+          git fetch origin refs/heads/with-store:refs/remotes/origin/with-store
+          remote_sha="$(git rev-parse origin/with-store)"
+          release_sha="$(git rev-parse "refs/tags/$RELEASE_TAG^{commit}")"
+          merge_subject="chore: merge $RELEASE_TAG into with-store"
+
+          # Reuse completed release pins and failed-job retries without republishing.
+          history="$(git log --first-parent --merges --format='%H %s' "$remote_sha")"
+          while read -r commit subject; do
+            [[ "$subject" == "$merge_subject" ]] || continue
+            if [[ "$(git rev-parse "$commit^2")" == "$release_sha" ]] &&
+               [[ "$commit" == "$pinned_sha" ||
+                  "$(git rev-parse "$commit^1")" == "$pinned_sha" ]]; then
+              git checkout --detach "$commit"
+              exit 0
+            fi
+          done <<< "$history"
+
+          if [[ "$remote_sha" != "$pinned_sha" ]]; then
+            echo "with-store advanced beyond the pinned source; rerun the whole workflow." >&2
+            exit 1
+          fi
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git merge --no-ff "refs/tags/$RELEASE_TAG" \
-            -m "chore: merge $RELEASE_TAG into with-store"
+            -m "$merge_subject"
           git push origin HEAD:with-store
 
       - name: Setup Node.js
