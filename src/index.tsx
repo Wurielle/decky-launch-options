@@ -28,7 +28,6 @@ import {
   applyProfileLaunchOptions,
   launchOptionsLifecycle,
   restoreAppLaunchOptions,
-  type RestoredAppLaunchOptions,
 } from "./utils"
 import { has_shell_script } from "./api"
 import { settingsStore } from "./stores"
@@ -59,37 +58,47 @@ export default definePlugin(() => {
   const menuPatches = contextMenuPatch(LibraryContextMenu)
   const libraryAppPatchResult = libraryAppPatch()
   const previousRestoration = window.dloLaunchOptionsRestored
-  const startupWrites: Promise<Record<string, RestoredAppLaunchOptions>> =
+  let pendingRestoration = previousRestoration
+  let startupWrites: Promise<unknown> = Promise.resolve()
+  let stopStartup = () => {}
+  const stopped = new Promise<undefined>((resolve) => {
+    stopStartup = () => resolve(undefined)
+  })
+  void Promise.race([
     Promise.all([
       previousRestoration,
       queryClient.fetchQuery(getSettingsQueryOptions),
       queryClient.fetchQuery(getInfoQueryOptions),
       has_shell_script(),
-    ])
-      .then(async ([restored, settings, info, hasShellScript]) => {
-        if (!launchOptionsLifecycle.active) return restored ?? {}
-        if (!settings || !hasShellScript) return {}
-        await Promise.allSettled(
-          Object.entries(settings.profiles).map(([appid, profile]) =>
-            applyProfileLaunchOptions(
-              Number(appid),
-              profile,
-              info,
-              {
-                steam: settingsStore.state.autoManageLaunchOptions,
-                nonSteam: settingsStore.state.autoManageNonSteamLaunchOptions,
-              },
-              restored?.[appid],
-            ),
+    ]),
+    stopped,
+  ])
+    .then(async (ready) => {
+      if (!ready || !launchOptionsLifecycle.active) return
+      const [restored, settings, info, hasShellScript] = ready
+      if (!settings || !hasShellScript) return
+      // Only Steam writes belong in the unload barrier. Backend requests can
+      // remain pending forever if Decky restarts their plugin process.
+      startupWrites = Promise.allSettled(
+        Object.entries(settings.profiles).map(([appid, profile]) =>
+          applyProfileLaunchOptions(
+            Number(appid),
+            profile,
+            info,
+            {
+              steam: settingsStore.state.autoManageLaunchOptions,
+              nonSteam: settingsStore.state.autoManageNonSteamLaunchOptions,
+            },
+            restored?.[appid],
           ),
-        )
-        // Carry the handoff through another reload if startup was interrupted.
-        return launchOptionsLifecycle.active ? {} : (restored ?? {})
-      })
-      .catch((error) => {
-        console.error("DLO startup recovery failed", error)
-        return {}
-      })
+        ),
+      )
+      await startupWrites
+      if (launchOptionsLifecycle.active) pendingRestoration = undefined
+    })
+    .catch((error) => {
+      console.error("DLO startup recovery failed", error)
+    })
 
   function onBatchCreateLaunchOptions(
     event: CustomEvent<Partial<LaunchOption>[]>,
@@ -118,6 +127,7 @@ export default definePlugin(() => {
     icon: <FaTerminal />,
     onDismount() {
       launchOptionsLifecycle.active = false
+      stopStartup()
       Object.values(routes).forEach((route) => {
         routerHook.removeRoute(route())
       })
@@ -129,7 +139,10 @@ export default definePlugin(() => {
       const info = queryClient.getQueryData(getInfoQueryOptions.queryKey)
       // Decky does not await onDismount. The next instance waits for these
       // callbacks so an old restoration cannot overwrite startup recovery.
-      window.dloLaunchOptionsRestored = startupWrites.then(async (pending) => {
+      window.dloLaunchOptionsRestored = Promise.all([
+        pendingRestoration,
+        startupWrites,
+      ]).then(async ([pending]) => {
         const restored = { ...pending }
         await Promise.allSettled(
           Object.entries(settings?.profiles ?? {}).map(
